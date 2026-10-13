@@ -1,0 +1,7 @@
+# Local practice state and server write intermediates
+**/attempt.json
+**/.attempt-*.tmp
+
+# Temporary renders and installed dependencies
+/tmp/
+node_modules/

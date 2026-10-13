@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice quiz</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="quiz-data.js" defer></script>
+  <script src="quiz.js" defer></script>
+</head>
+<body>
+  <div class="quiz-shell">
+  <main class="container">
+    <header class="page-header">
+      <div class="header-top">
+        <p class="eyebrow">Practice quiz</p>
+        <button id="review-attempt" class="button button-secondary" type="button">Review last attempt</button>
+        <button id="theme-toggle" class="button button-secondary theme-toggle" type="button" aria-pressed="false">Dark mode</button>
+      </div>
+      <h1 id="quiz-title">Your next quiz</h1>
+      <p id="quiz-source" class="subtitle" hidden></p>
+      <p id="quiz-instructions" class="subtitle" hidden></p>
+      <div id="quiz-meta" class="quiz-meta" hidden></div>
+    </header>
+
+    <p id="status-message" class="status-message" role="status" aria-live="polite" hidden></p>
+
+    <section id="empty-state" class="empty-state" hidden>
+      <h2>Ready for your question paper</h2>
+      <p>This is the blank quiz template. Send the question paper PDF and its answer key in the chat, and a separate folder will be prepared for that quiz.</p>
+      <p>Run <strong>start-quiz.cmd</strong> from the Quiz folder, then choose your paper at <strong>http://127.0.0.1:8765/</strong>.</p>
+    </section>
+
+    <form id="quiz-form" class="quiz-form" hidden>
+      <fieldset id="quiz-session" class="session-controls">
+      <div id="questions"></div>
+      <div class="quiz-actions">
+        <p id="progress" class="progress" role="status" aria-live="polite"></p>
+        <button class="button" type="submit">Submit and check answers</button>
+        <button id="clear-answers" class="button button-secondary" type="button">Clear answers</button>
+      </div>
+      </fieldset>
+    </form>
+
+    <section id="report" class="report" aria-labelledby="report-title" hidden>
+      <div class="score-card">
+        <h2 id="report-title" tabindex="-1">Your result</h2>
+        <p id="report-source" class="subtitle" hidden></p>
+        <p id="score-value" class="score-value"></p>
+        <p id="score-detail" class="score-detail"></p>
+        <div id="report-summary" class="report-summary"></div>
+      </div>
+      <div class="report-actions">
+        <button id="retry-quiz" class="button" type="button">Attempt again</button>
+        <button id="download-report" class="button button-secondary" type="button">Save report</button>
+        <button id="print-report" class="button button-secondary" type="button">Print report</button>
+      </div>
+      <div id="report-list" class="report-list"></div>
+    </section>
+    <noscript><p>Enable JavaScript in your browser to attempt and score this quiz.</p></noscript>
+  </main>
+  <aside id="question-nav" class="question-nav" aria-labelledby="nav-title" hidden>
+    <h2 id="nav-title">Question map</h2>
+    <p id="nav-progress" class="nav-progress" role="status" aria-live="polite"></p>
+    <div class="nav-legend">
+      <span><span class="nav-dot answered" aria-hidden="true"></span> Attempted</span>
+      <span><span class="nav-dot unanswered" aria-hidden="true"></span> Not attempted</span>
+      <span id="nav-check-legend" hidden><span class="nav-dot needs-check" aria-hidden="true"></span> Check number</span>
+    </div>
+    <nav id="nav-groups" class="nav-groups" aria-label="Jump to a question"></nav>
+  </aside>
+  </div>
+</body>
+</html>
