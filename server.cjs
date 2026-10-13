@@ -31,9 +31,39 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     const links = [];
     for (const item of await fsp.readdir(root, { withFileTypes: true })) {
       if (!item.isDirectory() || item.name.startsWith('_') || item.name.startsWith('.')) continue;
-      try { const folder = await quizFolder(item.name); const html = await fsp.readFile(path.join(folder, 'index.html'), 'utf8'); const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || item.name; links.push(`<li><a href="/${encodeURIComponent(item.name)}/">${escapeHtml(title)}</a></li>`); } catch { /* Ignore folders that are not quizzes. */ }
+      try {
+        const folder = await quizFolder(item.name);
+        const html = await fsp.readFile(path.join(folder, 'index.html'), 'utf8');
+        const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || item.name;
+        links.push(`<li><a class="question-card paper-card" href="/${encodeURIComponent(item.name)}/"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>`);
+      } catch { /* Ignore folders that are not quizzes. */ }
     }
-    return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GATE CSE quizzes</title><style>body{font:18px system-ui;max-width:700px;margin:60px auto;padding:0 20px;line-height:1.7}li{margin:12px 0}</style><h1>GATE CSE quizzes</h1><p>Unfinished answers stay in this browser. Submit saves the latest report in the quiz folder.</p><ul>${links.join('')}</ul></html>`;
+    return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GATE CSE quizzes</title>
+  <script src="/_template/theme.js"></script>
+  <link rel="stylesheet" href="/_template/styles.css">
+</head>
+<body>
+  <main class="container home-page">
+    <header class="page-header">
+      <div class="header-top">
+        <p class="eyebrow">Your practice library</p>
+        <button id="theme-toggle" class="button button-secondary theme-toggle" type="button" aria-pressed="false">Dark mode</button>
+      </div>
+      <h1>GATE CSE quizzes</h1>
+      <p class="subtitle">Choose a paper and practise at your own pace.</p>
+    </header>
+    <p class="home-count">${links.length} paper${links.length === 1 ? '' : 's'} available</p>
+    <ul class="home-papers" aria-label="Available question papers">${links.join('')}</ul>
+    ${links.length ? '' : '<p class="empty-state">No papers are ready yet. Add a quiz folder to get started.</p>'}
+    <p class="home-note subtitle">Your unfinished answers stay in this browser. Submit saves your latest result for review.</p>
+  </main>
+</body>
+</html>`;
   }
   const server = http.createServer(async (req, res) => {
     try {

@@ -17,6 +17,7 @@ async function run() {
     await fs.mkdir(path.join(root, '_template'));
     await fs.writeFile(path.join(root, '_template', 'index.html'), '<title>Blank template</title>');
     await fs.writeFile(path.join(root, '_template', 'quiz-data.js'), 'window.QUIZ_DATA = {};');
+    for (const filename of ['styles.css', 'theme.js']) await fs.copyFile(path.join(__dirname, '..', '_template', filename), path.join(root, '_template', filename));
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const port = server.address().port;
     const origin = `http://127.0.0.1:${port}`;
@@ -35,6 +36,16 @@ async function run() {
     const post = (data, url = '/gate-test/attempt.json', headers = {}) => request(url, { method: 'POST', body: typeof data === 'string' ? data : JSON.stringify(data), headers: { 'Content-Type': 'application/json', Origin: origin, ...headers } });
     assert.deepEqual(JSON.parse((await request('/health')).body), { server: MARKER });
     const landing = await request('/'); assert.equal(landing.status, 200); assert.match(landing.body, /Test quiz/); assert.doesNotMatch(landing.body, /Blank template/);
+    assert.match(landing.body, /href="\/gate-test\/"/);
+    assert.match(landing.body, /href="\/_template\/styles\.css"/);
+    assert.match(landing.body, /src="\/_template\/theme\.js"/);
+    assert.match(landing.body, /id="theme-toggle"/);
+    assert.doesNotMatch(landing.body, /<script[^>]+src="[^"]*quiz(?:-data)?\.js"/);
+    for (const filename of ['styles.css', 'theme.js']) {
+      const asset = await request(`/_template/${filename}`);
+      assert.equal(asset.status, 200);
+      assert.equal(asset.body, await fs.readFile(path.join(root, '_template', filename), 'utf8'));
+    }
     assert.match((await request('/gate-test/')).body, /<h1>Quiz/);
     assert.equal((await request('/gate-test/quiz-data.js')).status, 200);
     assert.equal((await request('/gate-test/attempt.json')).status, 404);
@@ -65,7 +76,7 @@ async function run() {
     } catch (error) { if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error; }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
     assert.equal((await fs.readdir(quiz)).filter(name => name.startsWith('.attempt-')).length, 0);
-    console.log('Quiz server tests passed: static files, submitted attempts, validation, origin/host guards, and paths.');
+    console.log('Quiz server tests passed: themed home page, static files, submitted attempts, validation, origin/host guards, and paths.');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));

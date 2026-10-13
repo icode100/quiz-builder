@@ -27,6 +27,8 @@ Browser cache holds unfinished work only; `attempt.json` holds the latest submit
 
 The server binds loopback at port 8765, serves local quiz files, and confines attempt reads/writes to an existing quiz folder. Submit writes JSON atomically. The Windows launcher finds Node on PATH or in Program Files, starts the server in the background or reuses it, and opens the quiz list in the default browser. Keep the same origin; do not alternate `localhost`/`127.0.0.1`, ports, or browser profiles.
 
+The home page lists quiz folders as responsive paper cards and loads `/_template/styles.css` and `/_template/theme.js`. It shares the remembered theme with quizzes, without loading quiz data/runtime or changing practice drafts and attempts. Restart the server after editing its generated home-page HTML.
+
 For terminal use, `start-quiz.ps1 -NoBrowser` starts/reuses the server; `stop-quiz.ps1` stops only Node processes with this workspace's exact server path owned by the current user. PowerShell profile functions `quiz-start` and `quiz-stop` are documented in README.md. Starting/stopping never changes drafts or attempts; launch under the user's Windows account so their terminal can stop it.
 
 ## Workspace and shared runtime

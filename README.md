@@ -4,6 +4,8 @@ Local GATE CSE practice quizzes with black and light themes, magenta accents, an
 
 Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local server and open the quiz list in your default browser. Node.js must be available; no npm packages or internet connection are needed.
 
+The home page and quizzes share the same remembered light/dark mode, magenta accents, and soft card shadows.
+
 For PowerShell terminal commands, create your profile if missing and open it:
 
 ```powershell
