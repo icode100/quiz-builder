@@ -73,11 +73,11 @@ a { color: var(--accent); }
 }
 .quiz-shell.has-navigator {
   display: grid;
-  grid-template-columns: minmax(0, 900px) 220px;
+  grid-template-columns: minmax(0, 900px) 360px;
   justify-content: center;
   align-items: start;
   gap: 1.5rem;
-  width: min(100% - 2rem, 1200px);
+  width: min(100% - 2rem, 1320px);
 }
 .quiz-shell > .container { width: 100%; min-width: 0; margin: 0; }
 .question-nav {
@@ -101,7 +101,7 @@ a { color: var(--accent); }
 .nav-dot.needs-check { border-color: #a16207; background: #f59e0b; }
 .nav-section + .nav-section { margin-top: 1rem; }
 .nav-section-title { margin: 0 0 0.5rem; color: var(--muted); font-size: 0.8rem; }
-.nav-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+.nav-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.4rem; }
 .nav-question {
   display: flex;
   align-items: center;
@@ -330,6 +330,11 @@ a { color: var(--accent); }
 
   /* Preserve every diagram and equation in its original PDF colors. */
   :root[data-theme="dark"] .question-image { background: #fff; border-color: #62505c; }
+}
+
+@media screen and (min-width: 901px) and (max-width: 1100px) {
+  .quiz-shell.has-navigator { grid-template-columns: minmax(0, 900px) 320px; }
+  .nav-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 
 @media screen and (max-width: 900px) {

@@ -112,7 +112,7 @@ Validate draft/attempt identity, signature, question IDs, response formats, and 
 
 Keep the layout responsive and keyboard-usable. Use pink/magenta accents and subtle shadows in both themes, with a pitch-black page in dark mode and pale pink/white surfaces in light mode. Preserve visible keyboard focus and distinct result colors. Original image pixels/colors stay unchanged in dark mode; printed reports stay light, hide controls, and omit shadows. Link crops to full-resolution local images with useful alt text and source pages.
 
-The map groups GA/CS numbering, uses response existence rather than correctness, and updates on input/clear/restore/retry. Invalid nonblank NAT may show `!` without revealing the answer. Wide layout uses a sticky right sidebar; at 900px or less it moves above the quiz. Report jumps target report entries. Hide the map in print and in the blank template.
+The map groups GA/CS numbering, uses response existence rather than correctness, and updates on input/clear/restore/retry. Invalid nonblank NAT may show `!` without revealing the answer. Wide layout uses a sticky 360px right sidebar with seven question squares per row; at 901–1100px it uses a 320px sidebar and six columns. At 900px or less the map moves above the quiz with columns fitted to available space. Report jumps target report entries. Hide the map in print and in the blank template.
 
 ## Existing paper references
 
