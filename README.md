@@ -4,7 +4,7 @@ Local GATE CSE practice quizzes with black and light themes, magenta accents, an
 
 Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local server and open the quiz list in your default browser. Node.js must be available; no npm packages or internet connection are needed.
 
-The home page and quizzes share remembered light/dark mode, magenta accents, and soft card shadows. **Dark mode** is a keyboard-accessible toggle switch.
+The home page and quizzes share remembered light/dark mode, magenta accents, and soft card shadows. **Theme** is a keyboard-accessible toggle switch.
 
 The home page uses stacked cards: green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified score out of 100 and a score bar. Scores are recomputed from the saved responses and answer key; stale or invalid submissions show **Last score unavailable**. Negative scores remain visible, with an empty bar.
 

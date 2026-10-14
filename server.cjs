@@ -118,7 +118,7 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     <header class="page-header">
       <div class="header-top">
         <p class="eyebrow">Your practice library</p>
-        <button id="theme-toggle" class="toggle-switch theme-toggle" role="switch" aria-checked="false" aria-label="Dark mode" type="button"><span class="switch-label">Dark mode</span><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span></button>
+        <button id="theme-toggle" class="toggle-switch theme-toggle" role="switch" aria-checked="false" aria-label="Theme" type="button"><span class="switch-label">Theme</span><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span></button>
       </div>
       <h1>GATE CSE quizzes</h1>
       <p class="subtitle">Choose a paper and practise at your own pace.</p>

@@ -441,7 +441,7 @@ async function editResponse(h, id, value) {
   assert.equal(unavailable.ids['status-message'].textContent, 'Could not cache your progress. Keep this tab open to retain your answers.');
   assert(!unavailable.ids['status-message'].hidden && unavailable.ids['status-message'].className.split(' ').includes('error'), 'Retry must not claim progress was cached when storage is unavailable');
 
-  // Dark mode leaves the draft/key/data intact. Both papers retain scoring/images.
+  // Theme leaves the draft/key/data intact. Both papers retain scoring/images.
   const theme = await load(); await editResponse(theme, 'GA-1', 'C');
   vm.runInContext(fs.readFileSync('gate-cse-2021-set-1/theme.js', 'utf8'), theme.ctx);
   theme.document.DOMContentLoaded();
