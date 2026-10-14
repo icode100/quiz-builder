@@ -36,6 +36,8 @@ function quiz-stop  { powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C
 
 Unfinished answers cache automatically in your browser and restore after reopening. Always use the same browser/profile and `http://127.0.0.1:8765`; opening HTML files directly uses a different, unreliable storage origin. Clearing browser data or ending a private session can erase drafts.
 
+**Mark for review** beside **Clear response** toggles a solid magenta marker in the question map. Flags restore with your browser draft and never enter `attempt.json` or affect scoring. Clear response keeps its flag; Clear answers and fresh Attempt again clear flags. A successful saved Submit clears the draft and flags; invalid input or a failed save keeps them. Reviewing the saved report hides current flags, and Back to quiz restores them.
+
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 
 Submit displays your score and question-by-question report and saves the latest submission to that quiz's `attempt.json`. The draft clears only after saving succeeds. **Review last attempt** is enabled only if that file has at least one non-null answer; otherwise its disabled button shows **This paper has not been attempted before.** on hover. Review opens the saved report without changing current practice; **Back to quiz** returns to your prior view. **Attempt again** starts fresh practice while preserving the saved submission. Save report and Print report remain available.

@@ -243,6 +243,19 @@ const sha256 = file => crypto.createHash('sha256').update(fs.readFileSync(file))
 const questionIndex = (h, id) => h.data.questions.findIndex(q => q.id === id);
 const card = (h, id) => h.document.getElementById(`question-card-${questionIndex(h, id)}`);
 const nav = (h, id) => h.document.getElementById(`nav-question-${questionIndex(h, id)}`);
+const reviewToggle = (h, id) => h.document.getElementById(`mark-review-${questionIndex(h, id)}`);
+async function markReview(h, id) {
+  const button = reviewToggle(h, id);
+  assert(button && button.className.split(' ').includes('mark-review'), `${id} has a Mark for review toggle`);
+  const actions = card(h, id).querySelector('.question-actions');
+  assert(actions && actions.children.includes(button) && actions.querySelector('.clear-response'), `${id} review toggle sits beside Clear response`);
+  await button.click();
+}
+function assertReviewMark(h, id, marked, icon = marked ? '★' : null) {
+  assert.equal(reviewToggle(h, id).attrs['aria-pressed'], String(marked), `${id} accessible review toggle state`);
+  assert.equal(nav(h, id).className.split(' ').includes('marked-review'), marked, `${id} map review marker`);
+  if (icon !== null) assert.equal(nav(h, id).querySelector('.nav-state-icon').textContent, icon, `${id} review map icon`);
+}
 const result = (h, id) => h.t.grade().find(row => row.question.id === id);
 function reset(h) {
   Object.keys(h.t.answers).forEach(id => delete h.t.answers[id]);
@@ -393,17 +406,25 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   await editResponse(h, mcq.id, correctResponse(mcq));
   await editResponse(h, msq.id, correctResponse(msq));
   await editResponse(h, nat.id, '-');
+  await markReview(h, mcq.id); await markReview(h, nat.id); await markReview(h, 'GA-2');
+  assertReviewMark(h, mcq.id, true); assertReviewMark(h, 'GA-2', true);
+  assertReviewMark(h, nat.id, true, '!');
+  assert(!Object.hasOwn(t.answers, 'GA-2'), 'Review marking an unanswered question does not supply an answer');
   assert.equal(h.requests.length, 1, 'Question edits add no requests after the availability check');
   assert.equal(ids['nav-progress'].textContent, '3 attempted · 62 not attempted');
   assert(nav(h, nat.id).className.includes('needs-check'));
   assert.equal(nav(h, nat.id).querySelector('.nav-state-icon').textContent, '!');
   await nav(h, nat.id).click(); assert(card(h, nat.id).focused);
   const cached = JSON.parse(h.storage.get(draftKey(h)));
+  assert(Array.isArray(cached.reviewFlags), 'Review flags use a draft-only ID array');
+  same([...cached.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Review flags belong only to the browser draft');
   assert.equal(cached.answers[nat.id], '-'); assert(cached.updatedAt);
   assert.equal(cached.signature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
   assert(!Object.hasOwn(cached, 'score') && !Object.hasOwn(cached, 'results'));
   const restored = await load(FOLDER, { storage: h.storage });
   same(restored.t.answers, JSON.parse(JSON.stringify(h.t.answers)));
+  assertReviewMark(restored, mcq.id, true); assertReviewMark(restored, 'GA-2', true);
+  assertReviewMark(restored, nat.id, true, '!');
   assert.equal(card(restored, nat.id).querySelector('input').value, '-');
   assert.equal(card(restored, nat.id).querySelector('input').attrs['aria-invalid'], 'true');
   assert(card(restored, mcq.id).querySelectorAll('input').find(input => input.value === correctResponse(mcq)).checked);
@@ -412,15 +433,21 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   await restored.ids['quiz-form'].fire('submit');
   assert(restored.ids.report.hidden); assert(card(restored, nat.id).querySelector('input').focused);
   assert.equal(h.storage.get(draftKey(h)), beforeInvalid);
+  assertReviewMark(restored, nat.id, true, '!');
   assert.equal(restored.requests.length, 1, 'Invalid NAT adds no requests after the availability check');
   await editResponse(restored, nat.id, correctResponse(nat));
   await restored.ids['quiz-form'].fire('submit');
   assert(!restored.ids.report.hidden); assert(restored.ids['quiz-form'].hidden);
   assert(!h.storage.has(draftKey(h)));
+  for (const id of [mcq.id, nat.id, 'GA-2']) assertReviewMark(restored, id, false);
   assert.equal(restored.requests.length, 2); assert.equal(restored.requests[1].method, 'POST');
   assert.equal(restored.requests[1].url, attemptUrl(restored));
   assert(!restored.ids['review-attempt'].disabled, 'Saving non-null responses enables Review');
   const submission = restored.server.get(attemptUrl(restored));
+  assert(!Object.hasOwn(submission, 'reviewFlags'), 'Submitted attempts never contain draft review flags');
+  assert.deepStrictEqual(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'The submitted envelope remains unchanged');
+  assert(!Object.hasOwn(submission.answers, 'reviewFlags'));
+  assert(submission.results.every(row => !Object.hasOwn(row, 'reviewFlags')), 'Per-question stored results omit draft review flags');
   assert.equal(submission.quizId, data.id); assert.equal(submission.version, 1);
   assert.equal(submission.quizSignature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
   assert.equal(Object.keys(submission.answers).length, 65); assert.equal(submission.results.length, 65);
@@ -439,6 +466,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert(restored.document.getElementById(`result-card-${questionIndex(restored, nat.id)}`).focused);
   const fresh = await load(FOLDER, { storage: h.storage });
   assert.equal(Object.keys(fresh.t.answers).length, 0); assert(fresh.ids.report.hidden); assertEditable(fresh);
+  for (const id of [mcq.id, nat.id, 'GA-2']) assertReviewMark(fresh, id, false);
   await restored.ids['retry-quiz'].click();
   assert.equal(restored.requests.length, 2, 'Retry preserves the server submission');
   assert.equal(restored.ids['status-message'].textContent, 'New attempt started. Progress is cached until Submit.');
@@ -446,41 +474,55 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert.equal(Object.keys(restored.t.answers).length, 0); assert(restored.ids.report.hidden); assertEditable(restored);
   assert.equal(restored.ids['nav-progress'].textContent, '0 attempted · 65 not attempted');
   await editResponse(restored, nat.id, '0');
+  await markReview(restored, nat.id);
   assert.equal(JSON.parse(h.storage.get(draftKey(h))).answers[nat.id], '0');
-  await card(restored, nat.id).querySelector('button').click();
+  await card(restored, nat.id).querySelector('.clear-response').click();
   assert.equal(Object.keys(restored.t.answers).length, 0);
+  assertReviewMark(restored, nat.id, true);
+  same(JSON.parse(h.storage.get(draftKey(h))).reviewFlags, [nat.id], 'Clear response preserves the review flag');
+  const markOnly = await load(FOLDER, { storage: h.storage });
+  assert.equal(Object.keys(markOnly.t.answers).length, 0); assertReviewMark(markOnly, nat.id, true);
+  assert.equal(markOnly.ids['nav-progress'].textContent, '0 attempted · 65 not attempted');
   await editResponse(restored, mcq.id, correctResponse(mcq));
   await restored.ids['clear-answers'].click();
   assert.equal(restored.requests.length, 2, 'Clearing practice responses does not save to disk');
   const cleared = await load(FOLDER, { storage: h.storage });
   assert.equal(Object.keys(cleared.t.answers).length, 0);
+  assertReviewMark(cleared, nat.id, false);
 
   // A saved Set 2 report can be reviewed while a separate unfinished draft is
   // cached. Its answers are regraded, and returning restores the active draft.
   const reviewing = await load(FOLDER, { server: restored.server });
   assert(!reviewing.ids['review-attempt'].disabled, 'A saved non-null response enables Review on reopening');
   await editResponse(reviewing, mcq.id, wrongResponse(mcq)); await editResponse(reviewing, nat.id, '-');
+  await markReview(reviewing, mcq.id); await markReview(reviewing, nat.id);
   const activeDraft = reviewing.storage.get(draftKey(reviewing)), savedDisk = JSON.stringify(submission);
   await reviewing.ids['review-attempt'].click();
   assert.equal(reviewing.requests.length, 2); assert.equal(reviewing.requests[1].method, 'GET');
   assert.equal(reviewing.requests[1].cache, 'no-store'); assert(!reviewing.ids.report.hidden);
   assert.equal(reviewing.t.answers[mcq.id], correctResponse(mcq));
+  assert(!reviewing.ids['nav-groups'].querySelectorAll('.marked-review').length, 'Reviewing the submitted report does not display current draft flags');
   assert.equal(reviewing.storage.get(draftKey(reviewing)), activeDraft);
   assert.equal(JSON.stringify(reviewing.server.get(attemptUrl(reviewing))), savedDisk);
   assert.equal(reviewing.t.summarize(reviewing.t.grade()).score, mcq.marks + msq.marks + nat.marks);
   await reviewing.ids['retry-quiz'].click();
   assert(reviewing.ids.report.hidden); assert.equal(reviewing.t.answers[mcq.id], wrongResponse(mcq));
   assert.equal(reviewing.t.answers[nat.id], '-'); assert.equal(reviewing.storage.get(draftKey(reviewing)), activeDraft);
+  assertReviewMark(reviewing, mcq.id, true); assertReviewMark(reviewing, nat.id, true, '!');
   assert.equal(reviewing.requests.length, 2); assertEditable(reviewing);
   const reopened = await load(FOLDER, { storage: reviewing.storage, server: reviewing.server });
   assert.equal(reopened.t.answers[mcq.id], wrongResponse(mcq)); assert.equal(reopened.t.answers[nat.id], '-');
+  assertReviewMark(reopened, mcq.id, true); assertReviewMark(reopened, nat.id, true, '!');
 
   // Existing paper drafts and independent theme storage are left intact.
   const shared = new Map(), set1 = await load(path.resolve(__dirname, '../gate-cse-2021-set-1'), { storage: shared });
-  await editResponse(set1, 'GA-1', 'C'); const set1Draft = shared.get(draftKey(set1));
+  await editResponse(set1, 'GA-1', 'C'); await markReview(set1, 'CS-1');
+  const set1Draft = shared.get(draftKey(set1));
   const set2 = await load(FOLDER, { storage: shared });
   assert.equal(Object.keys(set2.t.answers).length, 0);
+  assertReviewMark(set2, 'CS-1', false);
   await editResponse(set2, mcq.id, correctResponse(mcq));
+  await markReview(set2, mcq.id);
   vm.runInContext(fs.readFileSync(path.join(FOLDER, 'theme.js'), 'utf8'), set2.ctx);
   set2.document.DOMContentLoaded();
   const beforeTheme = shared.get(draftKey(set2));
@@ -489,6 +531,11 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   await set2.ids['quiz-form'].fire('submit');
   assert.equal(shared.get(draftKey(set1)), set1Draft); assert.equal(shared.get('practice-quiz:theme'), 'dark');
   assert(!shared.has(draftKey(set2)));
+  assertReviewMark(set1, 'CS-1', true);
+  const legacy = { ...cached }; delete legacy.reviewFlags;
+  const legacyDraft = await load(FOLDER, { storage: [[draftKey(h), JSON.stringify(legacy)]] });
+  same(legacyDraft.t.answers, cached.answers, 'Legacy drafts without review flags still restore their responses');
+  assert(!legacyDraft.ids['nav-groups'].querySelectorAll('.marked-review').length);
   for (const bad of ['{bad', JSON.stringify({ ...cached, signature: 'another paper' }), JSON.stringify({ ...cached, answers: { 'CS-999': 'A' } })]) {
     const invalid = await load(FOLDER, { storage: [[draftKey(h), bad]] });
     assert.equal(Object.keys(invalid.t.answers).length, 0); assert(!invalid.storage.has(draftKey(h))); assertEditable(invalid);
@@ -496,11 +543,26 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   const unavailable = await load(FOLDER, { storageUnavailable: true });
   const unavailableDialogs = rejectFileDialogs(unavailable);
   await editResponse(unavailable, mcq.id, correctResponse(mcq));
+  await markReview(unavailable, mcq.id); assertReviewMark(unavailable, mcq.id, true);
   assert(/unavailable|could not|cannot|failed/i.test(unavailable.ids['status-message'].textContent));
   await unavailable.ids['quiz-form'].fire('submit'); assert(!unavailable.ids.report.hidden);
   await unavailable.ids['retry-quiz'].click(); assertEditable(unavailable); assert.equal(Object.keys(unavailable.t.answers).length, 0);
+  assertReviewMark(unavailable, mcq.id, false);
   assert.equal(unavailable.ids['status-message'].textContent, 'Could not cache your progress. Keep this tab open to retain your answers.');
   assert(!unavailable.ids['status-message'].hidden && unavailable.ids['status-message'].className.split(' ').includes('error'), 'Retry must preserve the cache-write failure warning');
+  const failedSave = await load(FOLDER, { fetch: (request, perform, response) => request.method === 'POST' ? response(500, { error: 'Simulated write failure' }) : perform() });
+  await editResponse(failedSave, mcq.id, correctResponse(mcq)); await markReview(failedSave, mcq.id);
+  await failedSave.ids['quiz-form'].fire('submit');
+  assert(!failedSave.ids.report.hidden, 'A failed server save still displays the grade report');
+  same(JSON.parse(failedSave.storage.get(draftKey(failedSave))).reviewFlags, [mcq.id], 'Failed Submit retains cached review flags');
+  assert.equal(reviewToggle(failedSave, mcq.id).attrs['aria-pressed'], 'true', 'Failed save retains the draft review toggle');
+  assert(!nav(failedSave, mcq.id).className.split(' ').includes('marked-review'), 'A submitted report hides practice review markers');
+  assert(!failedSave.server.size, 'Failed Submit does not create a saved attempt');
+  assert(!Object.hasOwn(JSON.parse(failedSave.requests.at(-1).body), 'reviewFlags'), 'Even a failed POST excludes review flags');
+  const failedReopen = await load(FOLDER, { storage: failedSave.storage });
+  assertReviewMark(failedReopen, mcq.id, true);
+  await failedSave.ids['retry-quiz'].click(); assertReviewMark(failedSave, mcq.id, false);
+  assert(!failedSave.server.size, 'Retry does not write draft review flags to disk');
   noDialogs(); unavailableDialogs();
-  console.log(`PASS: Set 2 independent 65-question key, original PDF hashes, source PNGs/local paths/shared runtime, blank/perfect/mixed/wrong scores, ${msqSelections} MSQ subsets, ${natBoundaryChecks} NAT boundary checks, every MCQ option, maps/full reports, raw browser draft reopen, invalid Submit/no disk write, Submit snapshot/cache clear, read-only saved review/draft resume, Retry/clear disk preservation, paper/theme isolation, storage failures, no file dialogs.`);
+  console.log(`PASS: Set 2 independent 65-question key, original PDF hashes, source PNGs/local paths/shared runtime, blank/perfect/mixed/wrong scores, ${msqSelections} MSQ subsets, ${natBoundaryChecks} NAT boundary checks, every MCQ option, maps/full reports, raw browser draft and review-flag reopen, invalid/failed Submit retaining flags, unchanged Submit envelope/cache clear, saved review/draft flag resume, Retry/clear disk preservation, paper/theme/flag isolation, legacy drafts, storage failures, no file dialogs.`);
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });

@@ -106,7 +106,7 @@ function createHarness(folder, options = {}) {
   source = source.replace(marker, `  window.test = {
     validate, grade, summarize,
     renderQuestions, renderReport, clearAttempt, restartAttempt,
-    save, numericValue, plainAnswer, answers, checkLastAttempt,
+    save, numericValue, plainAnswer, answers, reviewFlags, checkLastAttempt,
     setSubmitted: value => { submittedAt = value; }
   };
 ${marker}`);
@@ -158,6 +158,22 @@ async function editResponse(h, id, value) {
     await inputs.find(input => input.value === value).fire('change');
   }
 }
+function reviewButton(h, id) {
+  return h.document.getElementById(`mark-review-${h.data.questions.findIndex(question => question.id === id)}`);
+}
+function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
+  assert.deepEqual([...h.t.reviewFlags].sort(), [...expected].sort());
+  for (const [index, question] of h.data.questions.entries()) {
+    const marked = expected.includes(question.id), button = reviewButton(h, question.id);
+    assert.equal(button.attrs['aria-pressed'], String(marked));
+    assert.equal(button.textContent, marked ? 'Unmark review' : 'Mark for review');
+    assert(button.attrs['aria-label'].includes(question.displayLabel || question.id));
+    const map = h.document.getElementById(`nav-question-${index}`);
+    assert.equal(map.className.split(' ').includes('marked-review'), marked && visible);
+    assert.equal(map.attrs['aria-label'].includes(', Marked for review'), marked && visible);
+  }
+  assert.equal(h.ids['nav-review-legend'].hidden, !visible, 'Review legend is practice-only');
+}
 
 (async () => {
   const h = await load(), { t, data, ids } = h;
@@ -182,6 +198,42 @@ async function editResponse(h, id, value) {
       assert.equal(statusCheck.requests.length, 1, 'Disabled Review does not fetch even when a click is invoked programmatically');
     }
   }
+
+  // Review flags belong only to the current draft. A flag neither answers a
+  // question nor makes a saved report available, and toggling never fetches.
+  const marked = await load(), markedSignature = JSON.stringify(marked.data);
+  const markedDialogs = rejectFileDialogs(marked);
+  assertFlags(marked, []);
+  const actionRow = marked.document.getElementById('question-card-0').querySelector('.question-actions');
+  assert(actionRow.querySelector('.clear-response') && actionRow.querySelector('.mark-review'), 'Clear and review controls share an action row');
+  assert.equal(reviewButton(marked, 'GA-1').type, 'button');
+  await reviewButton(marked, 'GA-1').click();
+  assertFlags(marked, ['GA-1']); assertReviewAvailability(marked, false);
+  assert.equal(Object.keys(marked.t.answers).length, 0);
+  assert(marked.ids['nav-progress'].textContent.startsWith('0 attempted'));
+  assert.equal(marked.document.getElementById('nav-question-0').querySelector('.nav-state-icon').textContent, '★');
+  assert.equal(marked.t.summarize(marked.t.grade()).score, 0);
+  const flaggedDraft = JSON.parse(marked.storage.get(draftKey(marked)));
+  assert.deepEqual(flaggedDraft.reviewFlags, ['GA-1']);
+  await editResponse(marked, 'GA-1', 'C');
+  await marked.document.getElementById('question-card-0').querySelector('.clear-response').click();
+  assertFlags(marked, ['GA-1']); assert.equal(Object.keys(marked.t.answers).length, 0, 'Clear response preserves the review flag');
+  await reviewButton(marked, 'CS-16').click(); await editResponse(marked, 'CS-16', '-');
+  assertFlags(marked, ['GA-1', 'CS-16']);
+  assert.equal(marked.document.getElementById('nav-question-25').querySelector('.nav-state-icon').textContent, '!', 'Invalid NAT retains its warning icon when flagged');
+  const markedCache = marked.storage.get(draftKey(marked));
+  await marked.ids['quiz-form'].fire('submit');
+  assertFlags(marked, ['GA-1', 'CS-16']); assert.equal(marked.storage.get(draftKey(marked)), markedCache);
+  assert.equal(marked.ids.report.hidden, true); assert.equal(marked.requests.length, 1);
+  const reopenedFlags = await load('gate-cse-2021-set-1', { storage: marked.storage });
+  assertFlags(reopenedFlags, ['GA-1', 'CS-16']); assert.equal(reopenedFlags.t.answers['CS-16'], '-');
+  await reviewButton(reopenedFlags, 'GA-1').click(); assertFlags(reopenedFlags, ['CS-16']);
+  assert.deepEqual(JSON.parse(marked.storage.get(draftKey(marked))).reviewFlags, ['CS-16']);
+  await reopenedFlags.ids['clear-answers'].click(); assertFlags(reopenedFlags, []);
+  assert.deepEqual(JSON.parse(marked.storage.get(draftKey(marked))).reviewFlags, []);
+  assert.equal(reopenedFlags.requests.length, 1); assert.equal(marked.requests.length, 1);
+  assert.equal(JSON.stringify(marked.data), markedSignature, 'Flags do not change question data or its cache signature');
+  markedDialogs();
   t.validate(); assert.equal(data.questions.length, 65);
   assert.equal(t.summarize(t.grade()).maximum, 100); assert.equal(t.summarize(t.grade()).score, 0);
   assertEditable(h);
@@ -237,6 +289,8 @@ async function editResponse(h, id, value) {
   assert(draft.updatedAt); assert.equal(Object.hasOwn(draft, 'summary'), false);
   assert.equal(Object.hasOwn(draft, 'results'), false);
   await editResponse(h, 'CS-16', '-');
+  await reviewButton(h, 'GA-1').click(); await reviewButton(h, 'CS-16').click();
+  assertFlags(h, ['GA-1', 'CS-16']);
   draft = JSON.parse(h.storage.get(draftKey(h))); assert.equal(draft.answers['CS-16'], '-');
   const refreshed = await load('gate-cse-2021-set-1', { storage: h.storage });
   const refreshedDialogs = rejectFileDialogs(refreshed);
@@ -247,6 +301,7 @@ async function editResponse(h, id, value) {
   const refreshedNat = refreshed.document.getElementById('question-card-25').querySelector('input');
   assert.equal(refreshedNat.value, '-'); assert.equal(refreshedNat.attrs['aria-invalid'], 'true');
   assert.equal(refreshed.ids.report.hidden, true); assert(refreshed.ids['nav-progress'].textContent.startsWith('3 attempted'));
+  assertFlags(refreshed, ['GA-1', 'CS-16']);
   assertEditable(refreshed);
 
   // Invalid Submit leaves the draft intact; valid Submit grades and clears it.
@@ -254,6 +309,7 @@ async function editResponse(h, id, value) {
   await refreshed.ids['quiz-form'].fire('submit');
   assert.equal(refreshed.ids.report.hidden, true); assert(refreshedNat.focused);
   assert.equal(h.storage.get(draftKey(h)), beforeInvalidSubmit);
+  assertFlags(refreshed, ['GA-1', 'CS-16']);
   assert.equal(postRequests(refreshed).length, 0, 'Invalid NAT Submit never writes to the server');
   assert.equal(getRequests(refreshed).length, 1, 'Invalid NAT Submit does not repeat the opening check');
   await editResponse(refreshed, 'CS-16', '11'); await refreshed.ids['quiz-form'].fire('submit');
@@ -265,7 +321,11 @@ async function editResponse(h, id, value) {
   assert.equal(refreshed.requests.length, 2);
   assert.equal(postRequests(refreshed).length, 1); assert.equal(postRequests(refreshed)[0].url, attemptUrl(refreshed));
   assertReviewAvailability(refreshed, true);
+  assertFlags(refreshed, []);
   const submittedAttempt = refreshed.server.get(attemptUrl(refreshed));
+  assert(!Object.hasOwn(submittedAttempt, 'reviewFlags'), 'Submitted attempt JSON excludes draft-only flags');
+  assert(submittedAttempt.results.every(result => !Object.hasOwn(result, 'reviewFlags')), 'Scored results exclude flags');
+  assert.deepEqual(Object.keys(submittedAttempt.answers).sort(), refreshed.data.questions.map(question => question.id).sort());
   assert.equal(submittedAttempt.version, 1); assert(submittedAttempt.submittedAt && submittedAttempt.updatedAt);
   assert.equal(submittedAttempt.quizId, refreshed.data.id); assert.equal(submittedAttempt.quizTitle, refreshed.data.title);
   assert.equal(submittedAttempt.quizSignature, JSON.stringify({ questions: refreshed.data.questions, scoring: refreshed.data.scoring ?? null }));
@@ -284,6 +344,7 @@ async function editResponse(h, id, value) {
   assert(refreshed.document.getElementById('result-card-20').focused);
   const afterSubmit = await load('gate-cse-2021-set-1', { storage: h.storage });
   assert.equal(Object.keys(afterSubmit.t.answers).length, 0); assert.equal(afterSubmit.ids.report.hidden, true);
+  assertFlags(afterSubmit, []);
   assert(afterSubmit.ids['nav-progress'].textContent.startsWith('0 attempted')); assertEditable(afterSubmit);
   await refreshed.ids['retry-quiz'].click();
   assert.equal(postRequests(refreshed).length, 1, 'Retry never overwrites the last submission');
@@ -293,6 +354,7 @@ async function editResponse(h, id, value) {
   assert(!refreshed.ids['status-message'].hidden && !refreshed.ids['status-message'].className.split(' ').includes('error'));
   assert.equal(Object.keys(refreshed.t.answers).length, 0); assert.equal(refreshed.ids.report.hidden, true);
   assert.equal(refreshed.ids['quiz-form'].hidden, false);
+  assertFlags(refreshed, []);
   assert(refreshed.ids['nav-progress'].textContent.startsWith('0 attempted')); assertEditable(refreshed);
   await editResponse(refreshed, 'GA-1', 'A');
   assert.equal(JSON.parse(h.storage.get(draftKey(h))).answers['GA-1'], 'A');
@@ -304,21 +366,25 @@ async function editResponse(h, id, value) {
   assert(review.ids['review-attempt']); assert.equal(review.requests.length, 1, 'Opening checks saved availability without restoring or saving an attempt');
   assertReviewAvailability(review, true);
   await editResponse(review, 'GA-1', 'A'); await editResponse(review, 'CS-16', '-');
+  await reviewButton(review, 'GA-1').click(); await reviewButton(review, 'CS-16').click();
   const workingDraft = review.storage.get(draftKey(review)), diskBeforeReview = JSON.stringify(submittedAttempt);
   await review.ids['review-attempt'].click();
   assert.equal(review.requests.length, 2); assert(getRequests(review).every(request => request.url === attemptUrl(review) && request.cache === 'no-store'));
   assert.equal(postRequests(review).length, 0);
   assert.equal(review.ids.report.hidden, false); assert.equal(review.t.answers['GA-1'], 'C');
+  assertFlags(review, []);
   assert(review.ids['nav-progress'].textContent.startsWith('3 attempted'));
   assert.equal(review.storage.get(draftKey(review)), workingDraft, 'Review must not replace an unfinished browser draft');
   assert.equal(JSON.stringify(review.server.get(attemptUrl(review))), diskBeforeReview, 'Review never rewrites attempt.json');
   await review.ids['retry-quiz'].click();
   assert.equal(review.t.answers['GA-1'], 'A'); assert.equal(review.t.answers['CS-16'], '-');
   assert.equal(review.ids.report.hidden, true); assert.equal(review.document.getElementById('question-card-25').querySelector('input').value, '-');
+  assertFlags(review, ['GA-1', 'CS-16']);
   assert(review.ids['nav-progress'].textContent.startsWith('2 attempted'));
   assert.equal(review.storage.get(draftKey(review)), workingDraft); assert.equal(review.requests.length, 2);
   const closedAndReopened = await load('gate-cse-2021-set-1', { storage: review.storage, server: review.server, url: review.window.location.href });
   assert.equal(closedAndReopened.t.answers['GA-1'], 'A'); assert.equal(closedAndReopened.t.answers['CS-16'], '-');
+  assertFlags(closedAndReopened, ['GA-1', 'CS-16']);
 
   const forgedScore = JSON.parse(JSON.stringify(submittedAttempt));
   forgedScore.summary = { score: 9999, maximum: 9999, counts: { correct: 9999 } };
@@ -362,7 +428,9 @@ async function editResponse(h, id, value) {
   // Retry/clear retain the availability of that disk record, independently of drafts.
   const blankSubmission = await load('gate-cse-2021-set-1', { server: [[attemptUrl(refreshed), submittedAttempt]] });
   assertReviewAvailability(blankSubmission, true);
+  await reviewButton(blankSubmission, 'GA-1').click();
   await blankSubmission.ids['quiz-form'].fire('submit');
+  assertFlags(blankSubmission, []);
   assertReviewAvailability(blankSubmission, false);
   assert(Object.values(blankSubmission.server.get(attemptUrl(blankSubmission)).answers).every(answer => answer === null));
   const savedBlank = JSON.stringify(blankSubmission.server.get(attemptUrl(blankSubmission)));
@@ -424,39 +492,65 @@ async function editResponse(h, id, value) {
   // and HTTP failures keep both the report and recoverable unfinished answers.
   for (const fetch of [async () => { throw Error('Offline'); }, async (_request, _perform, response) => response(503, { error: 'Disk unavailable' })]) {
     const failed = await load('gate-cse-2021-set-1', { fetch }); await editResponse(failed, 'GA-1', 'C');
+    await reviewButton(failed, 'GA-1').click();
     const prior = failed.storage.get(draftKey(failed)); await failed.ids['quiz-form'].fire('submit');
     assert.equal(failed.ids.report.hidden, false);
+    assertFlags(failed, ['GA-1']);
     const retainedDraft = JSON.parse(failed.storage.get(draftKey(failed)));
     assert.deepEqual(retainedDraft.answers, JSON.parse(prior).answers); assert(!retainedDraft.submittedAt);
+    assert.deepEqual(retainedDraft.reviewFlags, ['GA-1']);
+    assert(!Object.hasOwn(JSON.parse(postRequests(failed)[0].body), 'reviewFlags'));
     assert.equal(failed.server.size, 0); assert.equal(failed.ids['retry-quiz'].disabled, false); assertEditable(failed);
     const recovered = await load('gate-cse-2021-set-1', { storage: failed.storage });
     assert.equal(recovered.t.answers['GA-1'], 'C'); assert.equal(recovered.ids.report.hidden, true);
+    assertFlags(recovered, ['GA-1']);
+    await failed.ids['retry-quiz'].click(); assertFlags(failed, []);
   }
+  // Review also preserves flags from a failed-save report and returns to that
+  // same report. The saved record never acquires current draft metadata.
+  const failedReport = await load('gate-cse-2021-set-1', {
+    server: [[attemptUrl(refreshed), submittedAttempt]],
+    fetch: (request, perform, response) => request.method === 'POST' ? response(503, { error: 'Disk unavailable' }) : perform()
+  });
+  await editResponse(failedReport, 'GA-2', 'A'); await reviewButton(failedReport, 'GA-2').click();
+  await failedReport.ids['quiz-form'].fire('submit'); assertFlags(failedReport, ['GA-2']);
+  const failedReportDraft = failedReport.storage.get(draftKey(failedReport)), failedReportScore = failedReport.ids['score-value'].textContent;
+  await failedReport.ids['review-attempt'].click(); assertFlags(failedReport, []);
+  assert.equal(failedReport.storage.get(draftKey(failedReport)), failedReportDraft);
+  await failedReport.ids['retry-quiz'].click(); assertFlags(failedReport, ['GA-2']);
+  assert.equal(failedReport.ids.report.hidden, false); assert.equal(failedReport.ids['score-value'].textContent, failedReportScore);
+  assert.equal(failedReport.storage.get(draftKey(failedReport)), failedReportDraft);
+  assert.equal(JSON.stringify(failedReport.server.get(attemptUrl(failedReport))), diskBeforeReview);
   let finishSubmit;
   const waiting = await load('gate-cse-2021-set-1', {
     fetch: (request, perform) => request.method === 'POST' ? new Promise(resolve => { finishSubmit = () => resolve(perform()); }) : perform()
   });
-  await editResponse(waiting, 'GA-1', 'C'); const waitingDraft = waiting.storage.get(draftKey(waiting));
+  await editResponse(waiting, 'GA-1', 'C'); await reviewButton(waiting, 'GA-1').click();
+  const waitingDraft = waiting.storage.get(draftKey(waiting));
   const pendingSubmit = waiting.ids['quiz-form'].fire('submit');
   assert.deepEqual(JSON.parse(waiting.storage.get(draftKey(waiting))).answers, JSON.parse(waitingDraft).answers);
   assert(waiting.ids['quiz-form'].querySelectorAll('input, button').every(node => node.disabled));
   assert(waiting.ids['retry-quiz'].disabled && waiting.ids['review-attempt'].disabled);
+  await reviewButton(waiting, 'GA-1').click(); assertFlags(waiting, ['GA-1']);
   await waiting.ids['quiz-form'].fire('submit'); await waiting.ids['review-attempt'].click();
   assert.equal(postRequests(waiting).length, 1, 'Busy controls cannot start a second Submit');
   assert.equal(getRequests(waiting).length, 1, 'Busy Review cannot start another read');
   finishSubmit(); await pendingSubmit;
+  assertFlags(waiting, []);
   assert.equal(waiting.storage.has(draftKey(waiting)), false); assertEditable(waiting);
   assert.equal(waiting.ids['retry-quiz'].disabled, false); assert.equal(waiting.ids['review-attempt'].disabled, false);
   let finishReview, reviewReads = 0;
   const pendingReview = await load('gate-cse-2021-set-1', {
     server: refreshed.server, fetch: (_request, perform) => ++reviewReads === 1 ? perform() : new Promise(resolve => { finishReview = () => resolve(perform()); })
   });
-  await editResponse(pendingReview, 'GA-1', 'A'); const pendingReviewDraft = pendingReview.storage.get(draftKey(pendingReview));
+  await editResponse(pendingReview, 'GA-1', 'A'); await reviewButton(pendingReview, 'GA-1').click();
+  const pendingReviewDraft = pendingReview.storage.get(draftKey(pendingReview));
   const reviewingPromise = pendingReview.ids['review-attempt'].click();
   assert(pendingReview.ids['review-attempt'].disabled);
   assert(pendingReview.ids['quiz-form'].querySelectorAll('input, button').every(node => node.disabled));
   assert.equal(pendingReview.storage.get(draftKey(pendingReview)), pendingReviewDraft);
   finishReview(); await reviewingPromise;
+  assertFlags(pendingReview, []);
   assert.equal(pendingReview.ids['review-attempt'].disabled, false); assert.equal(pendingReview.ids['retry-quiz'].disabled, false);
   assert.equal(pendingReview.storage.get(draftKey(pendingReview)), pendingReviewDraft);
   const filePage = await load('gate-cse-2021-set-1', { url: 'file:///test/gate-cse-2021-set-1/index.html' });
@@ -475,14 +569,16 @@ async function editResponse(h, id, value) {
 
   // Cache keys isolate papers. Submitting one paper leaves another draft intact.
   const shared = new Map(), paper2021 = await load('gate-cse-2021-set-1', { storage: shared });
-  await editResponse(paper2021, 'GA-1', 'C');
+  await editResponse(paper2021, 'GA-1', 'C'); await reviewButton(paper2021, 'GA-1').click();
   const paper2020 = await load('gate-cse-2020', { storage: shared }); assert.equal(Object.keys(paper2020.t.answers).length, 0);
-  await editResponse(paper2020, 'GA-1', 'A');
+  assertFlags(paper2020, []);
+  await editResponse(paper2020, 'GA-1', 'A'); await reviewButton(paper2020, 'GA-2').click();
   const otherDraft = shared.get(draftKey(paper2020));
   await paper2021.ids['quiz-form'].fire('submit');
   assert.equal(shared.has(draftKey(paper2021)), false); assert.equal(shared.get(draftKey(paper2020)), otherDraft);
   const oldReload = await load('gate-cse-2020', { storage: shared });
   assert.equal(oldReload.t.answers['GA-1'], 'A'); assert.equal(oldReload.ids.report.hidden, true);
+  assertFlags(oldReload, ['GA-2']);
 
   // Malformed, obsolete and completed legacy caches are ignored and cleared.
   const seed = await load(); await editResponse(seed, 'GA-1', 'C');
@@ -492,17 +588,21 @@ async function editResponse(h, id, value) {
     JSON.stringify({ ...validDraft, answers: { 'CS-11': ['Z'] } }),
     JSON.stringify({ ...validDraft, answers: { 'CS-11': ['A', 'A'] } }),
     JSON.stringify({ ...validDraft, answers: { 'CS-11': 'A' } }),
+    ...[null, 'GA-1', {}, [null], [1], ['unknown-question'], ['GA-1', 'GA-1']].map(reviewFlags => JSON.stringify({ ...validDraft, reviewFlags })),
     JSON.stringify({ ...validDraft, updatedAt: 'bad' }),
     JSON.stringify({ ...validDraft, submittedAt: '2026-01-01T00:00:00.000Z' })];
   for (const text of damaged) {
     const invalid = await load('gate-cse-2021-set-1', { storage: [[draftKey(seed), text]] });
     assert.equal(Object.keys(invalid.t.answers).length, 0); assert.equal(invalid.ids.report.hidden, true);
+    assertFlags(invalid, []);
     assert.equal(invalid.storage.has(draftKey(invalid)), false); assertEditable(invalid);
   }
+  const { reviewFlags: _legacyFlags, ...oldDraft } = validDraft;
   const legacy = await load('gate-cse-2021-set-1', {
-    storage: [[draftKey(seed), JSON.stringify({ ...validDraft, protectSavedAttempt: true, submittedAt: '' })]]
+    storage: [[draftKey(seed), JSON.stringify({ ...oldDraft, protectSavedAttempt: true, submittedAt: '' })]]
   });
   assert.equal(legacy.t.answers['GA-1'], 'C'); assert.equal(legacy.ids.report.hidden, true); assertEditable(legacy);
+  assertFlags(legacy, []);
 
   // Storage read/quota/clear failures keep practice and reports usable and state
   // the failure instead of opening a file picker or silently downloading data.
@@ -514,6 +614,7 @@ async function editResponse(h, id, value) {
   await editResponse(writeFailure, 'GA-1', 'A');
   const priorDraft = writeFailure.storage.get(draftKey(writeFailure)); failWrites = true;
   await editResponse(writeFailure, 'GA-1', 'C');
+  await reviewButton(writeFailure, 'GA-1').click(); assertFlags(writeFailure, ['GA-1']);
   assert.equal(writeFailure.t.answers['GA-1'], 'C'); assert.equal(writeFailure.storage.get(draftKey(writeFailure)), priorDraft);
   assert(/unavailable|could not|cannot|failed/i.test(writeFailure.ids['status-message'].textContent));
   assertEditable(writeFailure); await writeFailure.ids['quiz-form'].fire('submit');
@@ -532,30 +633,35 @@ async function editResponse(h, id, value) {
     storageError: (operation, key) => failClear && operation === 'remove' && key === draftKey(seed)
   });
   await editResponse(clearFailure, 'GA-1', 'C'); const retained = clearFailure.storage.get(draftKey(clearFailure));
+  await reviewButton(clearFailure, 'GA-1').click();
   failClear = true; await clearFailure.ids['quiz-form'].fire('submit');
   assert.equal(clearFailure.ids.report.hidden, false); assert.equal(clearFailure.ids['retry-quiz'].disabled, false);
   assert.equal(clearFailure.t.answers['GA-1'], 'C');
+  assertFlags(clearFailure, [], false);
   assert.deepEqual(JSON.parse(clearFailure.storage.get(draftKey(clearFailure))).answers, JSON.parse(retained).answers);
   assert(/clear|remove|failed|unavailable/i.test(clearFailure.ids['status-message'].textContent));
   const unavailable = await load('gate-cse-2021-set-1', { storageUnavailable: true });
   const unavailableDialogs = rejectFileDialogs(unavailable);
   await editResponse(unavailable, 'GA-1', 'C');
+  await reviewButton(unavailable, 'GA-1').click(); assertFlags(unavailable, ['GA-1']);
   assert.equal(unavailable.t.answers['GA-1'], 'C'); assertEditable(unavailable);
   await unavailable.ids['quiz-form'].fire('submit'); assert.equal(unavailable.ids.report.hidden, false);
   assert.equal(unavailable.ids['retry-quiz'].disabled, false); unavailableDialogs();
   await unavailable.ids['retry-quiz'].click(); assertEditable(unavailable);
+  assertFlags(unavailable, []);
   assert.equal(Object.keys(unavailable.t.answers).length, 0);
   assert.equal(unavailable.ids['status-message'].textContent, 'Could not cache your progress. Keep this tab open to retain your answers.');
   assert(!unavailable.ids['status-message'].hidden && unavailable.ids['status-message'].className.split(' ').includes('error'), 'Retry must not claim progress was cached when storage is unavailable');
 
   // Theme leaves the draft/key/data intact. Both papers retain scoring/images.
-  const theme = await load(); await editResponse(theme, 'GA-1', 'C');
+  const theme = await load(); await editResponse(theme, 'GA-1', 'C'); await reviewButton(theme, 'GA-1').click();
   vm.runInContext(fs.readFileSync('gate-cse-2021-set-1/theme.js', 'utf8'), theme.ctx);
   theme.document.DOMContentLoaded();
   const beforeTheme = theme.storage.get(draftKey(theme)), beforeAnswers = JSON.stringify(theme.t.answers);
   await theme.ids['theme-toggle'].click();
   assert.equal(theme.document.documentElement.dataset.theme, 'dark');
   assert.equal(theme.storage.get(draftKey(theme)), beforeTheme); assert.equal(JSON.stringify(theme.t.answers), beforeAnswers);
+  assertFlags(theme, ['GA-1']);
   assert.equal(theme.storage.get('practice-quiz:theme'), 'dark');
   const old = await load('gate-cse-2020'); assert.equal(old.t.summarize(old.t.grade()).score, 1);
   for (const q of old.data.questions) old.t.answers[q.id] = q.type === 'nat' ? String(q.correctRanges[0].min) : q.marksToAll ? 'A' : q.correctAnswer;
@@ -565,5 +671,5 @@ async function editResponse(h, id, value) {
   assert.equal(old.ids['report-list'].querySelectorAll('img').length, 67);
   assert.equal(old.ids['retry-quiz'].disabled, false); await old.ids['retry-quiz'].click(); assertEditable(old); oldDialogs();
   const template = await load('_template'); assert.equal(template.ids['empty-state'].hidden, false);
-  console.log('PASS: grading/assets, MSQ/NAT/MCQ/MTA, maps/reports/theme, browser draft reopen/clear/isolation/failures, Submit-only server write and success-only cache clearing, saved-answer Review gating/tooltips/blank saves/failures/stale opening reads, read-only last-attempt review/resume/validation/recomputed scores, server failure recovery/busy controls, no file dialogs, blank template.');
+  console.log('PASS: grading/assets, MSQ/NAT/MCQ/MTA, maps/reports/theme, browser draft reopen/clear/isolation/failures, draft-only review flags with toggle/cache/restore/validation/clear/report/Submit isolation, Submit-only server write and success-only cache clearing, saved-answer Review gating/tooltips/blank saves/failures/stale opening reads, read-only last-attempt review/resume/validation/recomputed scores, server failure recovery/busy controls, no file dialogs, blank template.');
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });

@@ -4,6 +4,7 @@
   const byId = (id) => document.getElementById(id);
   const data = window.QUIZ_DATA;
   const answers = Object.create(null);
+  const reviewFlags = new Set();
   let results = [], submittedAt = "", updatedAt = "", signature = "", storageKey = "";
   let storageAvailable = false;
   let serverBusy = false, reviewState = null, hasSavedAttempt = false, reviewCheck = 0;
@@ -79,15 +80,19 @@
   function restoreDraft(saved) {
     if (!saved || saved.signature !== signature || saved.submittedAt) throw new Error("This cached draft is invalid or already submitted.");
     const restored = validateAnswers(saved.answers);
+    const flags = saved.reviewFlags === undefined ? [] : saved.reviewFlags;
+    if (!Array.isArray(flags) || new Set(flags).size !== flags.length || flags.some(id => !data.questions.some(question => question.id === id))) throw new Error("Invalid cached review flags.");
     if (saved.updatedAt && (typeof saved.updatedAt !== "string" || !Number.isFinite(Date.parse(saved.updatedAt)))) throw new Error("Invalid draft timestamp.");
     Object.keys(answers).forEach((id) => delete answers[id]);
     Object.assign(answers, restored);
+    reviewFlags.clear();
+    flags.forEach(id => reviewFlags.add(id));
     updatedAt = saved.updatedAt || "";
   }
   function save() {
     updatedAt = new Date(Math.max(Date.now(), (Date.parse(updatedAt) || 0) + 1)).toISOString();
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, updatedAt }));
+      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], updatedAt }));
       if (!storageAvailable) status("Progress is cached in this browser until Submit.");
       storageAvailable = true;
       return true;
@@ -204,6 +209,8 @@
   function restoreState(state) {
     Object.keys(answers).forEach((id) => delete answers[id]);
     Object.assign(answers, state.answers);
+    reviewFlags.clear();
+    (state.reviewFlags || []).forEach(id => reviewFlags.add(id));
     submittedAt = state.submittedAt;
     updatedAt = state.updatedAt;
   }
@@ -223,7 +230,7 @@
       setSavedAttempt(record);
       if (!hasSavedAttempt) throw new Error("This paper has not been attempted before.");
       const saved = validateSubmission(record);
-      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), submittedAt, updatedAt };
+      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], submittedAt, updatedAt };
       restoreState(saved);
       renderReport();
       status("Reviewing your last submitted attempt. Your current draft is unchanged.");
@@ -245,6 +252,8 @@
       const response = await fetch(attemptUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attempt) });
       if (!response.ok) throw new Error("The server could not save the result.");
       setSavedAttempt(attempt);
+      reviewFlags.clear();
+      updateProgress();
       clearDraft();
     } catch (error) {
       status(`Your report is ready, but attempt.json was not saved. ${error.message} Your draft is kept; restart the server and reload to submit again.`, true);
@@ -273,17 +282,26 @@
       const button = byId(`nav-question-${index}`);
       if (!button) return;
       const answered = Object.hasOwn(answers, question.id), invalid = answered && questionType(question) === "nat" && numericValue(answers[question.id]) === null;
+      const flagged = reviewFlags.has(question.id), marked = !submittedAt && flagged, markButton = byId(`mark-review-${index}`);
+      if (markButton) {
+        markButton.textContent = flagged ? "Unmark review" : "Mark for review";
+        markButton.classList.toggle("marked-review", flagged);
+        markButton.setAttribute("aria-pressed", String(flagged));
+        markButton.setAttribute("aria-label", `${markButton.textContent} for ${questionLabel(question)}`);
+      }
       attempted += Number(answered);
       invalidCount += Number(invalid);
       button.classList.toggle("answered", answered);
       button.classList.toggle("unanswered", !answered);
       button.classList.toggle("needs-check", invalid);
-      button.querySelector(".nav-state-icon").textContent = invalid ? "!" : answered ? "✓" : "·";
-      button.title = `${questionLabel(question)}: ${answered ? "Attempted" : "Not attempted"}${invalid ? " — check number" : ""}`;
+      button.classList.toggle("marked-review", marked);
+      button.querySelector(".nav-state-icon").textContent = invalid ? "!" : marked ? "★" : answered ? "✓" : "·";
+      button.title = `${questionLabel(question)}: ${answered ? "Attempted" : "Not attempted"}${invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}`;
       button.setAttribute("aria-label", button.title);
     });
     byId("nav-progress").textContent = `${attempted} attempted · ${data.questions.length - attempted} not attempted`;
     byId("nav-check-legend").hidden = invalidCount === 0;
+    byId("nav-review-legend").hidden = Boolean(submittedAt);
   }
   function renderNavigator() {
     const groups = new Map();
@@ -386,7 +404,18 @@
         renderQuestions();
         byId(`question-card-${index}`).focus();
       });
-      response.append(clear);
+      const actions = element("div", "question-actions"), mark = element("button", "button button-secondary mark-review");
+      mark.type = "button";
+      mark.id = `mark-review-${index}`;
+      mark.addEventListener("click", () => {
+        if (serverBusy || submittedAt || reviewState) return;
+        if (reviewFlags.has(question.id)) reviewFlags.delete(question.id);
+        else reviewFlags.add(question.id);
+        updateProgress();
+        save();
+      });
+      actions.append(clear, mark);
+      response.append(actions);
       content.append(response);
       card.append(content);
       fragment.append(card);
@@ -451,6 +480,7 @@
   function clearAttempt(moveFocus = true) {
     if (serverBusy) return false;
     Object.keys(answers).forEach((id) => delete answers[id]);
+    reviewFlags.clear();
     submittedAt = "";
     results = [];
     save();
