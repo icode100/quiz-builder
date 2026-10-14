@@ -31,6 +31,8 @@ h3 { font-size: 1.1rem; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.65; }
+.review-attempt-control { display: inline-flex; cursor: not-allowed; }
+.review-attempt-control button:disabled { pointer-events: none; }
 a { color: var(--accent); }
 
 :focus-visible {

@@ -15,7 +15,9 @@
     <header class="page-header">
       <div class="header-top">
         <p class="eyebrow">Practice quiz</p>
-        <button id="review-attempt" class="button button-secondary" type="button">Review last attempt</button>
+        <span id="review-attempt-wrap" class="review-attempt-control" title="This paper has not been attempted before.">
+          <button id="review-attempt" class="button button-secondary" type="button" title="This paper has not been attempted before." disabled>Review last attempt</button>
+        </span>
         <button id="theme-toggle" class="toggle-switch theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Theme">
           <span class="switch-label">Theme</span>
           <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>

@@ -6,7 +6,7 @@
   const answers = Object.create(null);
   let results = [], submittedAt = "", updatedAt = "", signature = "", storageKey = "";
   let storageAvailable = false;
-  let serverBusy = false, reviewState = null;
+  let serverBusy = false, reviewState = null, hasSavedAttempt = false, reviewCheck = 0;
 
   function element(tag, className = "", text) {
     const node = document.createElement(tag);
@@ -152,7 +152,10 @@
   function setControls() {
     byId("quiz-session").disabled = serverBusy;
     byId("quiz-form").querySelectorAll("input, button").forEach((control) => { control.disabled = serverBusy; });
-    byId("review-attempt").disabled = serverBusy;
+    const review = byId("review-attempt"), hint = hasSavedAttempt ? "" : "This paper has not been attempted before.";
+    review.disabled = serverBusy || !hasSavedAttempt;
+    review.title = hint;
+    byId("review-attempt-wrap").title = hint;
     byId("retry-quiz").disabled = serverBusy || !submittedAt;
     byId("retry-quiz").textContent = reviewState ? "Back to quiz" : "Attempt again";
   }
@@ -161,6 +164,21 @@
     const url = new URL(window.location.href);
     if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Start the quiz server and open the quiz at http://127.0.0.1:8765.");
     return new URL("attempt.json", url).href;
+  }
+  function setSavedAttempt(saved) {
+    reviewCheck++;
+    const responses = saved?.answers;
+    hasSavedAttempt = Boolean(saved && typeof saved === "object" && !Array.isArray(saved) && responses && typeof responses === "object" && !Array.isArray(responses) && Object.values(responses).some(answer => answer !== null));
+    setControls();
+  }
+  async function checkLastAttempt() {
+    const check = ++reviewCheck;
+    let saved = null;
+    try {
+      const response = await fetch(attemptUrl(), { cache: "no-store" });
+      if (response.ok) saved = await response.json();
+    } catch { /* Missing or unreadable attempts leave review disabled. */ }
+    if (check === reviewCheck) setSavedAttempt(saved);
   }
   function attemptSnapshot() {
     const scored = grade(), { counts, score, maximum, awardedMarks } = summarize(scored);
@@ -190,14 +208,21 @@
     updatedAt = state.updatedAt;
   }
   async function reviewLastAttempt() {
-    if (serverBusy) return;
+    if (serverBusy || !hasSavedAttempt) return;
     serverBusy = true;
     setControls();
     try {
       const response = await fetch(attemptUrl(), { cache: "no-store" });
-      if (response.status === 404) throw new Error("No submitted attempt has been saved yet.");
-      if (!response.ok) throw new Error("The saved attempt could not be read.");
-      const saved = validateSubmission(await response.json());
+      if (!response.ok) {
+        setSavedAttempt(null);
+        throw new Error(response.status === 404 ? "No submitted attempt has been saved yet." : "The saved attempt could not be read.");
+      }
+      let record;
+      try { record = await response.json(); }
+      catch { setSavedAttempt(null); throw new Error("The saved attempt could not be read."); }
+      setSavedAttempt(record);
+      if (!hasSavedAttempt) throw new Error("This paper has not been attempted before.");
+      const saved = validateSubmission(record);
       if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), submittedAt, updatedAt };
       restoreState(saved);
       renderReport();
@@ -216,8 +241,10 @@
     serverBusy = true;
     setControls();
     try {
-      const response = await fetch(attemptUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attemptSnapshot()) });
+      const attempt = attemptSnapshot();
+      const response = await fetch(attemptUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attempt) });
       if (!response.ok) throw new Error("The server could not save the result.");
+      setSavedAttempt(attempt);
       clearDraft();
     } catch (error) {
       status(`Your report is ready, but attempt.json was not saved. ${error.message} Your draft is kept; restart the server and reload to submit again.`, true);
@@ -473,7 +500,7 @@
     document.title = data.title;
     byId("quiz-title").textContent = data.title;
     for (const [id, value] of [["quiz-source", data.source], ["quiz-instructions", data.instructions]]) { byId(id).textContent = value || ""; byId(id).hidden = !value; }
-    if (!data.questions.length) { byId("empty-state").hidden = false; byId("review-attempt").hidden = true; return; }
+    if (!data.questions.length) { byId("empty-state").hidden = false; byId("review-attempt").hidden = true; byId("review-attempt-wrap").hidden = true; return; }
     const maximum = data.questions.reduce((sum, question) => sum + marks(question).correct, 0);
     byId("quiz-meta").append(element("span", "meta-item", `${data.questions.length} questions · ${number(maximum)} marks`));
     byId("quiz-meta").hidden = false;
@@ -485,7 +512,9 @@
     byId("download-report").addEventListener("click", downloadReport);
     byId("print-report").addEventListener("click", () => window.print());
     window.addEventListener("beforeunload", (event) => { if (serverBusy) { event.preventDefault(); event.returnValue = ""; } });
+    window.addEventListener("pageshow", (event) => { if (event.persisted) checkLastAttempt(); });
     showAttempt();
+    checkLastAttempt();
     if (new URL(window.location.href).protocol === "file:") status("Start the quiz server and open http://127.0.0.1:8765 for persistent drafts and automatic result saving.", true);
   } catch (error) {
     byId("quiz-form").hidden = true;

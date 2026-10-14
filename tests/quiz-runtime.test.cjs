@@ -106,16 +106,21 @@ function createHarness(folder, options = {}) {
   source = source.replace(marker, `  window.test = {
     validate, grade, summarize,
     renderQuestions, renderReport, clearAttempt, restartAttempt,
-    save, numericValue, plainAnswer, answers,
+    save, numericValue, plainAnswer, answers, checkLastAttempt,
     setSubmitted: value => { submittedAt = value; }
   };
 ${marker}`);
+  const initialCheck = '    checkLastAttempt();';
+  assert(source.includes(initialCheck), 'last-attempt status check injection point is missing');
+  source = source.replace(initialCheck, '    window.test.initialCheck = checkLastAttempt();');
   vm.runInContext(source, ctx);
   assert(!ids['status-message'].textContent.startsWith('Unable'), ids['status-message'].textContent);
   return { ctx, window, document, ids, t: window.test, data: window.QUIZ_DATA, storage, server, requests, submit };
 }
 async function load(folder = 'gate-cse-2021-set-1', options = {}) {
-  return createHarness(folder, options);
+  const h = createHarness(folder, options);
+  if (options.waitForInitialCheck !== false) await h.t.initialCheck;
+  return h;
 }
 function rejectFileDialogs(h) {
   let calls = 0;
@@ -126,6 +131,14 @@ function rejectFileDialogs(h) {
 }
 const draftKey = h => 'practice-quiz:' + h.data.id;
 const attemptUrl = h => new URL('attempt.json', h.window.location.href).href;
+const postRequests = h => h.requests.filter(request => request.method === 'POST');
+const getRequests = h => h.requests.filter(request => request.method === 'GET');
+function assertReviewAvailability(h, available) {
+  assert.equal(h.ids['review-attempt'].disabled, !available);
+  const title = available ? '' : 'This paper has not been attempted before.';
+  assert.equal(h.ids['review-attempt'].title, title);
+  assert.equal(h.ids['review-attempt-wrap'].title, title, 'The disabled button has a hoverable tooltip wrapper');
+}
 function assertEditable(h) {
   assert(h.ids['quiz-form'].querySelectorAll('input, button').every(node => !node.disabled), 'practice remains usable without file access');
 }
@@ -148,6 +161,27 @@ async function editResponse(h, id, value) {
 
 (async () => {
   const h = await load(), { t, data, ids } = h;
+  assert.equal(h.requests.length, 1, 'Opening reads saved availability once without writing');
+  assert.equal(h.requests[0].method, 'GET'); assert.equal(h.requests[0].url, attemptUrl(h));
+  assert.equal(h.requests[0].cache, 'no-store'); assertReviewAvailability(h, false);
+  const statusFixtures = [
+    [undefined, false], [null, false], [{}, false], [[], false],
+    [{ answers: null }, false], [{ answers: [] }, false], [{ answers: {} }, false],
+    [{ answers: { 'GA-1': null, 'CS-16': null } }, false],
+    [{ answers: { 'CS-16': 0 } }, true], [{ answers: { 'CS-16': '0' } }, true],
+    [{ answers: { 'CS-11': [] } }, true], [{ answers: { 'CS-11': ['A'] } }, true],
+    [{ answers: { 'GA-1': 'C', 'GA-2': null } }, true]
+  ];
+  for (const [saved, available] of statusFixtures) {
+    const statusCheck = await load('gate-cse-2021-set-1', { server: saved === undefined ? [] : [[attemptUrl(h), saved]] });
+    assertReviewAvailability(statusCheck, available); assertEditable(statusCheck);
+    assert.equal(statusCheck.requests.length, 1); assert.equal(postRequests(statusCheck).length, 0);
+    assert.equal(Object.keys(statusCheck.t.answers).length, 0, 'Checking saved availability never restores submitted answers into practice');
+    if (!available) {
+      await statusCheck.ids['review-attempt'].click();
+      assert.equal(statusCheck.requests.length, 1, 'Disabled Review does not fetch even when a click is invoked programmatically');
+    }
+  }
   t.validate(); assert.equal(data.questions.length, 65);
   assert.equal(t.summarize(t.grade()).maximum, 100); assert.equal(t.summarize(t.grade()).score, 0);
   assertEditable(h);
@@ -195,7 +229,8 @@ async function editResponse(h, id, value) {
   const noDialogs = rejectFileDialogs(h);
   await editResponse(h, 'GA-1', 'C'); await editResponse(h, 'CS-11', ['A', 'C']);
   await editResponse(h, 'CS-16', '0');
-  assert.equal(h.requests.length, 0, 'Editing answers never touches attempt.json');
+  assert.equal(postRequests(h).length, 0, 'Editing answers never writes attempt.json');
+  assert.equal(getRequests(h).length, 1, 'Editing answers does not repeat the opening availability check');
   let draft = JSON.parse(h.storage.get(draftKey(h)));
   assert.equal(draft.answers['GA-1'], 'C');
   assert.equal(draft.answers['CS-11'].join(','), 'A,C'); assert.equal(draft.answers['CS-16'], '0');
@@ -219,15 +254,17 @@ async function editResponse(h, id, value) {
   await refreshed.ids['quiz-form'].fire('submit');
   assert.equal(refreshed.ids.report.hidden, true); assert(refreshedNat.focused);
   assert.equal(h.storage.get(draftKey(h)), beforeInvalidSubmit);
-  assert.equal(refreshed.requests.length, 0, 'Invalid NAT Submit never calls the server');
+  assert.equal(postRequests(refreshed).length, 0, 'Invalid NAT Submit never writes to the server');
+  assert.equal(getRequests(refreshed).length, 1, 'Invalid NAT Submit does not repeat the opening check');
   await editResponse(refreshed, 'CS-16', '11'); await refreshed.ids['quiz-form'].fire('submit');
   assert.equal(refreshed.ids.report.hidden, false); assert.equal(refreshed.ids['quiz-form'].hidden, true);
   assert.equal(h.storage.has(draftKey(h)), false, 'Valid Submit removes only the active draft');
   assert.equal(refreshed.ids['report-list'].querySelectorAll('img').length, 65);
   assert.equal(refreshed.t.grade()[20].outcome, 'correct');
   assert.equal(refreshed.ids['retry-quiz'].disabled, false);
-  assert.equal(refreshed.requests.length, 1);
-  assert.equal(refreshed.requests[0].method, 'POST'); assert.equal(refreshed.requests[0].url, attemptUrl(refreshed));
+  assert.equal(refreshed.requests.length, 2);
+  assert.equal(postRequests(refreshed).length, 1); assert.equal(postRequests(refreshed)[0].url, attemptUrl(refreshed));
+  assertReviewAvailability(refreshed, true);
   const submittedAttempt = refreshed.server.get(attemptUrl(refreshed));
   assert.equal(submittedAttempt.version, 1); assert(submittedAttempt.submittedAt && submittedAttempt.updatedAt);
   assert.equal(submittedAttempt.quizId, refreshed.data.id); assert.equal(submittedAttempt.quizTitle, refreshed.data.title);
@@ -249,7 +286,9 @@ async function editResponse(h, id, value) {
   assert.equal(Object.keys(afterSubmit.t.answers).length, 0); assert.equal(afterSubmit.ids.report.hidden, true);
   assert(afterSubmit.ids['nav-progress'].textContent.startsWith('0 attempted')); assertEditable(afterSubmit);
   await refreshed.ids['retry-quiz'].click();
-  assert.equal(refreshed.requests.length, 1, 'Retry never overwrites the last submission');
+  assert.equal(postRequests(refreshed).length, 1, 'Retry never overwrites the last submission');
+  assert.equal(getRequests(refreshed).length, 1, 'Retry retains saved availability without another read');
+  assertReviewAvailability(refreshed, true);
   assert.equal(refreshed.ids['status-message'].textContent, 'New attempt started. Progress is cached until Submit.');
   assert(!refreshed.ids['status-message'].hidden && !refreshed.ids['status-message'].className.split(' ').includes('error'));
   assert.equal(Object.keys(refreshed.t.answers).length, 0); assert.equal(refreshed.ids.report.hidden, true);
@@ -262,12 +301,13 @@ async function editResponse(h, id, value) {
   // Last-submission review is read-only and leaves the current browser draft
   // intact. Returning from review resumes that draft, including unfinished NAT.
   const review = await load('gate-cse-2021-set-1', { server: refreshed.server });
-  assert(review.ids['review-attempt']); assert.equal(review.requests.length, 0, 'Opening a quiz does not fetch or save an attempt');
+  assert(review.ids['review-attempt']); assert.equal(review.requests.length, 1, 'Opening checks saved availability without restoring or saving an attempt');
+  assertReviewAvailability(review, true);
   await editResponse(review, 'GA-1', 'A'); await editResponse(review, 'CS-16', '-');
   const workingDraft = review.storage.get(draftKey(review)), diskBeforeReview = JSON.stringify(submittedAttempt);
   await review.ids['review-attempt'].click();
-  assert.equal(review.requests.length, 1); assert.equal(review.requests[0].method, 'GET');
-  assert.equal(review.requests[0].url, attemptUrl(review)); assert.equal(review.requests[0].cache, 'no-store');
+  assert.equal(review.requests.length, 2); assert(getRequests(review).every(request => request.url === attemptUrl(review) && request.cache === 'no-store'));
+  assert.equal(postRequests(review).length, 0);
   assert.equal(review.ids.report.hidden, false); assert.equal(review.t.answers['GA-1'], 'C');
   assert(review.ids['nav-progress'].textContent.startsWith('3 attempted'));
   assert.equal(review.storage.get(draftKey(review)), workingDraft, 'Review must not replace an unfinished browser draft');
@@ -276,7 +316,7 @@ async function editResponse(h, id, value) {
   assert.equal(review.t.answers['GA-1'], 'A'); assert.equal(review.t.answers['CS-16'], '-');
   assert.equal(review.ids.report.hidden, true); assert.equal(review.document.getElementById('question-card-25').querySelector('input').value, '-');
   assert(review.ids['nav-progress'].textContent.startsWith('2 attempted'));
-  assert.equal(review.storage.get(draftKey(review)), workingDraft); assert.equal(review.requests.length, 1);
+  assert.equal(review.storage.get(draftKey(review)), workingDraft); assert.equal(review.requests.length, 2);
   const closedAndReopened = await load('gate-cse-2021-set-1', { storage: review.storage, server: review.server, url: review.window.location.href });
   assert.equal(closedAndReopened.t.answers['GA-1'], 'A'); assert.equal(closedAndReopened.t.answers['CS-16'], '-');
 
@@ -311,9 +351,73 @@ async function editResponse(h, id, value) {
   }
   for (const fetch of [undefined, async () => { throw Error('Offline'); }, async () => ({ ok: true, status: 200, async json() { throw Error('Invalid JSON'); } })]) {
     const missing = await load('gate-cse-2021-set-1', { fetch }); await editResponse(missing, 'GA-1', 'A');
+    assertReviewAvailability(missing, false);
     const missingDraft = missing.storage.get(draftKey(missing)); await missing.ids['review-attempt'].click();
     assert.equal(missing.ids.report.hidden, true); assert.equal(missing.t.answers['GA-1'], 'A');
     assert.equal(missing.storage.get(draftKey(missing)), missingDraft); assertEditable(missing);
+    assert.equal(missing.requests.length, 1, 'Missing/unreadable saved attempts leave Review disabled without another request');
+  }
+
+  // A new blank submission replaces the saved record and disables Review.
+  // Retry/clear retain the availability of that disk record, independently of drafts.
+  const blankSubmission = await load('gate-cse-2021-set-1', { server: [[attemptUrl(refreshed), submittedAttempt]] });
+  assertReviewAvailability(blankSubmission, true);
+  await blankSubmission.ids['quiz-form'].fire('submit');
+  assertReviewAvailability(blankSubmission, false);
+  assert(Object.values(blankSubmission.server.get(attemptUrl(blankSubmission)).answers).every(answer => answer === null));
+  const savedBlank = JSON.stringify(blankSubmission.server.get(attemptUrl(blankSubmission)));
+  await blankSubmission.ids['retry-quiz'].click(); await editResponse(blankSubmission, 'GA-1', 'C');
+  await blankSubmission.ids['clear-answers'].click(); assertReviewAvailability(blankSubmission, false);
+  assert.equal(JSON.stringify(blankSubmission.server.get(attemptUrl(blankSubmission))), savedBlank);
+  assert.equal(postRequests(blankSubmission).length, 1); assert.equal(getRequests(blankSubmission).length, 1);
+  const reopenedBlank = await load('gate-cse-2021-set-1', { server: blankSubmission.server });
+  assertReviewAvailability(reopenedBlank, false);
+
+  // If a saved attempt disappears or becomes all-null after opening, Review
+  // refreshes availability and leaves unfinished answers and cache unchanged.
+  for (const nextSaved of [undefined, { ...submittedAttempt, answers: Object.fromEntries(data.questions.map(question => [question.id, null])) }]) {
+    const changed = await load('gate-cse-2021-set-1', { server: [[attemptUrl(refreshed), submittedAttempt]] });
+    assertReviewAvailability(changed, true); await editResponse(changed, 'GA-1', 'A');
+    const beforeChangedReview = changed.storage.get(draftKey(changed));
+    if (nextSaved === undefined) changed.server.delete(attemptUrl(changed));
+    else changed.server.set(attemptUrl(changed), nextSaved);
+    await changed.ids['review-attempt'].click(); assertReviewAvailability(changed, false);
+    assert.equal(changed.ids.report.hidden, true); assert.equal(changed.t.answers['GA-1'], 'A');
+    assert.equal(changed.storage.get(draftKey(changed)), beforeChangedReview);
+    assert.equal(postRequests(changed).length, 0);
+  }
+
+  // Failure to save must not disable an already-reviewable disk attempt or
+  // enable Review for an unsolved paper.
+  for (const hadSavedAttempt of [false, true]) {
+    const failedAvailability = await load('gate-cse-2021-set-1', {
+      server: hadSavedAttempt ? [[attemptUrl(refreshed), submittedAttempt]] : [],
+      fetch: (request, perform, response) => request.method === 'POST' ? response(503, { error: 'Disk unavailable' }) : perform()
+    });
+    assertReviewAvailability(failedAvailability, hadSavedAttempt);
+    await editResponse(failedAvailability, 'GA-1', 'C'); await failedAvailability.ids['quiz-form'].fire('submit');
+    assertReviewAvailability(failedAvailability, hadSavedAttempt);
+    await failedAvailability.ids['retry-quiz'].click(); assertReviewAvailability(failedAvailability, hadSavedAttempt);
+    assert.equal(failedAvailability.server.has(attemptUrl(failedAvailability)), hadSavedAttempt);
+    if (hadSavedAttempt) assert.equal(JSON.stringify(failedAvailability.server.get(attemptUrl(failedAvailability))), diskBeforeReview);
+  }
+
+  // Opening status reads are nonblocking. A late initial response must not
+  // override availability derived from a newer successful save.
+  for (const savedAnAnswer of [false, true]) {
+    let finishInitialCheck;
+    const lateStatus = await load('gate-cse-2021-set-1', {
+      waitForInitialCheck: false,
+      fetch: (request, perform, response) => request.method === 'POST' ? perform() : new Promise(resolve => {
+        finishInitialCheck = () => resolve(savedAnAnswer ? response(404, { error: 'No saved attempt' }) : response(200, submittedAttempt));
+      })
+    });
+    assertReviewAvailability(lateStatus, false); assertEditable(lateStatus);
+    if (savedAnAnswer) await editResponse(lateStatus, 'GA-1', 'C');
+    await lateStatus.ids['quiz-form'].fire('submit'); assertReviewAvailability(lateStatus, savedAnAnswer);
+    finishInitialCheck(); await lateStatus.t.initialCheck; assertReviewAvailability(lateStatus, savedAnAnswer);
+    assert.equal(postRequests(lateStatus).length, 1); assert.equal(getRequests(lateStatus).length, 1);
+    assert.equal(lateStatus.storage.has(draftKey(lateStatus)), false);
   }
 
   // Submit keeps the draft until the server confirms the folder write. Network
@@ -329,20 +433,23 @@ async function editResponse(h, id, value) {
     assert.equal(recovered.t.answers['GA-1'], 'C'); assert.equal(recovered.ids.report.hidden, true);
   }
   let finishSubmit;
-  const waiting = await load('gate-cse-2021-set-1', { fetch: (_request, perform) => new Promise(resolve => { finishSubmit = () => resolve(perform()); }) });
+  const waiting = await load('gate-cse-2021-set-1', {
+    fetch: (request, perform) => request.method === 'POST' ? new Promise(resolve => { finishSubmit = () => resolve(perform()); }) : perform()
+  });
   await editResponse(waiting, 'GA-1', 'C'); const waitingDraft = waiting.storage.get(draftKey(waiting));
   const pendingSubmit = waiting.ids['quiz-form'].fire('submit');
   assert.deepEqual(JSON.parse(waiting.storage.get(draftKey(waiting))).answers, JSON.parse(waitingDraft).answers);
   assert(waiting.ids['quiz-form'].querySelectorAll('input, button').every(node => node.disabled));
   assert(waiting.ids['retry-quiz'].disabled && waiting.ids['review-attempt'].disabled);
   await waiting.ids['quiz-form'].fire('submit'); await waiting.ids['review-attempt'].click();
-  assert.equal(waiting.requests.length, 1, 'Busy controls cannot start a second request');
+  assert.equal(postRequests(waiting).length, 1, 'Busy controls cannot start a second Submit');
+  assert.equal(getRequests(waiting).length, 1, 'Busy Review cannot start another read');
   finishSubmit(); await pendingSubmit;
   assert.equal(waiting.storage.has(draftKey(waiting)), false); assertEditable(waiting);
   assert.equal(waiting.ids['retry-quiz'].disabled, false); assert.equal(waiting.ids['review-attempt'].disabled, false);
-  let finishReview;
+  let finishReview, reviewReads = 0;
   const pendingReview = await load('gate-cse-2021-set-1', {
-    server: refreshed.server, fetch: (_request, perform) => new Promise(resolve => { finishReview = () => resolve(perform()); })
+    server: refreshed.server, fetch: (_request, perform) => ++reviewReads === 1 ? perform() : new Promise(resolve => { finishReview = () => resolve(perform()); })
   });
   await editResponse(pendingReview, 'GA-1', 'A'); const pendingReviewDraft = pendingReview.storage.get(draftKey(pendingReview));
   const reviewingPromise = pendingReview.ids['review-attempt'].click();
@@ -458,5 +565,5 @@ async function editResponse(h, id, value) {
   assert.equal(old.ids['report-list'].querySelectorAll('img').length, 67);
   assert.equal(old.ids['retry-quiz'].disabled, false); await old.ids['retry-quiz'].click(); assertEditable(old); oldDialogs();
   const template = await load('_template'); assert.equal(template.ids['empty-state'].hidden, false);
-  console.log('PASS: grading/assets, MSQ/NAT/MCQ/MTA, maps/reports/theme, browser draft reopen/clear/isolation/failures, Submit-only server write and success-only cache clearing, read-only last-attempt review/resume/validation/recomputed scores, server failure recovery/busy controls, no file dialogs, blank template.');
+  console.log('PASS: grading/assets, MSQ/NAT/MCQ/MTA, maps/reports/theme, browser draft reopen/clear/isolation/failures, Submit-only server write and success-only cache clearing, saved-answer Review gating/tooltips/blank saves/failures/stale opening reads, read-only last-attempt review/resume/validation/recomputed scores, server failure recovery/busy controls, no file dialogs, blank template.');
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });

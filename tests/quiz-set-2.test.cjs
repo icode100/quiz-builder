@@ -110,12 +110,18 @@ function createHarness(folder, options = {}) {
     setSubmitted: value => { submittedAt = value; }
   };
 ${marker}`);
+  const availabilityCheck = '    checkLastAttempt();';
+  assert(source.includes(availabilityCheck), 'runtime availability check injection point is missing');
+  source = source.replace(availabilityCheck, '    window.test.initialCheck = checkLastAttempt();');
   vm.runInContext(source, ctx);
   assert(!ids['status-message'].textContent.startsWith('Unable'), ids['status-message'].textContent);
   return { ctx, window, document, ids, t: window.test, data: window.QUIZ_DATA, storage, server, requests, submit };
 }
 async function load(folder = 'gate-cse-2021-set-1', options = {}) {
-  return createHarness(folder, options);
+  const h = createHarness(folder, options);
+  // Await the actual startup availability check, without a second GET.
+  await h.t.initialCheck;
+  return h;
 }
 function rejectFileDialogs(h) {
   let calls = 0;
@@ -309,6 +315,14 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
     assert(fs.existsSync(path.join(FOLDER, match[1])), `Missing ${match[1]}`);
   }
   assert(ids['review-attempt'], 'Review last attempt is the only attempt control');
+  assert(ids['review-attempt'].disabled, 'A missing last submission disables Review');
+  assert.equal(ids['review-attempt'].title, 'This paper has not been attempted before.');
+  assert.equal(h.requests.length, 1, 'Opening a paper checks its saved attempt once');
+  assert.equal(h.requests[0].method, 'GET');
+  assert.equal(h.requests[0].url, attemptUrl(h));
+  assert.equal(h.requests[0].cache, 'no-store');
+  const blankSaved = await load(FOLDER, { server: [[attemptUrl(h), { answers: Object.fromEntries(data.questions.map(q => [q.id, null])) }]] });
+  assert(blankSaved.ids['review-attempt'].disabled, 'An all-null saved attempt disables Review');
   assert.equal(ids.questions.querySelectorAll('fieldset').length, 65);
   assert.equal(ids.questions.querySelectorAll('img').length, imageCount);
   assert.equal(ids['nav-groups'].querySelectorAll('.nav-question').length, 65);
@@ -379,7 +393,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   await editResponse(h, mcq.id, correctResponse(mcq));
   await editResponse(h, msq.id, correctResponse(msq));
   await editResponse(h, nat.id, '-');
-  assert.equal(h.requests.length, 0, 'Question edits use only browser storage');
+  assert.equal(h.requests.length, 1, 'Question edits add no requests after the availability check');
   assert.equal(ids['nav-progress'].textContent, '3 attempted · 62 not attempted');
   assert(nav(h, nat.id).className.includes('needs-check'));
   assert.equal(nav(h, nat.id).querySelector('.nav-state-icon').textContent, '!');
@@ -398,13 +412,14 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   await restored.ids['quiz-form'].fire('submit');
   assert(restored.ids.report.hidden); assert(card(restored, nat.id).querySelector('input').focused);
   assert.equal(h.storage.get(draftKey(h)), beforeInvalid);
-  assert.equal(restored.requests.length, 0, 'Invalid NAT never reaches the server');
+  assert.equal(restored.requests.length, 1, 'Invalid NAT adds no requests after the availability check');
   await editResponse(restored, nat.id, correctResponse(nat));
   await restored.ids['quiz-form'].fire('submit');
   assert(!restored.ids.report.hidden); assert(restored.ids['quiz-form'].hidden);
   assert(!h.storage.has(draftKey(h)));
-  assert.equal(restored.requests.length, 1); assert.equal(restored.requests[0].method, 'POST');
-  assert.equal(restored.requests[0].url, attemptUrl(restored));
+  assert.equal(restored.requests.length, 2); assert.equal(restored.requests[1].method, 'POST');
+  assert.equal(restored.requests[1].url, attemptUrl(restored));
+  assert(!restored.ids['review-attempt'].disabled, 'Saving non-null responses enables Review');
   const submission = restored.server.get(attemptUrl(restored));
   assert.equal(submission.quizId, data.id); assert.equal(submission.version, 1);
   assert.equal(submission.quizSignature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
@@ -425,7 +440,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   const fresh = await load(FOLDER, { storage: h.storage });
   assert.equal(Object.keys(fresh.t.answers).length, 0); assert(fresh.ids.report.hidden); assertEditable(fresh);
   await restored.ids['retry-quiz'].click();
-  assert.equal(restored.requests.length, 1, 'Retry preserves the server submission');
+  assert.equal(restored.requests.length, 2, 'Retry preserves the server submission');
   assert.equal(restored.ids['status-message'].textContent, 'New attempt started. Progress is cached until Submit.');
   assert(!restored.ids['status-message'].hidden && !restored.ids['status-message'].className.split(' ').includes('error'));
   assert.equal(Object.keys(restored.t.answers).length, 0); assert(restored.ids.report.hidden); assertEditable(restored);
@@ -436,18 +451,19 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert.equal(Object.keys(restored.t.answers).length, 0);
   await editResponse(restored, mcq.id, correctResponse(mcq));
   await restored.ids['clear-answers'].click();
-  assert.equal(restored.requests.length, 1, 'Clearing practice responses does not save to disk');
+  assert.equal(restored.requests.length, 2, 'Clearing practice responses does not save to disk');
   const cleared = await load(FOLDER, { storage: h.storage });
   assert.equal(Object.keys(cleared.t.answers).length, 0);
 
   // A saved Set 2 report can be reviewed while a separate unfinished draft is
   // cached. Its answers are regraded, and returning restores the active draft.
   const reviewing = await load(FOLDER, { server: restored.server });
+  assert(!reviewing.ids['review-attempt'].disabled, 'A saved non-null response enables Review on reopening');
   await editResponse(reviewing, mcq.id, wrongResponse(mcq)); await editResponse(reviewing, nat.id, '-');
   const activeDraft = reviewing.storage.get(draftKey(reviewing)), savedDisk = JSON.stringify(submission);
   await reviewing.ids['review-attempt'].click();
-  assert.equal(reviewing.requests.length, 1); assert.equal(reviewing.requests[0].method, 'GET');
-  assert.equal(reviewing.requests[0].cache, 'no-store'); assert(!reviewing.ids.report.hidden);
+  assert.equal(reviewing.requests.length, 2); assert.equal(reviewing.requests[1].method, 'GET');
+  assert.equal(reviewing.requests[1].cache, 'no-store'); assert(!reviewing.ids.report.hidden);
   assert.equal(reviewing.t.answers[mcq.id], correctResponse(mcq));
   assert.equal(reviewing.storage.get(draftKey(reviewing)), activeDraft);
   assert.equal(JSON.stringify(reviewing.server.get(attemptUrl(reviewing))), savedDisk);
@@ -455,7 +471,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   await reviewing.ids['retry-quiz'].click();
   assert(reviewing.ids.report.hidden); assert.equal(reviewing.t.answers[mcq.id], wrongResponse(mcq));
   assert.equal(reviewing.t.answers[nat.id], '-'); assert.equal(reviewing.storage.get(draftKey(reviewing)), activeDraft);
-  assert.equal(reviewing.requests.length, 1); assertEditable(reviewing);
+  assert.equal(reviewing.requests.length, 2); assertEditable(reviewing);
   const reopened = await load(FOLDER, { storage: reviewing.storage, server: reviewing.server });
   assert.equal(reopened.t.answers[mcq.id], wrongResponse(mcq)); assert.equal(reopened.t.answers[nat.id], '-');
 

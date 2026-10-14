@@ -38,7 +38,7 @@ Unfinished answers cache automatically in your browser and restore after reopeni
 
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 
-Submit displays your score and question-by-question report and saves the latest submission to that quiz's `attempt.json`. The draft clears only after saving succeeds. **Review last attempt** opens that saved report without changing current practice; **Back to quiz** returns to your prior view. **Attempt again** starts fresh practice while preserving the saved submission. Save report and Print report remain available.
+Submit displays your score and question-by-question report and saves the latest submission to that quiz's `attempt.json`. The draft clears only after saving succeeds. **Review last attempt** is enabled only if that file has at least one non-null answer; otherwise its disabled button shows **This paper has not been attempted before.** on hover. Review opens the saved report without changing current practice; **Back to quiz** returns to your prior view. **Attempt again** starts fresh practice while preserving the saved submission. Save report and Print report remain available.
 
 Available quizzes, after starting the server:
 
