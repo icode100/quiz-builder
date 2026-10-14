@@ -14,7 +14,16 @@ const escapeHtml = value => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<':
 
 function createServer({ root = __dirname, port = PORT } = {}) {
   root = fs.realpathSync.native(root);
+  let resetting = false, saving = 0;
   const reply = (res, status, text, type = 'text/plain; charset=utf-8') => { res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', Connection: 'close' }); res.end(text); };
+  async function jsonBody(req) {
+    const fail = (status, message) => { throw Object.assign(new Error(message), { status }); };
+    if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') fail(415, 'Send application/json.');
+    if (Number(req.headers['content-length']) > MAX_BODY) fail(413, 'Request is too large.');
+    let size = 0; const chunks = [];
+    for await (const chunk of req) { size += chunk.length; if (size > MAX_BODY) fail(413, 'Request is too large.'); chunks.push(chunk); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { fail(400, 'Invalid JSON.'); }
+  }
   async function quizFolder(name) {
     if (!name || name.startsWith('.') || name.includes('/') || name.includes('\\')) throw Object.assign(new Error('Invalid quiz folder.'), { status: 404 });
     const directory = path.join(root, name);
@@ -27,15 +36,30 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     }
     return real;
   }
-  async function landing() {
-    const links = [];
+  async function quizDirectories() {
+    const quizzes = [];
     for (const item of await fsp.readdir(root, { withFileTypes: true })) {
       if (!item.isDirectory() || item.name.startsWith('_') || item.name.startsWith('.')) continue;
+      try { quizzes.push({ name: item.name, folder: await quizFolder(item.name) }); } catch { /* Ignore folders that are not quizzes. */ }
+    }
+    return quizzes;
+  }
+  async function attemptedBefore(folder) {
+    try {
+      const file = path.join(folder, 'attempt.json'), stat = await fsp.lstat(file);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_BODY) return false;
+      const attempt = JSON.parse(await fsp.readFile(file, 'utf8'));
+      return object(attempt) && object(attempt.answers) && Object.values(attempt.answers).some(answer => answer !== null);
+    } catch { return false; }
+  }
+  async function landing() {
+    const links = [];
+    for (const { name, folder } of await quizDirectories()) {
       try {
-        const folder = await quizFolder(item.name);
         const html = await fsp.readFile(path.join(folder, 'index.html'), 'utf8');
-        const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || item.name;
-        links.push(`<li><a class="question-card paper-card" href="/${encodeURIComponent(item.name)}/"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>`);
+        const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || name;
+        const attempted = await attemptedBefore(folder);
+        links.push(`<li data-attempted="${attempted}"><a class="question-card paper-card" href="/${encodeURIComponent(name)}/"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-status${attempted ? ' attempted' : ''}">${attempted ? 'Attempted before' : 'Not attempted'}</span><span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>`);
       } catch { /* Ignore folders that are not quizzes. */ }
     }
     return `<!doctype html>
@@ -45,6 +69,7 @@ function createServer({ root = __dirname, port = PORT } = {}) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>GATE CSE quizzes</title>
   <script src="/_template/theme.js"></script>
+  <script src="/_template/home.js" defer></script>
   <link rel="stylesheet" href="/_template/styles.css">
 </head>
 <body>
@@ -57,9 +82,14 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       <h1>GATE CSE quizzes</h1>
       <p class="subtitle">Choose a paper and practise at your own pace.</p>
     </header>
-    <p class="home-count">${links.length} paper${links.length === 1 ? '' : 's'} available</p>
-    <ul class="home-papers" aria-label="Available question papers">${links.join('')}</ul>
-    ${links.length ? '' : '<p class="empty-state">No papers are ready yet. Add a quiz folder to get started.</p>'}
+    <div class="home-tools">
+      <label class="home-filter"><input id="unsolved-only" type="checkbox"> Unsolved only</label>
+      <button id="reset-attempts" class="button button-secondary" type="button"${links.length ? '' : ' disabled'}>Reset saved attempts</button>
+    </div>
+    <p id="home-status" class="status-message" role="status" aria-live="polite" hidden></p>
+    <p id="paper-count" class="home-count" role="status" aria-live="polite">${links.length} paper${links.length === 1 ? '' : 's'} available</p>
+    <ul id="home-papers" class="home-papers" aria-label="Available question papers">${links.join('')}</ul>
+    <p id="no-papers" class="empty-state"${links.length ? ' hidden' : ''}>${links.length ? 'No unsolved papers left. Turn off the filter to see all papers.' : 'No papers are ready yet. Add a quiz folder to get started.'}</p>
     <p class="home-note subtitle">Your unfinished answers stay in this browser. Submit saves your latest result for review.</p>
   </main>
 </body>
@@ -73,25 +103,47 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       if (!pathname.startsWith('/') || pathname.includes('\\') || pathname.includes('\0') || pathname.split('/').some(part => part === '..' || part === '.')) return reply(res, 400, 'Invalid path.');
       if (req.method === 'GET' && pathname === '/health') return reply(res, 200, JSON.stringify({ server: MARKER }), mime['.json']);
       if (req.method === 'GET' && pathname === '/') return reply(res, 200, await landing(), mime['.html']);
+      if (pathname === '/reset-attempts') {
+        if (req.method !== 'POST') return reply(res, 405, 'Method not allowed.');
+        if (req.headers.origin !== origin || (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site']))) return reply(res, 403, 'Use the local home page to reset attempts.');
+        const settings = await jsonBody(req);
+        if (!object(settings) || settings.confirm !== true) return reply(res, 400, 'Confirm the reset first.');
+        if (resetting || saving) return reply(res, 409, 'A save or reset is in progress. Try again.');
+        resetting = true;
+        try {
+          const targets = [];
+          for (const { folder } of await quizDirectories()) {
+            const target = path.join(folder, 'attempt.json');
+            let stat;
+            try { stat = await fsp.lstat(target); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+            if (!stat.isFile() || stat.isSymbolicLink()) return reply(res, 403, 'Attempt files must be regular files. No attempts were reset.');
+            targets.push(target);
+          }
+          let reset = 0;
+          for (const target of targets) {
+            try { await fsp.unlink(target); reset++; } catch (error) { if (error.code !== 'ENOENT') throw error; }
+          }
+          return reply(res, 200, JSON.stringify({ reset }), mime['.json']);
+        } finally { resetting = false; }
+      }
       const [name, ...parts] = pathname.slice(1).split('/');
       const folder = await quizFolder(name);
       const relative = parts.join('/') || 'index.html';
       if (req.method === 'POST') {
         if (name === '_template' || relative !== 'attempt.json') return reply(res, 405, 'Only submitted attempts can be saved.');
         if ((req.headers.origin && req.headers.origin !== origin) || (req.headers['sec-fetch-site'] && req.headers['sec-fetch-site'] !== 'same-origin' && req.headers['sec-fetch-site'] !== 'none')) return reply(res, 403, 'Use the local quiz page to submit.');
-        if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') return reply(res, 415, 'Send application/json.');
-        if (Number(req.headers['content-length']) > MAX_BODY) return reply(res, 413, 'Attempt is too large.');
-        let size = 0; const chunks = [];
-        for await (const chunk of req) { size += chunk.length; if (size > MAX_BODY) return reply(res, 413, 'Attempt is too large.'); chunks.push(chunk); }
-        let attempt;
-        try { attempt = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return reply(res, 400, 'Invalid JSON.'); }
+        const attempt = await jsonBody(req);
         if (!object(attempt) || attempt.version !== 1 || typeof attempt.quizId !== 'string' || !attempt.quizId.trim() || attempt.quizId.length > 200 || !object(attempt.answers) || !object(attempt.summary) || !Array.isArray(attempt.results) || typeof attempt.submittedAt !== 'string' || !Number.isFinite(Date.parse(attempt.submittedAt)) || typeof attempt.updatedAt !== 'string' || !Number.isFinite(Date.parse(attempt.updatedAt))) return reply(res, 400, 'A completed quiz attempt is required.');
-        const target = path.join(folder, 'attempt.json');
-        try { if ((await fsp.lstat(target)).isSymbolicLink()) return reply(res, 403, 'Attempt file must be a regular file.'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-        const temporary = path.join(folder, `.attempt-${randomUUID()}.tmp`);
-        try { await fsp.writeFile(temporary, JSON.stringify(attempt, null, 2) + '\n', { flag: 'wx' }); await fsp.rename(temporary, target); }
-        finally { await fsp.unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
-        return reply(res, 200, JSON.stringify({ saved: true }), mime['.json']);
+        if (resetting) return reply(res, 409, 'A reset is in progress. Try submitting again.');
+        saving++;
+        try {
+          const target = path.join(folder, 'attempt.json');
+          try { if ((await fsp.lstat(target)).isSymbolicLink()) return reply(res, 403, 'Attempt file must be a regular file.'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+          const temporary = path.join(folder, `.attempt-${randomUUID()}.tmp`);
+          try { await fsp.writeFile(temporary, JSON.stringify(attempt, null, 2) + '\n', { flag: 'wx' }); await fsp.rename(temporary, target); }
+          finally { await fsp.unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
+          return reply(res, 200, JSON.stringify({ saved: true }), mime['.json']);
+        } finally { saving--; }
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') return reply(res, 405, 'Method not allowed.');
       const file = await fsp.realpath(path.resolve(folder, relative));
@@ -101,7 +153,7 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       res.writeHead(200, { 'Content-Type': mime[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Content-Length': stat.size, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
       if (req.method === 'HEAD') return res.end();
       const stream = fs.createReadStream(file); stream.on('error', () => res.destroy()); stream.pipe(res);
-    } catch (error) { reply(res, error.status || (error.code === 'ENOENT' || error.code === 'ENOTDIR' ? 404 : error instanceof URIError ? 400 : 500), error.status || error.code === 'ENOENT' || error.code === 'ENOTDIR' ? 'File not found.' : 'Unable to complete this request.'); }
+    } catch (error) { reply(res, error.status || (error.code === 'ENOENT' || error.code === 'ENOTDIR' ? 404 : error instanceof URIError ? 400 : 500), error.status ? error.message : error.code === 'ENOENT' || error.code === 'ENOTDIR' ? 'File not found.' : 'Unable to complete this request.'); }
   });
   server.quizPort = port;
   return server;

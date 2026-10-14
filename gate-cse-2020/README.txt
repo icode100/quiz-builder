@@ -1,6 +1,7 @@
 GATE CSE 2020 - Session 6: 65 questions, 100 marks.
-Launch ..\start-quiz.cmd, then open http://127.0.0.1:8765/gate-cse-2020/index.html in the same browser/profile each time. No internet is needed. Opening index.html directly is no longer the supported storage flow.
+Launch ..\start-quiz.cmd (Windows) or ..\start-quiz.command (macOS), then open http://127.0.0.1:8765/gate-cse-2020/index.html in the same browser/profile each time. No internet is needed. Opening index.html directly is no longer the supported storage flow.
 Unfinished answers cache automatically and restore across browser restarts; clearing browser data or ending a private session can erase them.
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 Submit shows your report and saves this folder's attempt.json, then clears the draft only after saving succeeds. Only Submit writes the file. Review last attempt reads the saved report without replacing your current draft; Back to quiz returns to your prior view. Attempt again starts fresh and preserves attempt.json. Save report and Print report remain available.
 MCQ penalties: one-third of marks; NAT: no penalty. CS 7 receives marks-to-all, so blank scores 1/100. Original paper, key, and question crops remain in this folder.
+Home: Attempted before means at least one non-null saved answer. Unsolved only filters the list. Reset saved attempts removes submitted reports after confirmation; browser drafts stay intact.

@@ -6,6 +6,16 @@ Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local ser
 
 The home page and quizzes share the same remembered light/dark mode, magenta accents, and soft card shadows.
 
+Cards show **Attempted before** when the latest `attempt.json` has at least one non-null answer. Select **Unsolved only** to hide those papers. **Reset saved attempts** asks for confirmation and removes all saved submissions, marking papers unsolved again; unfinished browser drafts remain intact.
+
+On macOS, with Node.js available, run this from the project folder (or double-click `start-quiz.command`):
+
+```bash
+bash start-quiz.command
+```
+
+Use `bash stop-quiz.command` to stop the recorded server; `bash start-quiz.command --no-browser` starts it without opening a browser. Copy your existing quiz `attempt.json` files into matching folders on the Mac to retain reports and attempted markers, since Git excludes them. Unfinished browser drafts do not transfer automatically between computers.
+
 For PowerShell terminal commands, create your profile if missing and open it:
 
 ```powershell

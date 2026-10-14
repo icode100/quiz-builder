@@ -159,7 +159,7 @@
 
   function attemptUrl() {
     const url = new URL(window.location.href);
-    if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Start start-quiz.cmd and open the quiz at http://127.0.0.1:8765.");
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Start the quiz server and open the quiz at http://127.0.0.1:8765.");
     return new URL("attempt.json", url).href;
   }
   function attemptSnapshot() {
@@ -486,7 +486,7 @@
     byId("print-report").addEventListener("click", () => window.print());
     window.addEventListener("beforeunload", (event) => { if (serverBusy) { event.preventDefault(); event.returnValue = ""; } });
     showAttempt();
-    if (new URL(window.location.href).protocol === "file:") status("Start start-quiz.cmd and open http://127.0.0.1:8765 for persistent drafts and automatic result saving.", true);
+    if (new URL(window.location.href).protocol === "file:") status("Start the quiz server and open http://127.0.0.1:8765 for persistent drafts and automatic result saving.", true);
   } catch (error) {
     byId("quiz-form").hidden = true;
     byId("report").hidden = true;

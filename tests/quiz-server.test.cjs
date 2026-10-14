@@ -9,15 +9,41 @@ async function run() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'quiz-server-test-'));
   const quiz = path.join(root, 'gate-test');
   const server = createServer({ root, port: 0 });
+  const attempt = { version: 1, quizId: 'test-quiz', answers: { 'GA-1': 'B' }, submittedAt: '2026-10-13T00:00:00.000Z', updatedAt: '2026-10-13T00:00:00.000Z', summary: { score: 1 }, results: [{ id: 'GA-1', outcome: 'correct' }] };
   try {
     await fs.mkdir(quiz);
     await fs.writeFile(path.join(quiz, 'index.html'), '<title>Test quiz</title><h1>Quiz</h1>');
     await fs.writeFile(path.join(quiz, 'quiz-data.js'), 'window.QUIZ_DATA = {};');
+    await fs.writeFile(path.join(quiz, 'original.pdf'), 'unchanged source PDF fixture');
+    await fs.mkdir(path.join(quiz, 'assets'));
+    await fs.writeFile(path.join(quiz, 'assets', 'question.png'), 'unchanged question image fixture');
     await fs.writeFile(path.join(root, 'secret.txt'), 'not a quiz asset');
     await fs.mkdir(path.join(root, '_template'));
     await fs.writeFile(path.join(root, '_template', 'index.html'), '<title>Blank template</title>');
     await fs.writeFile(path.join(root, '_template', 'quiz-data.js'), 'window.QUIZ_DATA = {};');
-    for (const filename of ['styles.css', 'theme.js']) await fs.copyFile(path.join(__dirname, '..', '_template', filename), path.join(root, '_template', filename));
+    await fs.writeFile(path.join(root, '_template', 'attempt.json'), 'preserve template attempt');
+    await fs.mkdir(path.join(root, 'not-a-quiz'));
+    await fs.writeFile(path.join(root, 'not-a-quiz', 'attempt.json'), 'preserve nonquiz attempt');
+    for (const filename of ['styles.css', 'theme.js', 'home.js']) await fs.copyFile(path.join(__dirname, '..', '_template', filename), path.join(root, '_template', filename));
+    async function fixture(name, answers) {
+      const directory = path.join(root, name);
+      await fs.mkdir(directory);
+      await fs.writeFile(path.join(directory, 'index.html'), `<title>${name}</title>`);
+      await fs.writeFile(path.join(directory, 'quiz-data.js'), 'window.QUIZ_DATA = {};');
+      if (answers !== undefined) await fs.writeFile(path.join(directory, 'attempt.json'), JSON.stringify({ ...attempt, answers }));
+      return directory;
+    }
+    const statusFixtures = [
+      ['gate-null', { 'GA-1': null, 'GA-2': null }, false],
+      ['gate-zero', { 'GA-1': 0 }, true],
+      ['gate-string-zero', { 'GA-1': '0' }, true],
+      ['gate-array', { 'GA-1': [] }, true],
+      ['gate-missing', undefined, false],
+      ['gate-invalid', [], false]
+    ];
+    for (const [name, answers] of statusFixtures) await fixture(name, answers);
+    const malformedQuiz = await fixture('gate-malformed');
+    await fs.writeFile(path.join(malformedQuiz, 'attempt.json'), '{broken JSON');
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const port = server.address().port;
     const origin = `http://127.0.0.1:${port}`;
@@ -32,16 +58,29 @@ async function run() {
         req.on('error', reject); req.end(body);
       });
     }
-    const attempt = { version: 1, quizId: 'test-quiz', answers: { 'GA-1': 'B' }, submittedAt: '2026-10-13T00:00:00.000Z', updatedAt: '2026-10-13T00:00:00.000Z', summary: { score: 1 }, results: [{ id: 'GA-1', outcome: 'correct' }] };
     const post = (data, url = '/gate-test/attempt.json', headers = {}) => request(url, { method: 'POST', body: typeof data === 'string' ? data : JSON.stringify(data), headers: { 'Content-Type': 'application/json', Origin: origin, ...headers } });
+    const reset = (data = { confirm: true }, headers = {}) => post(data, '/reset-attempts', headers);
+    function checkStatus(html, name, attempted) {
+      const card = (html.match(/<li\b[\s\S]*?<\/li>/g) || []).find(item => item.includes(`href="/${name}/"`));
+      assert.ok(card, `Home page includes ${name}`);
+      assert.match(card, new RegExp(`data-attempted="${attempted}"`));
+      assert.match(card, new RegExp(attempted ? 'Attempted before' : 'Not attempted'));
+    }
     assert.deepEqual(JSON.parse((await request('/health')).body), { server: MARKER });
     const landing = await request('/'); assert.equal(landing.status, 200); assert.match(landing.body, /Test quiz/); assert.doesNotMatch(landing.body, /Blank template/);
     assert.match(landing.body, /href="\/gate-test\/"/);
     assert.match(landing.body, /href="\/_template\/styles\.css"/);
     assert.match(landing.body, /src="\/_template\/theme\.js"/);
+    assert.match(landing.body, /src="\/_template\/home\.js"/);
     assert.match(landing.body, /id="theme-toggle"/);
+    assert.match(landing.body, /id="unsolved-only"/);
+    assert.match(landing.body, /id="reset-attempts"/);
+    checkStatus(landing.body, 'gate-test', false);
+    for (const [name, , attempted] of statusFixtures) checkStatus(landing.body, name, attempted);
+    checkStatus(landing.body, 'gate-malformed', false);
+    assert.equal(await fs.readFile(path.join(malformedQuiz, 'attempt.json'), 'utf8'), '{broken JSON');
     assert.doesNotMatch(landing.body, /<script[^>]+src="[^"]*quiz(?:-data)?\.js"/);
-    for (const filename of ['styles.css', 'theme.js']) {
+    for (const filename of ['styles.css', 'theme.js', 'home.js']) {
       const asset = await request(`/_template/${filename}`);
       assert.equal(asset.status, 200);
       assert.equal(asset.body, await fs.readFile(path.join(root, '_template', filename), 'utf8'));
@@ -51,6 +90,7 @@ async function run() {
     assert.equal((await request('/gate-test/attempt.json')).status, 404);
     assert.equal((await post(attempt)).status, 200);
     assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), attempt);
+    checkStatus((await request('/')).body, 'gate-test', true);
     const replacement = { ...attempt, answers: { 'GA-1': 'D' } };
     assert.equal((await post(replacement)).status, 200);
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
@@ -63,6 +103,40 @@ async function run() {
     assert.equal((await post('x'.repeat(MAX_BODY + 1), '/gate-test/attempt.json', { 'Transfer-Encoding': 'chunked' })).status, 413);
     assert.equal((await request('/health', { headers: { Host: 'evil.example' } })).status, 403);
     for (const url of ['/gate-test/../secret.txt', '/gate-test/%2e%2e/secret.txt', '/gate-test/%5c..%5csecret.txt', '/gate-test/%00', '/secret.txt']) assert.notEqual((await request(url)).status, 200);
+    assert.equal((await reset({ confirm: true }, { Origin: 'https://foreign.example' })).status, 403);
+    for (const method of ['GET', 'PUT']) assert.notEqual((await request('/reset-attempts', { method })).status, 200);
+    assert.equal((await request('/reset-attempts', { method: 'POST', body: JSON.stringify({ confirm: true }), headers: { 'Content-Type': 'application/json' } })).status, 403);
+    assert.equal((await reset({ confirm: true }, { 'Content-Type': 'text/plain' })).status, 415);
+    for (const invalid of ['{', [], {}, { confirm: false }, { confirm: 'true' }]) assert.equal((await reset(invalid)).status, 400);
+    assert.equal((await reset('x', { 'Content-Length': MAX_BODY + 1 })).status, 413);
+    assert.equal((await reset('x'.repeat(MAX_BODY + 1), { 'Transfer-Encoding': 'chunked' })).status, 413);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
+    for (const [name, answers] of statusFixtures) {
+      if (answers === undefined) await assert.rejects(fs.access(path.join(root, name, 'attempt.json')), { code: 'ENOENT' });
+      else assert.deepEqual(JSON.parse(await fs.readFile(path.join(root, name, 'attempt.json'), 'utf8')), { ...attempt, answers });
+    }
+    assert.equal(await fs.readFile(path.join(malformedQuiz, 'attempt.json'), 'utf8'), '{broken JSON');
+    const cleared = await reset();
+    assert.equal(cleared.status, 200);
+    assert.equal(JSON.parse(cleared.body).reset, 7);
+    for (const name of ['gate-test', 'gate-malformed', ...statusFixtures.map(([name]) => name)]) {
+      await assert.rejects(fs.access(path.join(root, name, 'attempt.json')), { code: 'ENOENT' });
+      checkStatus((await request('/')).body, name, false);
+    }
+    assert.equal(JSON.parse((await reset()).body).reset, 0);
+    assert.equal(await fs.readFile(path.join(root, '_template', 'attempt.json'), 'utf8'), 'preserve template attempt');
+    assert.equal(await fs.readFile(path.join(root, 'not-a-quiz', 'attempt.json'), 'utf8'), 'preserve nonquiz attempt');
+    assert.equal(await fs.readFile(path.join(quiz, 'original.pdf'), 'utf8'), 'unchanged source PDF fixture');
+    assert.equal(await fs.readFile(path.join(quiz, 'assets', 'question.png'), 'utf8'), 'unchanged question image fixture');
+    assert.equal(await fs.readFile(path.join(quiz, 'quiz-data.js'), 'utf8'), 'window.QUIZ_DATA = {};');
+    assert.equal((await post(replacement)).status, 200);
+    const directoryQuiz = await fixture('gate-directory');
+    await fs.mkdir(path.join(directoryQuiz, 'attempt.json'));
+    checkStatus((await request('/')).body, 'gate-directory', false);
+    assert.equal((await reset()).status, 403);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
+    assert.ok((await fs.lstat(path.join(directoryQuiz, 'attempt.json'))).isDirectory());
+    await fs.rmdir(path.join(directoryQuiz, 'attempt.json'));
     try {
       await fs.symlink(path.join(root, 'secret.txt'), path.join(quiz, 'outside.txt'));
       assert.equal((await request('/gate-test/outside.txt')).status, 403);
@@ -71,12 +145,16 @@ async function run() {
       await fs.copyFile(path.join(quiz, 'index.html'), path.join(linkedQuiz, 'index.html'));
       await fs.copyFile(path.join(quiz, 'quiz-data.js'), path.join(linkedQuiz, 'quiz-data.js'));
       await fs.symlink(path.join(root, 'secret.txt'), path.join(linkedQuiz, 'attempt.json'));
+      checkStatus((await request('/')).body, 'gate-linked', false);
       assert.equal((await post(attempt, '/gate-linked/attempt.json')).status, 403);
+      assert.equal((await reset()).status, 403);
+      assert.ok((await fs.lstat(path.join(linkedQuiz, 'attempt.json'))).isSymbolicLink());
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
       assert.equal(await fs.readFile(path.join(root, 'secret.txt'), 'utf8'), 'not a quiz asset');
     } catch (error) { if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error; }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
     assert.equal((await fs.readdir(quiz)).filter(name => name.startsWith('.attempt-')).length, 0);
-    console.log('Quiz server tests passed: themed home page, static files, submitted attempts, validation, origin/host guards, and paths.');
+    console.log('Quiz server tests passed: home attempt badges/filter/reset controls, reset isolation and guards, themed assets, submitted attempts, validation, and paths.');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));
