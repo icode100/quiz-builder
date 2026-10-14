@@ -15,7 +15,7 @@ class Element {
       toggle: (name, on) => { this.classList.remove(name); if (on) this.className = [this.className, name].filter(Boolean).join(' '); }
     };
   }
-  querySelector(selector) { return selector === '.paper-status' ? this.badge || null : null; }
+  querySelector(selector) { return selector === '.paper-status' ? this.badge || null : selector === '.paper-score' ? this.score || null : null; }
   querySelectorAll(selector) { return selector === 'li' ? this.children : []; }
   addEventListener(name, callback) { (this.events[name] ||= []).push(callback); }
   async fire(name) { for (const callback of this.events[name] || []) await callback({ target: this, preventDefault() {} }); }
@@ -27,7 +27,8 @@ function harness(states = ['true', 'false', 'false'], options = {}) {
   const cards = states.map(state => {
     const card = new Element(); card.dataset.attempted = state;
     card.badge = new Element(); card.badge.textContent = state === 'true' ? 'Attempted before' : 'Not attempted';
-    card.badge.className = state === 'true' ? 'paper-status attempted' : 'paper-status';
+    card.badge.className = state === 'true' ? 'paper-status attempted' : 'paper-status unattempted';
+    card.score = new Element(); card.score.hidden = state !== 'true'; card.score.textContent = '42 / 100';
     return card;
   });
   ids['home-papers'].children = cards;
@@ -53,7 +54,7 @@ function harness(states = ['true', 'false', 'false'], options = {}) {
   return { ids, cards, requests, confirmations, storageCalls: () => storageCalls, reloads: () => reloads, fireWindow: (name, event) => { for (const callback of windowEvents[name] || []) callback(event); } };
 }
 
-const snapshot = h => JSON.stringify({ cards: h.cards.map(card => ({ attempted: card.dataset.attempted, hidden: card.hidden, badge: card.badge.textContent, className: card.badge.className })), count: h.ids['paper-count'].textContent, empty: h.ids['no-papers'].hidden, notice: h.ids['home-status'].textContent });
+const snapshot = h => JSON.stringify({ cards: h.cards.map(card => ({ attempted: card.dataset.attempted, hidden: card.hidden, badge: card.badge.textContent, className: card.badge.className, scoreHidden: card.score.hidden, score: card.score.textContent })), count: h.ids['paper-count'].textContent, empty: h.ids['no-papers'].hidden, notice: h.ids['home-status'].textContent });
 
 async function run() {
   const h = harness();
@@ -110,6 +111,8 @@ async function run() {
     assert.equal(card.dataset.attempted, 'false'); assert.equal(card.hidden, false);
     assert.equal(card.badge.textContent, 'Not attempted');
     assert.ok(!card.badge.className.split(' ').includes('attempted'));
+    assert.ok(card.badge.className.split(' ').includes('unattempted'));
+    assert.equal(card.score.hidden, true);
   }
   assert.equal(reset.ids['unsolved-only'].checked, true);
   assert.ok(reset.ids['no-papers'].hidden);
@@ -121,9 +124,9 @@ async function run() {
     const failure = harness(undefined, { fetch });
     failure.ids['unsolved-only'].checked = true;
     await failure.ids['unsolved-only'].fire('change');
-    const cardsBefore = failure.cards.map(card => [card.dataset.attempted, card.hidden, card.badge.textContent, card.badge.className]);
+    const cardsBefore = failure.cards.map(card => [card.dataset.attempted, card.hidden, card.badge.textContent, card.badge.className, card.score.hidden, card.score.textContent]);
     await failure.ids['reset-attempts'].fire('click');
-    assert.deepEqual(failure.cards.map(card => [card.dataset.attempted, card.hidden, card.badge.textContent, card.badge.className]), cardsBefore);
+    assert.deepEqual(failure.cards.map(card => [card.dataset.attempted, card.hidden, card.badge.textContent, card.badge.className, card.score.hidden, card.score.textContent]), cardsBefore);
     assert.equal(failure.ids['unsolved-only'].checked, true);
     assert.equal(failure.ids['reset-attempts'].disabled, false);
     assert.ok(failure.ids['home-status'].textContent.trim());
@@ -135,6 +138,6 @@ async function run() {
   await empty.ids['unsolved-only'].fire('change');
   assert.equal(empty.ids['no-papers'].hidden, false);
   assert.equal(empty.storageCalls(), 0);
-  console.log('Quiz home tests passed: filtering/counts, reset confirmation/loading/success/failure, empty library, and browser draft isolation.');
+  console.log('Quiz home tests passed: filtering/counts, reset confirmation/loading/success/failure, score visibility, empty library, and browser draft isolation.');
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

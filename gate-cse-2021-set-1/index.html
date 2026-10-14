@@ -16,7 +16,10 @@
       <div class="header-top">
         <p class="eyebrow">Practice quiz</p>
         <button id="review-attempt" class="button button-secondary" type="button">Review last attempt</button>
-        <button id="theme-toggle" class="button button-secondary theme-toggle" type="button" aria-pressed="false">Dark mode</button>
+        <button id="theme-toggle" class="toggle-switch theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode">
+          <span class="switch-label">Dark mode</span>
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        </button>
       </div>
       <h1 id="quiz-title">GATE CSE 2021 — Set 1</h1>
       <p id="quiz-source" class="subtitle" hidden></p>

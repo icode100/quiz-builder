@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const fsp = fs.promises;
 const path = require('node:path');
+const vm = require('node:vm');
 const { randomUUID } = require('node:crypto');
 
 const PORT = 8765;
@@ -11,6 +12,38 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const inside = (parent, child) => { const relative = path.relative(parent, child); return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const escapeHtml = value => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const formatMarks = value => Number(value.toFixed(4)).toLocaleString('en-US', { maximumFractionDigits: 4 });
+
+function scoreAttempt(attempt, data) {
+  const invalid = () => { throw new Error('The saved score cannot be verified.'); };
+  if (!object(data) || typeof data.id !== 'string' || !Array.isArray(data.questions) || !data.questions.length || attempt.version !== 1 || attempt.quizId !== data.id || attempt.quizSignature !== JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null })) invalid();
+  for (const key of ['submittedAt', 'updatedAt']) if (typeof attempt[key] !== 'string' || !Number.isFinite(Date.parse(attempt[key]))) invalid();
+  const ids = new Set(data.questions.map(question => question?.id));
+  if (ids.size !== data.questions.length || [...ids].some(id => typeof id !== 'string' || !id.trim()) || Object.keys(attempt.answers).some(id => !ids.has(id))) invalid();
+  let score = 0, maximum = 0;
+  for (const question of data.questions) {
+    const type = question.type || 'mcq', answer = attempt.answers[question.id];
+    const correctMarks = question.marks ?? data.scoring?.correct ?? 1, incorrectMarks = question.incorrectMarks ?? data.scoring?.incorrect ?? 0;
+    if (!Number.isFinite(correctMarks) || correctMarks <= 0 || !Number.isFinite(incorrectMarks) || incorrectMarks > 0 || !['mcq', 'msq', 'nat'].includes(type)) invalid();
+    const answered = answer !== null && answer !== undefined;
+    let correct = false;
+    if (type === 'nat') {
+      if (!question.marksToAll && (!Array.isArray(question.correctRanges) || !question.correctRanges.length || question.correctRanges.some(range => !object(range) || !Number.isFinite(range.min) || !Number.isFinite(range.max) || range.min > range.max))) invalid();
+      if (answered && (typeof answer !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(answer.trim()) || !Number.isFinite(Number(answer.trim())))) invalid();
+      correct = answered && !question.marksToAll && question.correctRanges.some(({ min, max }) => Number(answer.trim()) >= min && Number(answer.trim()) <= max);
+    } else {
+      if (!Array.isArray(question.options) || question.options.length < 2) invalid();
+      const options = new Set(question.options.map(option => option?.id)), key = type === 'msq' ? question.correctAnswers : question.acceptedAnswers || [question.correctAnswer];
+      if (options.size !== question.options.length || [...options].some(id => typeof id !== 'string' || !id.trim()) || (!question.marksToAll && (!Array.isArray(key) || !key.length || new Set(key).size !== key.length || key.some(id => !options.has(id))))) invalid();
+      if (answered && (type === 'msq' ? !Array.isArray(answer) || !answer.length || new Set(answer).size !== answer.length || answer.some(id => !options.has(id)) : !options.has(answer))) invalid();
+      correct = answered && !question.marksToAll && (type === 'msq' ? answer.length === key.length && answer.every(id => key.includes(id)) : key.includes(answer));
+    }
+    maximum += correctMarks;
+    score += question.marksToAll || correct ? correctMarks : answered ? incorrectMarks : 0;
+  }
+  if (!Number.isFinite(score) || !Number.isFinite(maximum)) invalid();
+  return { score, maximum };
+}
 
 function createServer({ root = __dirname, port = PORT } = {}) {
   root = fs.realpathSync.native(root);
@@ -44,13 +77,19 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     }
     return quizzes;
   }
-  async function attemptedBefore(folder) {
+  async function lastAttempt(folder) {
     try {
       const file = path.join(folder, 'attempt.json'), stat = await fsp.lstat(file);
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_BODY) return false;
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_BODY) return { attempted: false };
       const attempt = JSON.parse(await fsp.readFile(file, 'utf8'));
-      return object(attempt) && object(attempt.answers) && Object.values(attempt.answers).some(answer => answer !== null);
-    } catch { return false; }
+      const attempted = object(attempt) && object(attempt.answers) && Object.values(attempt.answers).some(answer => answer !== null);
+      if (!attempted) return { attempted: false };
+      try {
+        const source = await fsp.readFile(path.join(folder, 'quiz-data.js'), 'utf8');
+        const data = JSON.parse(vm.runInNewContext(source + '\n;JSON.stringify(window.QUIZ_DATA);', { window: {} }, { timeout: 100, contextCodeGeneration: { strings: false, wasm: false } }));
+        return { attempted: true, result: scoreAttempt(attempt, data) };
+      } catch { return { attempted: true }; }
+    } catch { return { attempted: false }; }
   }
   async function landing() {
     const links = [];
@@ -58,8 +97,10 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       try {
         const html = await fsp.readFile(path.join(folder, 'index.html'), 'utf8');
         const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || name;
-        const attempted = await attemptedBefore(folder);
-        links.push(`<li data-attempted="${attempted}"><a class="question-card paper-card" href="/${encodeURIComponent(name)}/"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-status${attempted ? ' attempted' : ''}">${attempted ? 'Attempted before' : 'Not attempted'}</span><span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>`);
+        const { attempted, result } = await lastAttempt(folder);
+        const scoreLabel = result ? `Last score: ${formatMarks(result.score)} / ${formatMarks(result.maximum)}` : 'Last score unavailable';
+        const score = `<span class="paper-score"${attempted ? '' : ' hidden'}><span class="paper-score-value">${scoreLabel}</span><progress class="paper-score-bar"${result ? ` value="${Math.max(0, Math.min(result.maximum, result.score))}" max="${result.maximum}" aria-label="Last score: ${formatMarks(result.score)} out of ${formatMarks(result.maximum)} marks"` : ' hidden'}></progress></span>`;
+        links.push(`<li data-attempted="${attempted}"><a class="question-card paper-card" href="/${encodeURIComponent(name)}/"><div class="paper-details"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-status ${attempted ? 'attempted' : 'unattempted'}">${attempted ? 'Attempted before' : 'Not attempted'}</span></div>${score}<span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>`);
       } catch { /* Ignore folders that are not quizzes. */ }
     }
     return `<!doctype html>
@@ -77,13 +118,13 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     <header class="page-header">
       <div class="header-top">
         <p class="eyebrow">Your practice library</p>
-        <button id="theme-toggle" class="button button-secondary theme-toggle" type="button" aria-pressed="false">Dark mode</button>
+        <button id="theme-toggle" class="toggle-switch theme-toggle" role="switch" aria-checked="false" aria-label="Dark mode" type="button"><span class="switch-label">Dark mode</span><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span></button>
       </div>
       <h1>GATE CSE quizzes</h1>
       <p class="subtitle">Choose a paper and practise at your own pace.</p>
     </header>
     <div class="home-tools">
-      <label class="home-filter"><input id="unsolved-only" type="checkbox"> Unsolved only</label>
+      <label class="toggle-switch home-filter"><input id="unsolved-only" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-label">Unsolved only</span></label>
       <button id="reset-attempts" class="button button-secondary" type="button"${links.length ? '' : ' disabled'}>Reset saved attempts</button>
     </div>
     <p id="home-status" class="status-message" role="status" aria-live="polite" hidden></p>

@@ -13,9 +13,7 @@
     root.dataset.theme = theme;
     const button = document.getElementById("theme-toggle");
     if (button) {
-      button.textContent = theme === "dark" ? "Light mode" : "Dark mode";
-      button.setAttribute("aria-pressed", String(theme === "dark"));
-      button.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} mode`);
+      button.setAttribute("aria-checked", String(theme === "dark"));
     }
   }
 

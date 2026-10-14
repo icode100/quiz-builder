@@ -9,11 +9,19 @@ async function run() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'quiz-server-test-'));
   const quiz = path.join(root, 'gate-test');
   const server = createServer({ root, port: 0 });
-  const attempt = { version: 1, quizId: 'test-quiz', answers: { 'GA-1': 'B' }, submittedAt: '2026-10-13T00:00:00.000Z', updatedAt: '2026-10-13T00:00:00.000Z', summary: { score: 1 }, results: [{ id: 'GA-1', outcome: 'correct' }] };
+  const options = ['A', 'B', 'C', 'D'].map(id => ({ id, text: `Option ${id}` }));
+  const key = { id: 'test-quiz', title: 'Test quiz', questions: [
+    { id: 'GA-1', type: 'mcq', text: 'Fixture MCQ', options, acceptedAnswers: ['B', 'D'], marks: 25, incorrectMarks: -25 / 3 },
+    { id: 'CS-1', type: 'nat', text: 'Fixture NAT', correctRanges: [{ min: 0, max: 0 }, { min: 12, max: 13 }], marks: 25, incorrectMarks: 0 },
+    { id: 'CS-2', type: 'msq', text: 'Fixture MSQ', options, correctAnswers: ['A', 'C'], marks: 25, incorrectMarks: 0 },
+    { id: 'CS-3', type: 'mcq', text: 'Fixture award', options, marksToAll: true, marks: 25, incorrectMarks: 0 }
+  ] };
+  const keySource = `window.QUIZ_DATA = ${JSON.stringify(key)};`;
+  const attempt = { version: 1, quizId: key.id, quizSignature: JSON.stringify({ questions: key.questions, scoring: null }), answers: { 'GA-1': 'B' }, submittedAt: '2026-10-13T00:00:00.000Z', updatedAt: '2026-10-13T00:00:00.000Z', summary: { score: 999 }, results: [{ id: 'GA-1', outcome: 'incorrect' }] };
   try {
     await fs.mkdir(quiz);
     await fs.writeFile(path.join(quiz, 'index.html'), '<title>Test quiz</title><h1>Quiz</h1>');
-    await fs.writeFile(path.join(quiz, 'quiz-data.js'), 'window.QUIZ_DATA = {};');
+    await fs.writeFile(path.join(quiz, 'quiz-data.js'), keySource);
     await fs.writeFile(path.join(quiz, 'original.pdf'), 'unchanged source PDF fixture');
     await fs.mkdir(path.join(quiz, 'assets'));
     await fs.writeFile(path.join(quiz, 'assets', 'question.png'), 'unchanged question image fixture');
@@ -29,14 +37,14 @@ async function run() {
       const directory = path.join(root, name);
       await fs.mkdir(directory);
       await fs.writeFile(path.join(directory, 'index.html'), `<title>${name}</title>`);
-      await fs.writeFile(path.join(directory, 'quiz-data.js'), 'window.QUIZ_DATA = {};');
+      await fs.writeFile(path.join(directory, 'quiz-data.js'), keySource);
       if (answers !== undefined) await fs.writeFile(path.join(directory, 'attempt.json'), JSON.stringify({ ...attempt, answers }));
       return directory;
     }
     const statusFixtures = [
       ['gate-null', { 'GA-1': null, 'GA-2': null }, false],
       ['gate-zero', { 'GA-1': 0 }, true],
-      ['gate-string-zero', { 'GA-1': '0' }, true],
+      ['gate-string-zero', { 'CS-1': '0' }, true],
       ['gate-array', { 'GA-1': [] }, true],
       ['gate-missing', undefined, false],
       ['gate-invalid', [], false]
@@ -65,6 +73,10 @@ async function run() {
       assert.ok(card, `Home page includes ${name}`);
       assert.match(card, new RegExp(`data-attempted="${attempted}"`));
       assert.match(card, new RegExp(attempted ? 'Attempted before' : 'Not attempted'));
+      assert.match(card, new RegExp(`class="paper-status ${attempted ? 'attempted' : 'unattempted'}"`));
+      assert.match(card, /class="paper-details"/);
+      assert.match(card, attempted ? /class="paper-score">/ : /class="paper-score" hidden>/);
+      return card;
     }
     assert.deepEqual(JSON.parse((await request('/health')).body), { server: MARKER });
     const landing = await request('/'); assert.equal(landing.status, 200); assert.match(landing.body, /Test quiz/); assert.doesNotMatch(landing.body, /Blank template/);
@@ -73,10 +85,16 @@ async function run() {
     assert.match(landing.body, /src="\/_template\/theme\.js"/);
     assert.match(landing.body, /src="\/_template\/home\.js"/);
     assert.match(landing.body, /id="theme-toggle"/);
+    assert.match(landing.body, /id="theme-toggle"[^>]*role="switch"[^>]*aria-checked="false"/);
     assert.match(landing.body, /id="unsolved-only"/);
+    assert.match(landing.body, /id="unsolved-only"[^>]*type="checkbox"[^>]*role="switch"/);
     assert.match(landing.body, /id="reset-attempts"/);
     checkStatus(landing.body, 'gate-test', false);
     for (const [name, , attempted] of statusFixtures) checkStatus(landing.body, name, attempted);
+    const unavailable = checkStatus(landing.body, 'gate-zero', true);
+    assert.match(unavailable, /Last score unavailable/);
+    assert.match(unavailable, /class="paper-score-bar" hidden/);
+    assert.match(checkStatus(landing.body, 'gate-string-zero', true), /Last score: 50 \/ 100/);
     checkStatus(landing.body, 'gate-malformed', false);
     assert.equal(await fs.readFile(path.join(malformedQuiz, 'attempt.json'), 'utf8'), '{broken JSON');
     assert.doesNotMatch(landing.body, /<script[^>]+src="[^"]*quiz(?:-data)?\.js"/);
@@ -90,7 +108,41 @@ async function run() {
     assert.equal((await request('/gate-test/attempt.json')).status, 404);
     assert.equal((await post(attempt)).status, 200);
     assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), attempt);
-    checkStatus((await request('/')).body, 'gate-test', true);
+    let card = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(card, /Last score: 50 \/ 100/);
+    assert.match(card, /<progress class="paper-score-bar" value="50" max="100" aria-label="Last score: 50 out of 100 marks">/);
+    assert.doesNotMatch(card, /999/);
+    const scoreCases = [
+      [{ 'GA-1': 'D', 'CS-1': '13', 'CS-2': ['C', 'A'] }, 100],
+      [{ 'GA-1': 'A', 'CS-1': '12', 'CS-2': ['A'] }, Number((50 - 25 / 3).toFixed(4))],
+      [{ 'CS-1': '13.00001', 'CS-2': ['A', 'C', 'D'] }, 25],
+      [{ 'CS-1': '1' }, 25]
+    ];
+    for (const [answers, expected] of scoreCases) {
+      assert.equal((await post({ ...attempt, answers })).status, 200);
+      assert.match(checkStatus((await request('/')).body, 'gate-test', true), new RegExp(`Last score: ${String(expected).replace('.', '\\.')} \\/ 100`));
+    }
+    for (const invalid of [
+      { quizId: 'another-paper' }, { quizSignature: 'stale key' }, { version: 2 }, { submittedAt: 'invalid' }, { updatedAt: null },
+      { answers: { unknown: null, 'GA-1': 'B' } }, { answers: { 'GA-1': 'unknown' } },
+      { answers: { 'CS-2': [] } }, { answers: { 'CS-2': ['A', 'A'] } }, { answers: { 'CS-2': ['A', 'unknown'] } },
+      ...['-', ' ', '1e1', 'NaN', 'Infinity', '0x0', '1/2', '1,2'].map(answer => ({ answers: { 'CS-1': answer } }))
+    ]) {
+      await fs.writeFile(path.join(quiz, 'attempt.json'), JSON.stringify({ ...attempt, ...invalid }));
+      const invalidCard = checkStatus((await request('/')).body, 'gate-test', true);
+      assert.match(invalidCard, /Last score unavailable/);
+      assert.match(invalidCard, /class="paper-score-bar" hidden/);
+    }
+    const withoutAward = structuredClone(key);
+    delete withoutAward.questions[3].marksToAll;
+    withoutAward.questions[3].correctAnswer = 'B';
+    await fs.writeFile(path.join(quiz, 'quiz-data.js'), `window.QUIZ_DATA = ${JSON.stringify(withoutAward)};`);
+    const negativeAttempt = { ...attempt, quizSignature: JSON.stringify({ questions: withoutAward.questions, scoring: null }), answers: { 'GA-1': 'A' } };
+    assert.equal((await post(negativeAttempt)).status, 200);
+    card = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(card, /Last score: -8\.3333 \/ 100/);
+    assert.match(card, /class="paper-score-bar" value="0" max="100" aria-label="Last score: -8\.3333 out of 100 marks"/);
+    await fs.writeFile(path.join(quiz, 'quiz-data.js'), keySource);
     const replacement = { ...attempt, answers: { 'GA-1': 'D' } };
     assert.equal((await post(replacement)).status, 200);
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
@@ -128,7 +180,7 @@ async function run() {
     assert.equal(await fs.readFile(path.join(root, 'not-a-quiz', 'attempt.json'), 'utf8'), 'preserve nonquiz attempt');
     assert.equal(await fs.readFile(path.join(quiz, 'original.pdf'), 'utf8'), 'unchanged source PDF fixture');
     assert.equal(await fs.readFile(path.join(quiz, 'assets', 'question.png'), 'utf8'), 'unchanged question image fixture');
-    assert.equal(await fs.readFile(path.join(quiz, 'quiz-data.js'), 'utf8'), 'window.QUIZ_DATA = {};');
+    assert.equal(await fs.readFile(path.join(quiz, 'quiz-data.js'), 'utf8'), keySource);
     assert.equal((await post(replacement)).status, 200);
     const directoryQuiz = await fixture('gate-directory');
     await fs.mkdir(path.join(directoryQuiz, 'attempt.json'));
@@ -154,7 +206,7 @@ async function run() {
     } catch (error) { if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error; }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
     assert.equal((await fs.readdir(quiz)).filter(name => name.startsWith('.attempt-')).length, 0);
-    console.log('Quiz server tests passed: home attempt badges/filter/reset controls, reset isolation and guards, themed assets, submitted attempts, validation, and paths.');
+    console.log('Quiz server tests passed: verified card scores/bars, attempt badges/toggles/reset controls, reset isolation and guards, themed assets, submitted attempts, validation, and paths.');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));

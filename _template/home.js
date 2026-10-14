@@ -30,6 +30,8 @@
         const badge = card.querySelector(".paper-status");
         badge.textContent = "Not attempted";
         badge.classList.remove("attempted");
+        badge.classList.toggle("unattempted", true);
+        card.querySelector(".paper-score").hidden = true;
       });
       updateFilter();
       status("Saved attempts reset. All papers are unsolved again.");
