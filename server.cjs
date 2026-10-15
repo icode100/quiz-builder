@@ -21,6 +21,7 @@ function scoreAttempt(attempt, data) {
   const ids = new Set(data.questions.map(question => question?.id));
   if (ids.size !== data.questions.length || [...ids].some(id => typeof id !== 'string' || !id.trim()) || Object.keys(attempt.answers).some(id => !ids.has(id))) invalid();
   let score = 0, maximum = 0;
+  const verified = new Map();
   for (const question of data.questions) {
     const type = question.type || 'mcq', answer = attempt.answers[question.id];
     const correctMarks = question.marks ?? data.scoring?.correct ?? 1, incorrectMarks = question.incorrectMarks ?? data.scoring?.incorrect ?? 0;
@@ -38,8 +39,15 @@ function scoreAttempt(attempt, data) {
       if (answered && (type === 'msq' ? !Array.isArray(answer) || !answer.length || new Set(answer).size !== answer.length || answer.some(id => !options.has(id)) : !options.has(answer))) invalid();
       correct = answered && !question.marksToAll && (type === 'msq' ? answer.length === key.length && answer.every(id => key.includes(id)) : key.includes(answer));
     }
+    let eligible = true;
+    if (question.requiresCorrect !== undefined) {
+      const prerequisite = verified.get(question.requiresCorrect);
+      if (typeof question.requiresCorrect !== 'string' || !prerequisite || type !== 'mcq' || question.marksToAll || incorrectMarks !== 0 || (prerequisite.question.type || 'mcq') !== 'mcq' || prerequisite.question.marksToAll || prerequisite.question.requiresCorrect !== undefined) invalid();
+      eligible = prerequisite.correct;
+    }
+    verified.set(question.id, { question, correct: correct && eligible });
     maximum += correctMarks;
-    score += question.marksToAll || correct ? correctMarks : answered ? incorrectMarks : 0;
+    score += !eligible ? 0 : question.marksToAll || correct ? correctMarks : answered ? incorrectMarks : 0;
   }
   if (!Number.isFinite(score) || !Number.isFinite(maximum)) invalid();
   return { score, maximum };

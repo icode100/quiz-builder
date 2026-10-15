@@ -59,6 +59,10 @@
         if (!question.marksToAll && (!Array.isArray(key) || !key.length || new Set(key).size !== key.length || key.some((id) => !optionIds.has(id)))) throw new Error(`${question.id} needs a verified answer.`);
       }
       if (!Number.isFinite(marks(question).correct) || marks(question).correct <= 0 || !Number.isFinite(marks(question).incorrect) || marks(question).incorrect > 0) throw new Error(`${question.id} has invalid marking rules.`);
+      if (question.requiresCorrect !== undefined) {
+        const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
+        if (typeof question.requiresCorrect !== "string" || question.requiresCorrect === question.id || !ids.has(question.requiresCorrect) || type !== "mcq" || question.marksToAll || marks(question).incorrect !== 0 || !prerequisite || questionType(prerequisite) !== "mcq" || prerequisite.marksToAll || prerequisite.requiresCorrect !== undefined) throw new Error(`${question.id} has invalid linked-answer rules.`);
+      }
     }
   }
   function validateAnswers(savedAnswers, submitted = false) {
@@ -130,24 +134,31 @@
     }
   }
   function grade() {
+    const outcomes = new Map();
     return data.questions.map((question) => {
       const selected = answers[question.id], type = questionType(question);
-      let outcome = "unanswered";
+      let outcome = "unanswered", reason = "";
       if (question.marksToAll) outcome = "awarded";
       else if (selected !== undefined) {
         const correct = type === "nat" ? numericValue(selected) !== null && question.correctRanges.some(({ min, max }) => numericValue(selected) >= min && numericValue(selected) <= max)
           : type === "msq" ? selected.length === question.correctAnswers.length && selected.every((id) => question.correctAnswers.includes(id))
           : (question.acceptedAnswers || [question.correctAnswer]).includes(selected);
         outcome = correct ? "correct" : "incorrect";
+        if (question.requiresCorrect && outcomes.get(question.requiresCorrect) !== "correct") {
+          outcome = "blocked";
+          const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
+          reason = `Not evaluated because question ${questionLabel(prerequisite)} was incorrect or unanswered.`;
+        }
       }
-      return { question, selected, outcome, earned: outcome === "unanswered" ? 0 : outcome === "awarded" ? marks(question).correct : marks(question)[outcome] };
+      outcomes.set(question.id, outcome);
+      return { question, selected, outcome, earned: outcome === "unanswered" || outcome === "blocked" ? 0 : outcome === "awarded" ? marks(question).correct : marks(question)[outcome], ...(reason ? { reason } : {}) };
     });
   }
   function summarize(currentResults) {
     const counts = { correct: 0, incorrect: 0, unanswered: 0, awarded: 0 };
     let score = 0, maximum = 0, awardedMarks = 0;
     currentResults.forEach((result) => {
-      counts[result.outcome] += 1;
+      counts[result.outcome] = (counts[result.outcome] || 0) + 1;
       score += result.earned;
       maximum += marks(result.question).correct;
       if (result.outcome === "awarded") awardedMarks += result.earned;
@@ -194,7 +205,7 @@
       summary: { score, maximum, ...counts, awardedMarks },
       results: scored.map((result) => ({ questionId: result.question.id, answer: result.selected ?? null,
         correctAnswer: correctAnswerText(result.question), outcome: result.outcome,
-        marksEarned: result.earned, maxMarks: marks(result.question).correct }))
+        marksEarned: result.earned, maxMarks: marks(result.question).correct, ...(result.reason ? { reason: result.reason } : {}) }))
     };
   }
   function validateSubmission(saved) {
@@ -342,6 +353,10 @@
       card.append(element("legend", "question-heading", `Question ${questionLabel(question)}`));
       const type = questionType(question), kind = type === "nat" ? "Numerical answer" : type === "msq" ? "Select all correct options (exact set; no partial credit)" : "Choose one option";
       content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"}`));
+      if (question.requiresCorrect) {
+        const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
+        content.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct. No negative marking for this question.`));
+      }
       if (question.text.trim()) content.append(element("p", "question-text", question.text));
       addImages(content, question, `Question ${questionLabel(question)} and its original options`);
       if (type === "nat") {
@@ -449,18 +464,20 @@
     byId("score-detail").textContent = `${counts.correct} of ${results.length - counts.awarded} scorable questions correct${counts.awarded ? ` · ${number(awardedMarks)} marks awarded to all` : ""} · Submitted ${new Date(submittedAt).toLocaleString()}`;
     const summary = [["Correct", counts.correct], ["Incorrect", counts.incorrect], ["Unanswered", counts.unanswered]];
     if (counts.awarded) summary.push(["Marks to all", counts.awarded]);
+    if (counts.blocked) summary.push(["Not evaluated", counts.blocked]);
     byId("report-summary").replaceChildren(...summary.map(([label, count]) => element("div", "summary-item", `${label}: ${count}`)));
     const fragment = document.createDocumentFragment();
-    results.forEach(({ question, selected, outcome, earned }, index) => {
-      const card = element("article", `result-card ${outcome}`), heading = element("div", "result-heading");
+    results.forEach(({ question, selected, outcome, earned, reason }, index) => {
+      const card = element("article", `result-card ${outcome === "blocked" ? "unanswered" : outcome}`), heading = element("div", "result-heading");
       card.id = `result-card-${index}`;
       card.tabIndex = -1;
-      const label = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all" }[outcome];
+      const label = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated" }[outcome];
       heading.append(element("h3", "", `Question ${questionLabel(question)}`), element("span", "result-status", `${label} · ${number(earned)} / ${number(marks(question).correct)} marks`));
       card.append(heading);
       if (question.text.trim()) card.append(element("p", "question-text", question.text));
       addImages(card, question, `Question ${questionLabel(question)} and its original options`);
       card.append(answerLine("Your answer", question, selected), answerLine("Correct answer", question, question.correctAnswer, true));
+      if (reason) card.append(element("p", "explanation", reason));
       if (question.explanation) card.append(element("p", "explanation", question.explanation));
       fragment.append(card);
     });
@@ -513,11 +530,12 @@
   }
   function downloadReport() {
     const { counts, score, maximum, awardedMarks } = summarize(results);
-    const lines = [data.title, data.source || "", `Submitted: ${new Date(submittedAt).toLocaleString()}`, `Score: ${number(score)} / ${number(maximum)}`, `Correct: ${counts.correct} | Incorrect: ${counts.incorrect} | Unanswered: ${counts.unanswered} | Marks to all: ${counts.awarded} (${number(awardedMarks)} marks)`, ""];
-    results.forEach(({ question, outcome, selected, earned }) => {
+    const lines = [data.title, data.source || "", `Submitted: ${new Date(submittedAt).toLocaleString()}`, `Score: ${number(score)} / ${number(maximum)}`, `Correct: ${counts.correct} | Incorrect: ${counts.incorrect} | Unanswered: ${counts.unanswered} | Marks to all: ${counts.awarded} (${number(awardedMarks)} marks)${counts.blocked ? ` | Not evaluated: ${counts.blocked}` : ""}`, ""];
+    results.forEach(({ question, outcome, selected, earned, reason }) => {
       lines.push(`Question ${questionLabel(question)}: ${outcome.toUpperCase()} (${number(earned)} / ${number(marks(question).correct)} marks)`, question.text);
       imagesOf(question).forEach((part) => lines.push(`Original question image: ${part.src}${part.page ? ` (PDF page ${part.page})` : ""}`));
       lines.push(`Your answer: ${plainAnswer(question, selected)}`, `Correct answer: ${plainAnswer(question, question.correctAnswer, true)}`);
+      if (reason) lines.push(reason);
       question.options?.forEach((option) => imagesOf(option).forEach((part) => lines.push(`Option ${option.id} image: ${part.src}`)));
       if (question.explanation) lines.push(`Explanation: ${question.explanation}`);
       lines.push("");

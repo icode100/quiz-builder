@@ -1,0 +1,86 @@
+GATE CSE 2009 key reconciliation
+
+The attached screenshot is the supplied key and must be retained unchanged.
+It contains eight blank entries: 6, 10, 20, 21, 45, 47, 54, 58.
+Blank key cells do not establish a marks-to-all award. No MTA was established.
+
+Primary exam document (unchanged supplemental reference):
+GATE2009-original-exam-reference.pdf
+https://media.geeksforgeeks.org/wp-content/cdn-uploads/20211005202818/GATE2009.pdf
+This is a scan of the original 2009 CS examination, hosted by a third party.
+The physical file has 14 pages. Printed footers say 1/16 through 14/16; the
+instructions include rough-work pages in the printed total of 16.
+The local user PDF is a 13-page GateForum reproduction without this instruction page.
+Do not characterize the supplemental reference as an official answer key.
+
+Scoring, visually verified on the complete first reference page:
+* 60 questions, 100 total marks; Q1-20 are 1 mark, Q21-60 are 2 marks.
+* Ordinary wrong Q1-20 deduct 1/3. Ordinary wrong Q21-56 deduct 2/3.
+* Q51-56 are three common-data pairs, with independent scoring.
+* Q57/58 and Q59/60 are linked-answer pairs.
+* The second answer is not evaluated if its first answer is wrong or unanswered.
+* Wrong Q57/59 deduct 2/3; Q58/60 have no wrong-answer deduction.
+* Ordinary unanswered responses receive zero.
+
+Derived fills, independently reconciled against question content:
+6 B: NOR(A,C), NOR(B,C), followed by NOR of those two produces
+     (A+C)(B+C) = AB+C using three NOR gates. Two are insufficient.
+10 B: The virtual page number indexes the page table; its essential mapped
+      value is the physical page-frame number.
+20 C: Counts of occupied table cells by column are 2,3,2 and by row 2,3,2.
+21 B: Each even face has probability 10/57; P(face>3) = (2*10/57)/0.75
+      = 80/171 = 0.467836..., closest to 0.468.
+45 A: I is the division expression and II its universal-quantifier definition.
+      III does not express division; IV is a join/projection.
+47 A: Adopted practice interpretation only. 1/64 = 0.015625/s selects A.
+      The wording is ambiguous: the actual TCP byte-sequence rate is data-
+      dependent, and maximum safe wraparound rate is 2^32/64, absent from
+      the choices. No authoritative final key was located, so do not claim
+      this entry is officially verified or a MTA award.
+54 B: LCS cells depend on the preceding row/column; either row-major or
+      column-major increasing traversal satisfies these dependencies.
+58 C: One frame takes 1ms. l=5 gives 32 sent frames (32ms). Earliest first
+      data arrives fully at 26ms, piggybacked ACK frame transmits for 1ms
+      and propagates 25ms, returning at 52ms. Sender wait is 52-32=20ms.
+
+Two corrected populated screenshot entries for the practice key:
+11 A (screenshot C): Selection sort makes a linear number of swaps, although
+      a quadratic number of comparisons. Primary textbook authors' reference:
+      https://algs4.cs.princeton.edu/21elementary/
+      https://algs4.cs.princeton.edu/21elementary/Selection.java.html
+13 B (screenshot A): Ordinary single-source Bellman-Ford detects reachable
+      negative cycles, not unreachable negative cycles. Implementation authors:
+      https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.bellman_ford_predecessor_and_distance.html
+Q43 remains B as supplied; exact independent conflict-edge audit:
+S1 R1x,R2x,R2y,W1x,W1y,W2y:
+   T2->T1 from R2x<W1x and R2y<W1y; T1->T2 from W1y<W2y.
+S2 R1x,R2x,R2y,W1x,W2y,W1y:
+   T2->T1 from R2x<W1x,R2y<W1y,W2y<W1y; no T1->T2 edge.
+S3 R1x,W1x,R2x,W1y,R2y,W2y:
+   T1->T2 from W1x<R2x,W1y<R2y,W1y<W2y; no reverse edge.
+S4 R2x,R2y,R1x,W1x,W1y,W2y:
+   T2->T1 from R2x<W1x,R2y<W1y; T1->T2 from W1y<W2y.
+Therefore S2 and S3 are BOTH conflict serializable, so the supplied B is
+correct.
+
+Preserved screenshot alternate accepted choices:
+37 B OR C, 44 A OR B, 55 A OR D. These remain MCQ alternatives, not MSQs.
+37's stated edge-height convention mathematically selects B (3), while the
+screenshot also accepts C. Retaining C is explicit supplied-key fidelity.
+49 remains C as supplied. Statement II asserts external entities must be
+identified at every DFD level, which is not required by the usual hierarchy.
+
+Primary-vs-supplied transcription defects observed visually:
+26: Supplied IV repeats III with a leading negation. Original IV is exists
+    x(not P(x)); retain original-reference crop so accepted B is meaningful.
+40: Crop agent identified incorrect exponent transcription; original crop.
+49: Supplied B duplicates A (II and III); original B is I, II and IV.
+53: Supplied expr2 has equality condition; original has inequality.
+55: Supplied second NOT misses IN; original is C.pid NOT IN(...).
+55/56: Original schema has primary-key underlining; supplied reproduction
+       omits it. Use original common schema crops where needed.
+
+Recommended provenance label: Reconciled practice key based on the supplied
+screenshot, completed by independent solutions and documented corrections;
+Q47 uses a stated ambiguous-question interpretation. No official final
+2009 answer key was located. Preserve the screenshot and both PDFs.

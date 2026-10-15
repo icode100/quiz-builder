@@ -44,10 +44,16 @@ Submit displays your score and question-by-question report and saves the latest 
 
 Available quizzes, after starting the server:
 
+- [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
+- [GATE CSE 2019](http://127.0.0.1:8765/gate-cse-2019/index.html)
 - [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
 - [GATE CSE 2021, Set 1, session 5](http://127.0.0.1:8765/gate-cse-2021-set-1/index.html)
 - [GATE CSE 2021, Set 2, session 6](http://127.0.0.1:8765/gate-cse-2021-set-2/index.html)
 
-Each has 65 questions and 100 marks. Original PDFs, diagrams, and equations remain in each folder. Builder guidance: `AGENTS.md`.
+All papers total 100 marks. The 2009 paper has 60 MCQs; the later papers each have 65 questions. Original PDFs, diagrams, and equations remain in each folder. Builder guidance: `AGENTS.md`.
+
+The 2009 quiz preserves the supplied paper and screenshot key, with 69 sharp image parts. Its practice key completes eight blanks, corrects Q11/Q13, preserves the supplied alternatives, and documents Q47's ambiguous wording in `gate-cse-2009/KEY-NOTES.txt`. Original-exam scan crops restore missing notation in affected questions. Linked-answer rules apply to 57/58 and 59/60: the second scores only when the first is correct and has no negative marking. Its checks run with `node tests\quiz-2009.test.cjs` and `node tests\quiz-linked.test.cjs`.
+
+The 2019 quiz has 41 MCQ and 24 NAT questions. Its verified key retains the C/D alternative for CS-12 and the two separate numerical ranges for CS-42. Source filenames and printed set labels are preserved; no session number is inferred. Its independent checks run with `node tests\quiz-2019.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
