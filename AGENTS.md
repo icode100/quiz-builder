@@ -62,6 +62,7 @@ Quiz/
     quiz-data.js
     home.js                    Home-page controls only
   gate-cse-2009/                60 MCQs; linked pairs 57/58 and 59/60
+  gate-cse-2018/                65 questions; supplied PDFs remain outside the folder
   gate-cse-2019/
   gate-cse-2020/
   gate-cse-2021-set-1/
@@ -76,6 +77,8 @@ Quiz/
   tests/fixtures/gate-cse-2009-key.json
   tests/quiz-2019.test.cjs
   tests/fixtures/gate-cse-2019-key.json
+  tests/quiz-2018.test.cjs
+  tests/fixtures/gate-cse-2018-key.json
   tests/quiz-set-2.test.cjs
   tests/quiz-server.test.cjs
   tests/quiz-home.test.cjs
@@ -83,7 +86,7 @@ Quiz/
 
 Copy `_template` into a new descriptive folder, assign a stable unique paper/year/set/session ID, and change its title/data. Inspect the destination first: never overwrite an existing quiz or its user's state. Each quiz must remain self-contained with relative local asset/script paths.
 
-Reusable UI/runtime fixes apply to `_template`, 2009, 2019, 2020, and both 2021 sets. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
+Reusable UI/runtime fixes apply to `_template`, 2009, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
 
 ## Building from a new paper
 
@@ -95,11 +98,11 @@ Reusable UI/runtime fixes apply to `_template`, 2009, 2019, 2020, and both 2021 
 6. For split questions, use ordered image parts across pages. A printed number at a page bottom may belong to content on the next page; preserve numbering through the UI label.
 7. Map PDF-point rectangles using actual image dimensions: `scaleX = imageWidth / pageWidth`, `scaleY = imageHeight / pageHeight`; floor left/top and ceil right/bottom pixels. Do not stretch crops.
 8. Visually compare every crop, including diagrams/equations and options, with the original PDF. Text/OCR alone is insufficient. Contact sheets and temporary renders may live under workspace `tmp/pdfs`.
-9. Copy unchanged source files into the new folder and populate `quiz-data.js`. Check question completeness, key mapping, totals, local asset paths, and runtime behavior before delivering its HTTP link and launcher path. Do not create/reset `attempt.json`; it is written on Submit.
+9. Leave supplied original PDFs and keys in place; do not copy them into the new quiz folder. Record source filenames and SHA-256 hashes in `quiz-data.js`, along with the verified questions and crop provenance. Check question completeness, key mapping, totals, local asset paths, and runtime behavior before delivering its HTTP link and launcher path. Do not create/reset `attempt.json`; it is written on Submit.
 
 Do not move or edit supplied originals. Clean up only task-created intermediates; before recursive Windows deletion verify absolute targets stay inside the intended workspace and use literal paths.
 
-Keep personal `attempt.json` files, server `.attempt-*.tmp` intermediates, and `tmp/` renders excluded from Git. Original paper/key PDFs and question crops are part of the quiz repository.
+Keep personal `attempt.json` files, server `.attempt-*.tmp` intermediates, and `tmp/` renders excluded from Git. Question crops and source provenance are part of each new quiz. Preserve any existing source PDFs during development; the rule against new duplicate copies does not authorize deleting existing originals.
 
 ## Data, answers, and scoring
 
@@ -129,12 +132,15 @@ The map groups GA/CS numbering, uses response existence rather than correctness,
 | Paper | Folder / unique ID | Sources | Questions / assets |
 | --- | --- | --- | --- |
 | 2009 | `gate-cse-2009` / `gate-cse-2009` | `CS-2009.pdf` (13 pages), `answer-key-screenshot.png`, supplemental `GATE2009-original-exam-reference.pdf` (14 pages) | 60 MCQ, 100 marks; 69 crops |
+| 2018 | `gate-cse-2018` / `gate-cse-2018` | External originals `GATE2018.pdf` (23 pages), `Keys2018.pdf` (3 pages); filenames/hashes recorded in data | 65, 100 marks; 41 MCQ/24 NAT; 65 crops |
 | 2019 | `gate-cse-2019` / `gate-cse-2019` | `2019_CS_Paper1.pdf` (16 physical pages), `2019-Keys1.pdf` (3 pages) | 65, 100 marks; 41 MCQ/24 NAT; 65 crops |
 | 2020 session 6 | `gate-cse-2020` / `gate-cse-2020-session-6` | `cs_2020_qp.pdf` (16 pages), `cs_2020_key.pdf` (2 pages) | 65, 100 marks; 42 MCQ/23 NAT; 67 crops |
 | 2021 Set 1, official session 5 | `gate-cse-2021-set-1` / `gate-cse-2021-set-1-session-5` | `cs_2021_set_1.pdf` (41 pages), `cs_2021_set_1_key.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 | 2021 Set 2, official session 6 | `gate-cse-2021-set-2` / `gate-cse-2021-set-2-session-6` | `GATE2021_QP_CS-2.pdf` (43 pages), `2021-CS2-S6-Keys.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 
 The 2009 paper uses CS 1–60 only; later papers keep GA 1–10 and CS 1–55 separate. Preserve these key exceptions:
+
+- 2018 has 41 MCQ and 24 NAT questions, with no alternate MCQ answers or MTA. CS-15 accepts 0.021–0.024, CS-16 0.27–0.30, CS-23 59–60, and CS-44 0.60–0.62, all inclusive; the remaining NAT keys are exact values. Blank: 0/100; perfect: 100/100; all wrong: -21/100. The 23-page supplied paper contains 3 GA pages (Set-3) and 20 CS pages; no session number is inferred. All 23 paper pages, 3 key pages, and 65 final crops were visually checked. Crops use 240 DPI and recorded PDF-point rectangles; CS-38 retains the source diagram's inherent raster softness. Originals remain at their supplied external locations, with filenames and SHA-256 hashes recorded in data and the independent fixture; no PDF copies are stored in this quiz folder. Marking follows IIT Guwahati's GATE 2018 Information Brochure section 5.2.1 ([mirrored copy](https://acetheraceonline.com/wp-content/uploads/2017/11/GATE-2018-Information-Brochure.pdf), search-index verified; direct fetch unavailable during preparation).
 
 - 2009 uses a reconciled practice key, not an official final key. Screenshot blanks filled: 6 B, 10 B, 20 C, 21 B, 45 A, 47 A, 54 B, 58 C. Screenshot Q11 C corrected to A and Q13 A to B; Q43 B retained after conflict-graph audit. Preserve screenshot alternatives Q37 B OR C (C retained solely for supplied-key fidelity despite the stated height convention), Q44 A OR B, Q55 A OR D. Q47 A is a stated interpretation of ambiguous wording. No MTA. Linked 57→58 and 59→60 use `requiresCorrect`; Q58/60 have no deduction. Blank 0/100, perfect 100/100, all wrong -32/100. Q26, Q40, Q49 and Q53–56 use sharp crops of the original-exam reference to restore notation/wording lost in the supplied reproduction; Q38 uses the supplied paper and is correct. All 13 supplied pages and all 69 final assets were visually checked; original-reference source blocks and the full scoring instruction page were inspected. Both PDFs and screenshot are unchanged. Full provenance: `gate-cse-2009/KEY-NOTES.txt`; independent fixture: `tests/fixtures/gate-cse-2009-key.json`.
 
@@ -148,6 +154,8 @@ The 2009 paper uses CS 1–60 only; later papers keep GA 1–10 and CS 1–55 se
 Marking references used during preparation: [official GATE guidance](https://gate2024.iisc.ac.in/question-papers/), [GATE 2021 brochure section 5.2.1](https://bt.iitkgp.ac.in/GATE-2021_IB_V3_09_09_2020.pdf), and [GATE 2019 brochure section 5.2.1](https://gate.iitm.ac.in/gate2019/pdfs/GATE_2019_Information_Brochure.pdf) (official search index verified; direct fetch currently returns 404). The [official archive](https://gate.iitb.ac.in/G21/prev_qp.php) lists one CS paper/key for 2019. Prefer relevant-year official rules for new papers.
 
 ## Verification and delivery
+
+The 2018 build passed `quiz-2018.test.cjs`: an independent 65-entry key/source-page fixture, 65 PNGs and crop metadata, all 164 MCQ choices, 96 numerical boundary checks plus 8 nearest-outside checks, scores/reports/maps, draft/flag/Submit/Retry/review/storage failures, and disposable-server verified card scores. `quiz-runtime.test.cjs`, script syntax checks, and Bash launcher syntax checks also passed. Actual HTTP health/home/quiz/PNG requests succeeded. In-app browser verification confirmed 65 questions, 164 radios, 24 numerical controls, no broken question images or console errors, disabled initial Review, working map jumps, 320px/six-column layout at 1000px, and the map above the quiz without horizontal overflow at 390px. Tests used simulated storage and temporary server folders; no real 2018 attempt was created. Supplied 2018 source hashes and the existing saved attempt were unchanged. Native browser shutdown/reopen was not automated.
 
 The 2009 build passed `quiz-2009.test.cjs` (60-key fixture, all 240 MCQ choices, source hashes, 69 PNGs/source metadata, scores, map/report, drafts/flags/Submit/Retry/review/storage failures, actual-paper temporary-server scores) and `quiz-linked.test.cjs` (18 pair combinations, report/download reasons, server recomputation, invalid rules and malformed blocked responses). Shared runtime, 2019, Set 2 and server regressions passed after the opt-in linked-answer addition. Submissions used only simulated storage or temporary server folders; existing attempts and paper data stayed unchanged. The actual server was restarted and health/home/quiz/PNG requests succeeded. In-app browser checks verified 60 questions, 240 controls, disabled Review for the new paper, seven-column/360px and six-column/320px map breakpoints, mobile map order, no horizontal overflow and no console errors. Native browser shutdown/reopen was not automated. Run both 2009/linked suites for relevant data/scoring/runtime changes. Restart the actual server after server edits.
 
@@ -164,6 +172,8 @@ For new papers or scoring changes, reconcile every source/key entry and crop. Te
 Run syntax checks on actual scripts and `node tests\quiz-runtime.test.cjs` for runtime changes. For Set 2 data/scoring/runtime changes, also run `node tests\quiz-set-2.test.cjs`; it covers the independent key fixture, source hashes/assets, all MCQ options, 208 MSQ subsets, NAT boundaries, scores/reports/maps, draft lifecycle, and isolation. For server changes, run `node tests\quiz-server.test.cjs`, including verified card scores, tampered/stale submissions, negative scores, and progress markup. For home controls, run `node tests\quiz-home.test.cjs` (filtering, confirmation/cancel, reset success/errors, score visibility, and no storage access). Syntax-check Mac scripts with Bash, and distinguish that check from actual macOS verification. Do not rerun unrelated checks after they pass.
 
 For 2019 data/scoring/runtime changes, run `node tests\quiz-2019.test.cjs`. Its independent key fixture checks all 65 entries, supplied PDF hashes, local PNGs and metadata, every MCQ option including CS-12 alternatives, numerical endpoints and CS-42's excluded gap, blank/perfect/mixed/wrong scores, and simulated draft/report/review/flag/theme behavior. Never create a real attempt while testing.
+
+For 2018 data/scoring/runtime changes, run `node tests/quiz-2018.test.cjs`. It checks the independent key/source-page fixture, provenance hashes without depending on external originals, all options and numerical boundaries, scores, crops/local resources, persistence/review/flags, and disposable-server scores. Never create a real attempt while testing.
 
 Browser automation previously rejected `file://`; do not bypass that restriction or claim native UI verification. Source/Node VM checks remain permitted.
 

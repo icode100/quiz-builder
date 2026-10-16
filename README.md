@@ -45,15 +45,18 @@ Submit displays your score and question-by-question report and saves the latest 
 Available quizzes, after starting the server:
 
 - [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
+- [GATE CSE 2018](http://127.0.0.1:8765/gate-cse-2018/)
 - [GATE CSE 2019](http://127.0.0.1:8765/gate-cse-2019/index.html)
 - [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
 - [GATE CSE 2021, Set 1, session 5](http://127.0.0.1:8765/gate-cse-2021-set-1/index.html)
 - [GATE CSE 2021, Set 2, session 6](http://127.0.0.1:8765/gate-cse-2021-set-2/index.html)
 
-All papers total 100 marks. The 2009 paper has 60 MCQs; the later papers each have 65 questions. Original PDFs, diagrams, and equations remain in each folder. Builder guidance: `AGENTS.md`.
+All papers total 100 marks. The 2009 paper has 60 MCQs; the later papers each have 65 questions. Original question crops preserve diagrams and equations. New quizzes record source filenames and hashes without duplicating supplied PDFs. Builder guidance: `AGENTS.md`.
 
 The 2009 quiz preserves the supplied paper and screenshot key, with 69 sharp image parts. Its practice key completes eight blanks, corrects Q11/Q13, preserves the supplied alternatives, and documents Q47's ambiguous wording in `gate-cse-2009/KEY-NOTES.txt`. Original-exam scan crops restore missing notation in affected questions. Linked-answer rules apply to 57/58 and 59/60: the second scores only when the first is correct and has no negative marking. Its checks run with `node tests\quiz-2009.test.cjs` and `node tests\quiz-linked.test.cjs`.
 
 The 2019 quiz has 41 MCQ and 24 NAT questions. Its verified key retains the C/D alternative for CS-12 and the two separate numerical ranges for CS-42. Source filenames and printed set labels are preserved; no session number is inferred. Its independent checks run with `node tests\quiz-2019.test.cjs`.
+
+The 2018 quiz has 41 MCQ and 24 NAT questions, with 65 original 240 DPI question crops. It preserves the supplied inclusive ranges for CS-15, CS-16, CS-23, and CS-44. The original PDFs remain in their supplied location; the quiz works entirely from its local crops and verified data. Its independent checks run with `node tests/quiz-2018.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
