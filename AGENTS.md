@@ -7,7 +7,7 @@ Read this file and inspect `_template` before building or repairing a quiz. It i
 - Build a complete local practice quiz from each supplied GATE CSE paper and answer key, with its own folder.
 - Use ordinary HTML, CSS, and JavaScript with the small built-in Node server. Launch `start-quiz.cmd` on Windows or `start-quiz.command` on macOS and use the stable origin `http://127.0.0.1:8765`; requires available Node.js, with no npm packages, build step, account, CDN, or external service.
 - Preserve original diagrams, mathematics, options, code, tables, and passages intact. Use original question images or sharp PDF crops rather than uncertain OCR or redrawn content.
-- Keep unchanged copies of all supplied original PDFs and keys in that quiz folder.
+- DO NOT keep unchanged copies of all supplied original PDFs and keys in that quiz folder.
 - Show a score and a report for every question on Submit: response, outcome, correct answer, and marks. Keep Save report and Print report.
 - Include remembered light/dark mode, a **Mark for review** toggle beside each **Clear response**, and a compact question map showing attempted/unattempted and marked questions; clicking a number jumps to its question or report entry.
 - Keep the implementation small and functional. Quizzes have **Review last attempt**; the home page has **Unsolved only** and **Reset saved attempts**. No Save/Load attempt buttons, setup modes, file pickers, file-handle cache, or download-attempt controls.
