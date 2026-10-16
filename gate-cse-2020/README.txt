@@ -5,3 +5,7 @@ If caching fails, keep the tab open. Attempt again remains usable and keeps the 
 Submit shows your report and saves this folder's attempt.json, then clears the draft only after saving succeeds. Only Submit writes the file. Review last attempt reads the saved report without replacing your current draft; Back to quiz returns to your prior view. Attempt again starts fresh and preserves attempt.json. Save report and Print report remain available.
 MCQ penalties: one-third of marks; NAT: no penalty. CS 7 receives marks-to-all, so blank scores 1/100. Original paper, key, and question crops remain in this folder.
 Home: Attempted before means at least one non-null saved answer. Unsolved only filters the list. Reset saved attempts removes submitted reports after confirmation; browser drafts stay intact.
+
+Timer: choose 180, 150, 120, 90, 60, or 30 minutes (default 180), then Start, Pause, or Reset. No custom duration is available. Changing the preset or Reset leaves it paused. It restores with the browser draft; a running timer counts elapsed time while closed. At zero it stops with a message and you can keep answering. Submit resets it even for invalid input or a failed save; Clear answers preserves it. Reviewing hides the timer while a running timer keeps counting; Back to quiz shows it again. It never enters attempt.json and is hidden in reports and print.
+
+Theme: remembered blue accents in light/dark mode; the dark page remains pitch black and the light page keeps its existing background.

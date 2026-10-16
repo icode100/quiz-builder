@@ -50,3 +50,7 @@ The actual server was restarted and the quiz/PNG returned successfully.
 In-app browser checks verified the desktop, middle and mobile map layouts,
 240 option controls, no horizontal overflow and no console errors. Native
 browser shutdown/reopen was not automated.
+
+Timer: choose 180, 150, 120, 90, 60, or 30 minutes (default 180), then Start, Pause, or Reset. No custom duration is available. Changing the preset or Reset leaves it paused. It restores with the browser draft; a running timer counts elapsed time while closed. At zero it stops with a message and you can keep answering. Submit resets it even for invalid input or a failed save; Clear answers preserves it. Reviewing hides the timer while a running timer keeps counting; Back to quiz shows it again. It never enters attempt.json and is hidden in reports and print.
+
+Theme: remembered blue accents in light/dark mode; the dark page remains pitch black and the light page keeps its existing background.

@@ -1,10 +1,10 @@
 # quiz-builder
 
-Local GATE CSE practice quizzes with black and light themes, magenta accents, and original PDF question images.
+Local GATE CSE practice quizzes with black and light themes, blue accents, and original PDF question images.
 
 Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local server and open the quiz list in your default browser. Node.js must be available; no npm packages or internet connection are needed.
 
-The home page and quizzes share remembered light/dark mode, magenta accents, and soft card shadows. **Theme** is a keyboard-accessible toggle switch.
+The home page and quizzes share remembered light/dark mode, blue accents, and soft card shadows. Dark mode uses deeper royal-blue controls on a pitch-black page; the light palette keeps its existing colors and pale background. **Theme** is a keyboard-accessible toggle switch.
 
 The home page uses stacked cards: green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified score out of 100 and a score bar. Scores are recomputed from the saved responses and answer key; stale or invalid submissions show **Last score unavailable**. Negative scores remain visible, with an empty bar.
 
@@ -36,7 +36,11 @@ function quiz-stop  { powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C
 
 Unfinished answers cache automatically in your browser and restore after reopening. Always use the same browser/profile and `http://127.0.0.1:8765`; opening HTML files directly uses a different, unreliable storage origin. Clearing browser data or ending a private session can erase drafts.
 
-**Mark for review** beside **Clear response** toggles a solid magenta marker in the question map. Flags restore with your browser draft and never enter `attempt.json` or affect scoring. Clear response keeps its flag; Clear answers and fresh Attempt again clear flags. A successful saved Submit clears the draft and flags; invalid input or a failed save keeps them. Reviewing the saved report hides current flags, and Back to quiz restores them.
+Each quiz has a countdown with six presets: **180, 150, 120, 90, 60, or 30 minutes** (default 180). Choose a duration, then use **Start**, **Pause**, or **Reset**. Choosing another preset or Reset leaves the timer paused at that duration. It restores with your browser draft, counting elapsed time while closed if it was running. At zero it stops and displays a message; you can keep answering.
+
+Clicking **Submit** resets the timer, including when numerical input is invalid or saving fails. Clear answers preserves it. Reviewing a saved report hides the timer while a running timer keeps counting; Back to quiz shows the remaining time. Timer state never enters saved submissions, and the timer is hidden in reports and print.
+
+**Mark for review** beside **Clear response** toggles a solid blue marker in the question map. Flags restore with your browser draft and never enter `attempt.json` or affect scoring. Clear response keeps its flag; Clear answers and fresh Attempt again clear flags. A successful saved Submit clears the draft and flags; invalid input or a failed save keeps them. Reviewing the saved report hides current flags, and Back to quiz restores them.
 
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 
@@ -60,3 +64,5 @@ The 2019 quiz has 41 MCQ and 24 NAT questions. Its verified key retains the C/D 
 The 2018 quiz has 41 MCQ and 24 NAT questions, with 65 original 240 DPI question crops. It preserves the supplied inclusive ranges for CS-15, CS-16, CS-23, and CS-44. The original PDFs remain in their supplied location; the quiz works entirely from its local crops and verified data. Its independent checks run with `node tests/quiz-2018.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
+
+Timer and shared-interface checks: `node tests/quiz-timer.test.cjs` and `node tests/quiz-runtime.test.cjs`; tests use simulated storage or temporary folders.

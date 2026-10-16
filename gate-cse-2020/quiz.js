@@ -8,6 +8,72 @@
   let results = [], submittedAt = "", updatedAt = "", signature = "", storageKey = "";
   let storageAvailable = false;
   let serverBusy = false, reviewState = null, hasSavedAttempt = false, reviewCheck = 0;
+  const timerPresets = [180, 150, 120, 90, 60, 30];
+  let timerMinutes = 180, timerRemainingMs = 180 * 60000, timerEndsAt = null, timerInterval = null;
+
+  function timerSnapshot() {
+    return { durationMinutes: timerMinutes, remainingMs: timerEndsAt === null ? timerRemainingMs : Math.max(0, Math.min(timerMinutes * 60000, timerEndsAt - Date.now())), endsAt: timerEndsAt };
+  }
+  function restoreTimer(saved) {
+    if (!saved || typeof saved !== "object" || Array.isArray(saved) || !timerPresets.includes(saved.durationMinutes) ||
+        !Number.isSafeInteger(saved.remainingMs) || saved.remainingMs < 0 || saved.remainingMs > saved.durationMinutes * 60000 ||
+        !(saved.endsAt === null || (Number.isSafeInteger(saved.endsAt) && saved.endsAt > 0 && saved.endsAt - Date.now() <= saved.durationMinutes * 60000))) return;
+    timerMinutes = saved.durationMinutes;
+    timerRemainingMs = saved.remainingMs;
+    timerEndsAt = saved.endsAt;
+  }
+  function renderTimer() {
+    const remaining = timerSnapshot().remainingMs;
+    if (timerEndsAt !== null && remaining === 0) {
+      timerRemainingMs = 0;
+      timerEndsAt = null;
+      if (timerInterval !== null) { clearInterval(timerInterval); timerInterval = null; }
+    }
+    const seconds = Math.ceil(remaining / 1000);
+    byId("timer-display").textContent = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(value => String(value).padStart(2, "0")).join(":");
+    byId("timer-duration").value = String(timerMinutes);
+    byId("timer-start").disabled = timerEndsAt !== null || remaining === 0;
+    byId("timer-pause").disabled = timerEndsAt === null;
+    const message = remaining === 0 ? "Time is up. Submit when ready." : timerEndsAt !== null ? "Running" : remaining === timerMinutes * 60000 ? "Ready" : "Paused";
+    if (byId("timer-status").textContent !== message) byId("timer-status").textContent = message;
+    byId("quiz-timer").classList.toggle("timer-expired", remaining === 0);
+  }
+  function startTimer() {
+    if (submittedAt || timerEndsAt !== null || timerRemainingMs <= 0) return;
+    timerEndsAt = Date.now() + timerRemainingMs;
+    timerInterval = setInterval(renderTimer, 250);
+    renderTimer();
+    save();
+  }
+  function pauseTimer() {
+    if (submittedAt || timerEndsAt === null) return;
+    timerRemainingMs = timerSnapshot().remainingMs;
+    timerEndsAt = null;
+    if (timerInterval !== null) { clearInterval(timerInterval); timerInterval = null; }
+    renderTimer();
+    save();
+  }
+  function resetTimer(persist = true) {
+    if (timerInterval !== null) { clearInterval(timerInterval); timerInterval = null; }
+    timerEndsAt = null;
+    timerRemainingMs = timerMinutes * 60000;
+    renderTimer();
+    if (persist) save();
+  }
+  function setupTimer() {
+    byId("quiz-timer").hidden = false;
+    byId("timer-duration").addEventListener("change", () => {
+      const selected = Number(byId("timer-duration").value);
+      if (submittedAt || !timerPresets.includes(selected)) { renderTimer(); return; }
+      timerMinutes = selected;
+      resetTimer();
+    });
+    byId("timer-start").addEventListener("click", startTimer);
+    byId("timer-pause").addEventListener("click", pauseTimer);
+    byId("timer-reset").addEventListener("click", () => { if (!submittedAt) resetTimer(); });
+    renderTimer();
+    if (timerEndsAt !== null) timerInterval = setInterval(renderTimer, 250);
+  }
 
   function element(tag, className = "", text) {
     const node = document.createElement(tag);
@@ -92,11 +158,12 @@
     reviewFlags.clear();
     flags.forEach(id => reviewFlags.add(id));
     updatedAt = saved.updatedAt || "";
+    restoreTimer(saved.timer);
   }
   function save() {
     updatedAt = new Date(Math.max(Date.now(), (Date.parse(updatedAt) || 0) + 1)).toISOString();
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], updatedAt }));
+      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], timer: timerSnapshot(), updatedAt }));
       if (!storageAvailable) status("Progress is cached in this browser until Submit.");
       storageAvailable = true;
       return true;
@@ -251,8 +318,10 @@
   async function submitAttempt(event) {
     event.preventDefault();
     if (serverBusy || reviewState) return;
+    const timerChanged = timerEndsAt !== null || timerRemainingMs !== timerMinutes * 60000;
+    resetTimer(false);
     const invalid = byId("questions").querySelector('.numeric-answer[aria-invalid="true"]');
-    if (invalid) { status("Check the highlighted number, or clear it to skip the question.", true); invalid.focus(); invalid.scrollIntoView({ block: "center" }); return; }
+    if (invalid) { if (timerChanged) save(); status("Check the highlighted number, or clear it to skip the question.", true); invalid.focus(); invalid.scrollIntoView({ block: "center" }); return; }
     submittedAt = new Date().toISOString();
     save();
     renderReport();
@@ -484,6 +553,7 @@
     byId("report-list").replaceChildren(fragment);
     byId("quiz-form").hidden = true;
     byId("report").hidden = false;
+    byId("quiz-timer").hidden = true;
     updateProgress();
     setControls();
     if (moveFocus) { byId("report-title").focus(); byId("report").scrollIntoView({ block: "start" }); }
@@ -492,6 +562,8 @@
     renderQuestions();
     byId("report").hidden = true;
     byId("quiz-form").hidden = false;
+    byId("quiz-timer").hidden = false;
+    renderTimer();
     if (submittedAt) renderReport(false);
   }
   function clearAttempt(moveFocus = true) {
@@ -553,6 +625,7 @@
     byId("quiz-meta").append(element("span", "meta-item", `${data.questions.length} questions · ${number(maximum)} marks`));
     byId("quiz-meta").hidden = false;
     setupStorage();
+    setupTimer();
     byId("quiz-form").addEventListener("submit", submitAttempt);
     byId("review-attempt").addEventListener("click", reviewLastAttempt);
     byId("clear-answers").addEventListener("click", () => clearAttempt());
@@ -560,7 +633,7 @@
     byId("download-report").addEventListener("click", downloadReport);
     byId("print-report").addEventListener("click", () => window.print());
     window.addEventListener("beforeunload", (event) => { if (serverBusy) { event.preventDefault(); event.returnValue = ""; } });
-    window.addEventListener("pageshow", (event) => { if (event.persisted) checkLastAttempt(); });
+    window.addEventListener("pageshow", (event) => { if (event.persisted) { renderTimer(); checkLastAttempt(); } });
     showAttempt();
     checkLastAttempt();
     if (new URL(window.location.href).protocol === "file:") status("Start the quiz server and open http://127.0.0.1:8765 for persistent drafts and automatic result saving.", true);
@@ -568,6 +641,7 @@
     byId("quiz-form").hidden = true;
     byId("report").hidden = true;
     byId("question-nav").hidden = true;
+    byId("quiz-timer").hidden = true;
     document.querySelector(".quiz-shell").classList.remove("has-navigator");
     status(`Unable to open this quiz. ${error.message}`, true);
   }

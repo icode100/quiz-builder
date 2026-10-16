@@ -17,3 +17,7 @@ Marking reference: IIT Guwahati's GATE 2018 Information Brochure, section 5.2.1,
 Home: Unsolved only filters papers. Reset saved attempts removes saved submissions after confirmation, leaving unfinished browser drafts and theme intact. Never use reset for development tests.
 
 Verification: node tests/quiz-2018.test.cjs checks an independently transcribed 65-entry key, all 164 MCQ choices, numerical boundaries, scores, assets/provenance, draft/flag/review lifecycle, and temporary-server scores. No real attempt is created during testing.
+
+Timer: choose 180, 150, 120, 90, 60, or 30 minutes (default 180), then Start, Pause, or Reset. No custom duration is available. Changing the preset or Reset leaves it paused. It restores with the browser draft; a running timer counts elapsed time while closed. At zero it stops with a message and you can keep answering. Submit resets it even for invalid input or a failed save; Clear answers preserves it. Reviewing hides the timer while a running timer keeps counting; Back to quiz shows it again. It never enters attempt.json and is hidden in reports and print.
+
+Theme: remembered blue accents in light/dark mode; the dark page remains pitch black and the light page keeps its existing background.

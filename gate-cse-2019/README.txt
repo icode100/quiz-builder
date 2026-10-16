@@ -10,3 +10,7 @@ Includes 65 original question PNG crops at 240 DPI with full-resolution links, s
 Marking reference: GATE 2019 Information Brochure section 5.2.1, https://gate.iitm.ac.in/gate2019/pdfs/GATE_2019_Information_Brochure.pdf (official search index verified; direct URL currently returns 404). Official archive: https://gate.iitb.ac.in/G21/prev_qp.php.
 Home: Attempted before means at least one non-null saved answer. Unsolved only filters the list. Reset saved attempts removes submitted reports after confirmation; unfinished browser drafts and theme remain intact.
 Verification: node tests\quiz-2019.test.cjs uses a separately transcribed key and simulated storage/server. It never submits to the user's real quiz.
+
+Timer: choose 180, 150, 120, 90, 60, or 30 minutes (default 180), then Start, Pause, or Reset. No custom duration is available. Changing the preset or Reset leaves it paused. It restores with the browser draft; a running timer counts elapsed time while closed. At zero it stops with a message and you can keep answering. Submit resets it even for invalid input or a failed save; Clear answers preserves it. Reviewing hides the timer while a running timer keeps counting; Back to quiz shows it again. It never enters attempt.json and is hidden in reports and print.
+
+Theme: remembered blue accents in light/dark mode; the dark page remains pitch black and the light page keeps its existing background.
