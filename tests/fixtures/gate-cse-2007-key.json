@@ -1,0 +1,1450 @@
+{
+  "provenance": "Independent visual transcription of both supplied key tables, with 36 blank entries solved and five supplied answers reconciled separately from quiz-data.js. Not an official final key. Q15 uses the explicitly disclosed practice interpretation below. Original examination scan verifies the 2007-specific marking scheme and repairs the Q78/79 grammar transcription.",
+  "year": 2007,
+  "paperCode": "CS",
+  "sourceSha256": {
+    "CS-2007.pdf": "dca3a28232aead288896d627478e3890de192bc2768610cb3b109f3dfaf27edd",
+    "Gate-2007-Cse-answer-key.pdf": "a838a79196c63c963c08d02443c0f0b2c1b4bfa4047ae2aab49d410a56a49e6d",
+    "GATE2007-original-exam-reference.pdf": "f3df0aaaf8a898ecd17380984636780d16d897a8d630463fdaab7f1d7187e463"
+  },
+  "paperPageCount": 19,
+  "supplementalPageCount": 21,
+  "keyPageCount": 2,
+  "questionCount": 85,
+  "totalMarks": 150,
+  "typeCounts": {
+    "MCQ": 85
+  },
+  "missingQuestionNumbers": [
+    4,
+    8,
+    9,
+    10,
+    11,
+    16,
+    17,
+    19,
+    20,
+    21,
+    23,
+    25,
+    27,
+    32,
+    34,
+    35,
+    36,
+    37,
+    56,
+    57,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    80,
+    81,
+    82,
+    83
+  ],
+  "markingSource": {
+    "filename": "GATE2007-original-exam-reference.pdf",
+    "page": 1,
+    "url": "https://media.geeksforgeeks.org/wp-content/cdn-uploads/20211005202950/GATE2007.pdf",
+    "description": "Scan of the original GATE 2007 CS examination, mirrored by a third party; full instruction page visually inspected. 150 marks; Q1-20 +1/-0.25; Q21-85 +2/-0.5 except linked seconds 77,79,81,83,85 have no wrong-answer penalty."
+  },
+  "linkedAnswerPairs": [
+    [
+      "CS-76",
+      "CS-77"
+    ],
+    [
+      "CS-78",
+      "CS-79"
+    ],
+    [
+      "CS-80",
+      "CS-81"
+    ],
+    [
+      "CS-82",
+      "CS-83"
+    ],
+    [
+      "CS-84",
+      "CS-85"
+    ]
+  ],
+  "keyExceptions": {
+    "CS-15": "Adopted practice interpretation: count successful loop-condition comparisons/iterations. These are floor(log2(n))+1. Counting the final false condition adds one, giving floor(log2(n))+2, which is absent from the printed options; supplied A fails at powers of two. Original examination scan p4 confirms the same printed defect.",
+    "CS-24": "The ten even numbers are exchangeable; each has probability 1/10 of being first among them.",
+    "CS-43": "A full n-ary tree has nI=I+L-1 edges. With I=10 and L=41, n=50/10=5.",
+    "CS-48": "Every ordinary nonempty disjunctive clause is satisfied by a uniformly random assignment with probability at least 1/2. Expectation guarantees an assignment satisfying at least half the clauses. C contradicts this guarantee.",
+    "CS-51": "Even composite n stops after its first divisor check, while prime n performs Theta(sqrt(n)) checks. Thus a uniform upper bound is O(sqrt(n)) and lower bound Omega(1). Treat the code as the intended C-like primality pseudocode despite its redundant printed declaration.",
+    "CS-44": "Retain supplied A under the usual worst-case complexity interpretation; the literal number of recursive calls depends on n and m and can be zero.",
+    "CS-54": "Retain supplied B for dependency-preserving code generation of the given basic block, without algebraic reassociation.",
+    "CS-58": "Retain supplied D as the intended most specific statement: the protocol ensures mutual exclusion but can deadlock if both flags become true.",
+    "CS-67": "C uses the historical exclusion of all-zero/all-one subnet identifiers. Modern 64-subnet/1022-host combination is absent from printed options.",
+    "CS-69": "A uses the conventional Go-Back-N sliding-window interpretation; the variant is implicit in the question.",
+    "CS-70": "B is the only option matching SMTP/application, TCP/transport and PPP/data-link. It classifies BGP by network-routing function, though BGP uses TCP.",
+    "CS-78": "Original examination p20 has A->bAA, while the supplied reproduction p18 misprints S->bAA. Restore original grammar image; option C and two parse trees are unchanged.",
+    "CS-79": "Evaluated only when CS-78 is correct; the accepted string aabbab has two parse trees (B). No deduction for wrong answer."
+  },
+  "questions": [
+    {
+      "id": "CS-1",
+      "section": "CS",
+      "number": 1,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        1
+      ]
+    },
+    {
+      "id": "CS-2",
+      "section": "CS",
+      "number": 2,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        1
+      ]
+    },
+    {
+      "id": "CS-3",
+      "section": "CS",
+      "number": 3,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        1
+      ]
+    },
+    {
+      "id": "CS-4",
+      "section": "CS",
+      "number": 4,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        1
+      ],
+      "solution": "K3,3 is non-planar with 9 edges and 6 vertices. Every non-planar graph has a subdivision of K5 or K3,3, requiring at least 9 edges; K5 requires 10."
+    },
+    {
+      "id": "CS-5",
+      "section": "CS",
+      "number": 5,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        1
+      ]
+    },
+    {
+      "id": "CS-6",
+      "section": "CS",
+      "number": 6,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        1
+      ]
+    },
+    {
+      "id": "CS-7",
+      "section": "CS",
+      "number": 7,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        2
+      ]
+    },
+    {
+      "id": "CS-8",
+      "section": "CS",
+      "number": 8,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        2
+      ],
+      "solution": "Use one 3-to-8 decoder on the high 3 bits to enable eight decoders of the low 3 bits: 1+8=9."
+    },
+    {
+      "id": "CS-9",
+      "section": "CS",
+      "number": 9,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        2
+      ],
+      "solution": "The listed minterms are exactly x XOR z. Both w and y are independent variables."
+    },
+    {
+      "id": "CS-10",
+      "section": "CS",
+      "number": 10,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "D",
+      "sourcePages": [
+        2
+      ],
+      "solution": "128 lines / 4 ways = 32 sets, so set/LINE bits=5. A line of 64 words needs 6 WORD bits. TAG=20\u22125\u22126=9."
+    },
+    {
+      "id": "CS-11",
+      "section": "CS",
+      "number": 11,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        2
+      ],
+      "solution": "Capacity = 16\u00d7128\u00d7256\u00d7512 = 2^28 bytes = 256 MiB. There are 2^(4+7+8)=2^19 sectors, requiring 19 sector-address bits."
+    },
+    {
+      "id": "CS-12",
+      "section": "CS",
+      "number": 12,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        2
+      ]
+    },
+    {
+      "id": "CS-13",
+      "section": "CS",
+      "number": 13,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        2
+      ]
+    },
+    {
+      "id": "CS-14",
+      "section": "CS",
+      "number": 14,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        2
+      ]
+    },
+    {
+      "id": "CS-15",
+      "section": "CS",
+      "number": 15,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "corrected-supplied",
+      "correctAnswer": "D",
+      "sourcePages": [
+        3
+      ],
+      "solution": "Adopted practice interpretation: count successful loop-condition comparisons/iterations. These are floor(log2(n))+1. Counting the final false condition adds one, giving floor(log2(n))+2, which is absent from the printed options; supplied A fails at powers of two. Original examination scan p4 confirms the same printed defect."
+    },
+    {
+      "id": "CS-16",
+      "section": "CS",
+      "number": 16,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        3
+      ],
+      "solution": "Gang scheduling schedules related threads together (3); rate-monotonic scheduling is real-time scheduling (2); fair-share scheduling supplies scheduling shares/guarantees (1)."
+    },
+    {
+      "id": "CS-17",
+      "section": "CS",
+      "number": 17,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "D",
+      "sourcePages": [
+        3
+      ],
+      "solution": "The kernel can block one kernel-level thread while scheduling another; blocking one does not block all related kernel threads."
+    },
+    {
+      "id": "CS-18",
+      "section": "CS",
+      "number": 18,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        3
+      ]
+    },
+    {
+      "id": "CS-19",
+      "section": "CS",
+      "number": 19,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        3
+      ],
+      "solution": "Manchester uses two signal elements per data bit, so bit rate is half the conventional signal-element/baud rate."
+    },
+    {
+      "id": "CS-20",
+      "section": "CS",
+      "number": 20,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.25,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        3
+      ],
+      "solution": "DNS uses UDP for ordinary queries, while the listed HTTP, Telnet and SMTP protocols use TCP in the historical context of the paper. DNS can also use TCP."
+    },
+    {
+      "id": "CS-21",
+      "section": "CS",
+      "number": 21,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        4
+      ],
+      "solution": "The two isomorphism classes are cyclic C4 and the Klein four-group C2\u00d7C2."
+    },
+    {
+      "id": "CS-22",
+      "section": "CS",
+      "number": 22,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        4
+      ]
+    },
+    {
+      "id": "CS-23",
+      "section": "CS",
+      "number": 23,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        4
+      ],
+      "solution": "The complement of C25 is connected and every vertex has degree 24\u22122=22, so it has an Eulerian circuit. An arbitrary even-regular graph need not be connected; K90 has odd degree 89."
+    },
+    {
+      "id": "CS-24",
+      "section": "CS",
+      "number": 24,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "corrected-supplied",
+      "correctAnswer": "B",
+      "sourcePages": [
+        4
+      ],
+      "solution": "The ten even numbers are exchangeable; each has probability 1/10 of being first among them."
+    },
+    {
+      "id": "CS-25",
+      "section": "CS",
+      "number": 25,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        4
+      ],
+      "solution": "For Av=\u03bbv, vectors (v,v) and (v,\u2212v) give eigenvalues \u03bb+1 and \u03bb\u22121 of the block matrix. Its spectrum is {\u22126,\u22124,\u22123,\u22121,0,2,3,5}; only option 2 occurs."
+    },
+    {
+      "id": "CS-26",
+      "section": "CS",
+      "number": 26,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "CS-27",
+      "section": "CS",
+      "number": 27,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        5
+      ],
+      "solution": "Both vectors lie in the plane x1+x2+x3=0 and are independent. Every vector in that plane equals (\u2212x2)(1,\u22121,0)+(\u2212x3)(1,0,\u22121)."
+    },
+    {
+      "id": "CS-28",
+      "section": "CS",
+      "number": 28,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        5
+      ]
+    },
+    {
+      "id": "CS-29",
+      "section": "CS",
+      "number": 29,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        5
+      ]
+    },
+    {
+      "id": "CS-30",
+      "section": "CS",
+      "number": 30,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        5
+      ]
+    },
+    {
+      "id": "CS-31",
+      "section": "CS",
+      "number": 31,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        6
+      ]
+    },
+    {
+      "id": "CS-32",
+      "section": "CS",
+      "number": 32,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "D",
+      "sourcePages": [
+        6
+      ],
+      "solution": "Truth-table enumeration gives P=Q=R={0,4,5,7,8,9,13,15}, while S={0,2,3,6,7,8,9}. Thus S only is not equivalent."
+    },
+    {
+      "id": "CS-33",
+      "section": "CS",
+      "number": 33,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        6
+      ]
+    },
+    {
+      "id": "CS-34",
+      "section": "CS",
+      "number": 34,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        6
+      ],
+      "solution": "Choose n\u22121 variables as select lines of a 2^(n\u22121):1 mux. Each residual one-variable function is 0,1,x or NOT x, with one shared inverter enough. Fewer select lines leave arbitrary two-variable functions at data inputs, which cannot all be supplied with one inverter."
+    },
+    {
+      "id": "CS-35",
+      "section": "CS",
+      "number": 35,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        6
+      ],
+      "solution": "Expanding C1 through C4 in parallel gives respectively 1,2,3,4 nontrivial AND product terms and one OR gate per carry. Hence 10 AND and 4 OR gates; the sum XOR gates are outside the requested AND/OR count."
+    },
+    {
+      "id": "CS-36",
+      "section": "CS",
+      "number": 36,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        7
+      ],
+      "solution": "The diagram connects A3 and A1 to an AND feeding asynchronous Clear. The first count asserting both is binary 0101=5, which immediately clears with negligible delay. Stable observed sequence is 0,1,2,3,4."
+    },
+    {
+      "id": "CS-37",
+      "section": "CS",
+      "number": 37,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        7,
+        8
+      ],
+      "solution": "ADD IF1 ID2 EX3 WB4; MUL IF2 ID3 EX4\u20136 WB7; SUB IF3 ID4\u20136 (held) EX7 WB8. Forwarding removes additional data stalls; completion is cycle 8."
+    },
+    {
+      "id": "CS-38",
+      "section": "CS",
+      "number": 38,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        8
+      ]
+    },
+    {
+      "id": "CS-39",
+      "section": "CS",
+      "number": 39,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        8
+      ]
+    },
+    {
+      "id": "CS-40",
+      "section": "CS",
+      "number": 40,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        8
+      ]
+    },
+    {
+      "id": "CS-41",
+      "section": "CS",
+      "number": 41,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        8
+      ]
+    },
+    {
+      "id": "CS-42",
+      "section": "CS",
+      "number": 42,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        8
+      ]
+    },
+    {
+      "id": "CS-43",
+      "section": "CS",
+      "number": 43,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "D",
+      "keyProvenance": "corrected-supplied",
+      "correctAnswer": "C",
+      "sourcePages": [
+        9
+      ],
+      "solution": "A full n-ary tree has nI=I+L-1 edges. With I=10 and L=41, n=50/10=5."
+    },
+    {
+      "id": "CS-44",
+      "section": "CS",
+      "number": 44,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 1,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        9
+      ]
+    },
+    {
+      "id": "CS-45",
+      "section": "CS",
+      "number": 45,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        9
+      ]
+    },
+    {
+      "id": "CS-46",
+      "section": "CS",
+      "number": 46,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        9,
+        10
+      ]
+    },
+    {
+      "id": "CS-47",
+      "section": "CS",
+      "number": 47,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        10
+      ]
+    },
+    {
+      "id": "CS-48",
+      "section": "CS",
+      "number": 48,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "corrected-supplied",
+      "correctAnswer": "A",
+      "sourcePages": [
+        10
+      ],
+      "solution": "Every ordinary nonempty disjunctive clause is satisfied by a uniformly random assignment with probability at least 1/2. Expectation guarantees an assignment satisfying at least half the clauses. C contradicts this guarantee."
+    },
+    {
+      "id": "CS-49",
+      "section": "CS",
+      "number": 49,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        10
+      ]
+    },
+    {
+      "id": "CS-50",
+      "section": "CS",
+      "number": 50,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        10
+      ]
+    },
+    {
+      "id": "CS-51",
+      "section": "CS",
+      "number": 51,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "A",
+      "keyProvenance": "corrected-supplied",
+      "correctAnswer": "B",
+      "sourcePages": [
+        11
+      ],
+      "solution": "Even composite n stops after its first divisor check, while prime n performs Theta(sqrt(n)) checks. Thus a uniform upper bound is O(sqrt(n)) and lower bound Omega(1). Treat the code as the intended C-like primality pseudocode despite its redundant printed declaration."
+    },
+    {
+      "id": "CS-52",
+      "section": "CS",
+      "number": 52,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        11
+      ]
+    },
+    {
+      "id": "CS-53",
+      "section": "CS",
+      "number": 53,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        11
+      ]
+    },
+    {
+      "id": "CS-54",
+      "section": "CS",
+      "number": 54,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        11,
+        12
+      ]
+    },
+    {
+      "id": "CS-55",
+      "section": "CS",
+      "number": 55,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        12
+      ]
+    },
+    {
+      "id": "CS-56",
+      "section": "CS",
+      "number": 56,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        12
+      ],
+      "solution": "P is Belady's anomaly for FIFO. Q can be true, but lack of locality is not the reason FIFO can fault more when its frame allocation increases."
+    },
+    {
+      "id": "CS-57",
+      "section": "CS",
+      "number": 57,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        12,
+        13
+      ],
+      "solution": "The actual image table gives allocated vectors P0=(1,2,1), P1=(2,0,1), P2=(2,2,1), hence available=(0,1,2). Only P1 can finish first; available becomes (2,1,3), allowing P0; P2 finishes last. Text extraction misaligns P0's row."
+    },
+    {
+      "id": "CS-58",
+      "section": "CS",
+      "number": 58,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        13
+      ]
+    },
+    {
+      "id": "CS-59",
+      "section": "CS",
+      "number": 59,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        13
+      ],
+      "solution": "The Cartesian product lists every female student/course pair. Removing enroll leaves missing female enrolments. Projection returns courses missing at least one female student; since at least one female is enrolled in each, their female enrolments form a proper subset."
+    },
+    {
+      "id": "CS-60",
+      "section": "CS",
+      "number": 60,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        14
+      ],
+      "solution": "For every employee x, if e directly supervises x then x is male. Thus e has no immediate female subordinate, including employees with no subordinates."
+    },
+    {
+      "id": "CS-61",
+      "section": "CS",
+      "number": 61,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        14
+      ],
+      "solution": "Q1 excludes e precisely if some department-5 employee has salary greater than or equal to e's salary, so it selects salaries above the department maximum. Q2 uses ANY, requiring only one smaller salary. Conventional non-null salary model is implicit in the exam."
+    },
+    {
+      "id": "CS-62",
+      "section": "CS",
+      "number": 62,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "D",
+      "sourcePages": [
+        14
+      ],
+      "solution": "BCNF disallows a nontrivial dependency with a non-superkey determinant, preventing the nonkey-intermediary transitive dependency intended here. 3NF permits it for a prime right-hand attribute. Two-attribute relations are BCNF under the usual exam assumptions, and single-attribute candidate keys cannot have partial dependencies."
+    },
+    {
+      "id": "CS-63",
+      "section": "CS",
+      "number": 63,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        14
+      ],
+      "solution": "A leaf reserves a 6-byte next-leaf block pointer. Each value/record-pointer pair takes 9+7=16 bytes. floor((1024-6)/16)=63."
+    },
+    {
+      "id": "CS-64",
+      "section": "CS",
+      "number": 64,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        15
+      ],
+      "solution": "S1 has T1->T2 through Y and T2->T1 through X, a cycle. S2 has only T2->T1, hence is conflict serializable in order T2,T1."
+    },
+    {
+      "id": "CS-65",
+      "section": "CS",
+      "number": 65,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        15
+      ],
+      "solution": "There are n choices of the sole transmitter, each with probability p(1-p)^(n-1), assuming independent attempts."
+    },
+    {
+      "id": "CS-66",
+      "section": "CS",
+      "number": 66,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        15
+      ],
+      "solution": "One bit lasts 1/10^7 second=0.1 microsecond. At 200 metres/microsecond this equals 20 metres."
+    },
+    {
+      "id": "CS-67",
+      "section": "CS",
+      "number": 67,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        15
+      ],
+      "solution": "The historical convention intended by these options excludes all-zero and all-one subnet identifiers: 2^6-2=62. Class B leaves 16-6=10 host bits, hence 2^10-2=1022 hosts."
+    },
+    {
+      "id": "CS-68",
+      "section": "CS",
+      "number": 68,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        15
+      ],
+      "solution": "Modulo-2 division of 11001001000 by generator 1001 yields remainder 011, so append 011 to obtain 11001001011."
+    },
+    {
+      "id": "CS-69",
+      "section": "CS",
+      "number": 69,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        15
+      ],
+      "solution": "With propagation Lt and frame transmission K/R, continuous operation needs a sender window at least 1+2LtR/K. The conventional Go-Back-N sequence space is at least one greater than its window, giving ceil(log2((2LtR+2K)/K))."
+    },
+    {
+      "id": "CS-70",
+      "section": "CS",
+      "number": 70,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "B",
+      "sourcePages": [
+        16
+      ],
+      "solution": "SMTP is application layer, TCP transport, and PPP data link. Only option B has those three matches; it places BGP at the network layer by routing function."
+    },
+    {
+      "id": "CS-71",
+      "section": "CS",
+      "number": 71,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        16
+      ]
+    },
+    {
+      "id": "CS-72",
+      "section": "CS",
+      "number": 72,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        16
+      ]
+    },
+    {
+      "id": "CS-73",
+      "section": "CS",
+      "number": 73,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        16,
+        17
+      ]
+    },
+    {
+      "id": "CS-74",
+      "section": "CS",
+      "number": 74,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        17
+      ]
+    },
+    {
+      "id": "CS-75",
+      "section": "CS",
+      "number": 75,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        17
+      ]
+    },
+    {
+      "id": "CS-76",
+      "section": "CS",
+      "number": 76,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        17
+      ]
+    },
+    {
+      "id": "CS-77",
+      "section": "CS",
+      "number": 77,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        17
+      ],
+      "requiresCorrect": "CS-76"
+    },
+    {
+      "id": "CS-78",
+      "section": "CS",
+      "number": 78,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "C",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "C",
+      "sourcePages": [
+        20,
+        18
+      ]
+    },
+    {
+      "id": "CS-79",
+      "section": "CS",
+      "number": 79,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "B",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "B",
+      "sourcePages": [
+        20,
+        18
+      ],
+      "requiresCorrect": "CS-78"
+    },
+    {
+      "id": "CS-80",
+      "section": "CS",
+      "number": 80,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        18
+      ],
+      "solution": "Start 0x1100=4352 is 64-byte aligned, block68. The 2500-byte array spans 40 blocks,68..107. The first scan has40 misses. Eight direct-mapped line collisions overwrite blocks68..75 with100..107. Scan2 misses on both these groups,16 misses. Total56."
+    },
+    {
+      "id": "CS-81",
+      "section": "CS",
+      "number": 81,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        18
+      ],
+      "requiresCorrect": "CS-80",
+      "solution": "Blocks68..75 and100..107 both map modulo32 to lines4..11, the lines replaced in scan2. Other array lines retain their matching blocks."
+    },
+    {
+      "id": "CS-82",
+      "section": "CS",
+      "number": 82,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "A",
+      "sourcePages": [
+        18
+      ],
+      "solution": "Optimal faults on references1,2,3,7,4,5,6 only. At7 evict2 (never used again), then evict each one-use replacement while retaining1 and3. Final3 and1 hit:7 faults."
+    },
+    {
+      "id": "CS-83",
+      "section": "CS",
+      "number": 83,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 2,
+      "suppliedAnswer": null,
+      "keyProvenance": "independently-solved-missing",
+      "correctAnswer": "C",
+      "sourcePages": [
+        18
+      ],
+      "requiresCorrect": "CS-82",
+      "solution": "LRU faults on every access except the second reference to1:9 faults. Optimal has7, so LRU has2 more."
+    },
+    {
+      "id": "CS-84",
+      "section": "CS",
+      "number": 84,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.5,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "A",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "A",
+      "sourcePages": [
+        19
+      ]
+    },
+    {
+      "id": "CS-85",
+      "section": "CS",
+      "number": 85,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 2,
+      "suppliedAnswer": "D",
+      "keyProvenance": "supplied-key-audited",
+      "correctAnswer": "D",
+      "sourcePages": [
+        19
+      ],
+      "requiresCorrect": "CS-84"
+    }
+  ],
+  "supplementalCrops": [
+    {
+      "sourceDocument": "GATE2007-original-exam-reference.pdf",
+      "page": 20,
+      "pageWidth": 557.640015,
+      "pageHeight": 825.47998,
+      "rect": [
+        45,
+        29,
+        498,
+        157
+      ],
+      "dpi": 240,
+      "questions": [
+        "CS-78",
+        "CS-79"
+      ],
+      "purpose": "Restore complete original common statement and grammar, including A -> bAA misprinted as S -> bAA in the supplied reproduction."
+    }
+  ]
+}

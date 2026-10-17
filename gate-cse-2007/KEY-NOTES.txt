@@ -1,0 +1,258 @@
+GATE CSE 2007: RECONCILED PRACTICE KEY AND SOURCE NOTES
+
+This is a reconciled practice key, not an authenticated official final answer key.
+The supplied two-page key is partial. Its 36 blank cells have been independently solved.
+Five printed answers were corrected or given an explicit practice interpretation:
+Q15 A -> D (successful comparisons/iterations interpretation), Q24 A -> B,
+Q43 D -> C, Q48 C -> A, and Q51 A -> B. No marks-to-all awards are invented.
+
+SOURCES AND INTEGRITY
+
+Supplied originals remain unchanged in their supplied Downloads location:
+  CS-2007.pdf (19 pages)
+  Gate-2007-Cse-answer-key.pdf (2 pages)
+No unchanged duplicate PDFs or keys are stored in this quiz folder.
+
+Supplemental original-exam scan:
+  Filename for provenance: GATE2007-original-exam-reference.pdf
+  URL: https://media.geeksforgeeks.org/wp-content/cdn-uploads/20211005202950/GATE2007.pdf
+  Original examination scan hosted by a third party; 21 physical pages of an
+  originally 24-page booklet (includes the printed scoring instruction page).
+  Used for scoring verification and one lossless crop restoring the Q78/79 grammar.
+  Temporary research copy is outside the quiz folder.
+
+SHA-256:
+  CS-2007.pdf: dca3a28232aead288896d627478e3890de192bc2768610cb3b109f3dfaf27edd
+  Gate-2007-Cse-answer-key.pdf: a838a79196c63c963c08d02443c0f0b2c1b4bfa4047ae2aab49d410a56a49e6d
+  GATE2007-original-exam-reference.pdf: f3df0aaaf8a898ecd17380984636780d16d897a8d630463fdaab7f1d7187e463
+
+SCORING
+
+The original CS examination instruction page (physical page 1) was visually
+inspected. This 2007 paper has 85 single-choice questions and 150 marks:
+  Q1-Q20: +1 correct, -0.25 incorrect, 0 unanswered.
+  Q21-Q85: +2 correct, -0.5 incorrect, 0 unanswered, except linked seconds below.
+  Linked pairs: 76->77, 78->79, 80->81, 82->83, 84->85.
+  Q77/Q79/Q81/Q83/Q85 have zero wrong-answer deduction and are evaluated only
+  when their prerequisite is answered correctly. Otherwise an answered dependent
+  is Not evaluated; a blank remains unanswered. Common data Q71-Q73 and Q74-Q75
+  are independent questions, not linked-answer dependencies.
+  Blank score: 0/150. Perfect: 150/150. All wrong: -35/150.
+  The later GATE one-third deduction and 100-mark totals do not apply here.
+
+COMPLETED BLANKS
+
+4: B, 8: C, 9: B, 10: D, 11: A, 16: A, 17: D, 19: A, 20: C, 21: A, 23: C, 25: C, 27: A, 32: D, 34: C, 35: B, 36: C, 37: B, 56: B, 57: C, 59: B, 60: C, 61: A, 62: D, 63: A, 64: C, 65: A, 66: C, 67: C, 68: B, 69: A, 70: B, 80: C, 81: A, 82: A, 83: C
+
+CORRECTIONS AND INTERPRETATIONS
+
+Q15: Adopted practice interpretation: count successful loop-condition comparisons/iterations. These are floor(log2(n))+1. Counting the final false condition adds one, giving floor(log2(n))+2, which is absent from the printed options; supplied A fails at powers of two. Original examination scan p4 confirms the same printed defect.
+
+Q24: The ten even numbers are exchangeable; each has probability 1/10 of being first among them.
+
+Q43: A full n-ary tree has nI=I+L-1 edges. With I=10 and L=41, n=50/10=5.
+
+Q48: Every ordinary nonempty disjunctive clause is satisfied by a uniformly random assignment with probability at least 1/2. Expectation guarantees an assignment satisfying at least half the clauses. C contradicts this guarantee.
+
+Q51: Even composite n stops after its first divisor check, while prime n performs Theta(sqrt(n)) checks. Thus a uniform upper bound is O(sqrt(n)) and lower bound Omega(1). Treat the code as the intended C-like primality pseudocode despite its redundant printed declaration.
+
+Q15 is intrinsically defective as printed, including in the original scan.
+For n>0, the body executes floor(log2(n))+1 times. Testing the condition once
+more to leave the loop gives floor(log2(n))+2 comparisons, absent from all
+options. The quiz visibly asks for successful loop-condition comparisons
+(iterations), for which D is exact. The crop is unchanged. This qualification
+is a practice interpretation, not a claim about an official awarded answer.
+
+Q78/Q79 source restoration: supplied paper page 18 ends the grammar with
+S -> bAA. The original examination page 20 correctly has A -> bAA.
+The quiz uses an unchanged crop of the entire original common statement and
+grammar. Source page size is 557.640015 x 825.47998 PDF points; crop rectangle
+[45,29,498,157] PDF points, rendered at 240 DPI. Question/options remain from
+the supplied paper page 18. Under the correct grammar only aabbab (C) among
+Q78 choices is generated, with exactly two derivation trees (Q79 B). Both answers
+also happen to be unchanged under the literal reproduction typo.
+
+Other historical/wording conventions retained:
+  Q44: A is the usual worst-case recursion-depth answer. Actual calls can be
+  zero when m divides n; the question omits the phrase worst case.
+  Q54: B assumes dependency-preserving code generation for the given basic block,
+  rather than arbitrary algebraic reassociation of its mathematical expression.
+  Q58: D is the supplied and intended most specific option: mutual exclusion is
+  ensured but simultaneous intent can deadlock. Bounded waiting consequently
+  also fails; the single-choice wording is imperfect.
+  Q67: C uses the historical all-zero/all-one subnet exclusion (62 subnets,
+  1022 hosts). Modern 64 subnets / 1022 hosts is absent from the options.
+  Q69: A uses the conventional Go-Back-N sliding-window interpretation. The
+  question leaves the protocol variant implicit.
+  Q70: B classifies BGP by its network-routing function. BGP uses TCP; the
+  other three layer matches make B the intended printed choice.
+
+FULL KEY TRANSCRIPTION (supplied dash = blank)
+
+Question   Supplied   Practice   Provenance
+  1         A          A      supplied, audited
+  2         B          B      supplied, audited
+  3         C          C      supplied, audited
+  4         -          B      solved missing
+  5         D          D      supplied, audited
+  6         B          B      supplied, audited
+  7         B          B      supplied, audited
+  8         -          C      solved missing
+  9         -          B      solved missing
+ 10         -          D      solved missing
+ 11         -          A      solved missing
+ 12         C          C      supplied, audited
+ 13         B          B      supplied, audited
+ 14         A          A      supplied, audited
+ 15         A          D      corrected/qualified
+ 16         -          A      solved missing
+ 17         -          D      solved missing
+ 18         A          A      supplied, audited
+ 19         -          A      solved missing
+ 20         -          C      solved missing
+ 21         -          A      solved missing
+ 22         D          D      supplied, audited
+ 23         -          C      solved missing
+ 24         A          B      corrected/qualified
+ 25         -          C      solved missing
+ 26         C          C      supplied, audited
+ 27         -          A      solved missing
+ 28         A          A      supplied, audited
+ 29         A          A      supplied, audited
+ 30         B          B      supplied, audited
+ 31         C          C      supplied, audited
+ 32         -          D      solved missing
+ 33         D          D      supplied, audited
+ 34         -          C      solved missing
+ 35         -          B      solved missing
+ 36         -          C      solved missing
+ 37         -          B      solved missing
+ 38         A          A      supplied, audited
+ 39         A          A      supplied, audited
+ 40         B          B      supplied, audited
+ 41         D          D      supplied, audited
+ 42         D          D      supplied, audited
+ 43         D          C      corrected/qualified
+ 44         A          A      supplied, audited
+ 45         D          D      supplied, audited
+ 46         C          C      supplied, audited
+ 47         B          B      supplied, audited
+ 48         C          A      corrected/qualified
+ 49         D          D      supplied, audited
+ 50         B          B      supplied, audited
+ 51         A          B      corrected/qualified
+ 52         C          C      supplied, audited
+ 53         C          C      supplied, audited
+ 54         B          B      supplied, audited
+ 55         B          B      supplied, audited
+ 56         -          B      solved missing
+ 57         -          C      solved missing
+ 58         D          D      supplied, audited
+ 59         -          B      solved missing
+ 60         -          C      solved missing
+ 61         -          A      solved missing
+ 62         -          D      solved missing
+ 63         -          A      solved missing
+ 64         -          C      solved missing
+ 65         -          A      solved missing
+ 66         -          C      solved missing
+ 67         -          C      solved missing
+ 68         -          B      solved missing
+ 69         -          A      solved missing
+ 70         -          B      solved missing
+ 71         D          D      supplied, audited
+ 72         A          A      supplied, audited
+ 73         C          C      supplied, audited
+ 74         C          C      supplied, audited
+ 75         B          B      supplied, audited
+ 76         A          A      supplied, audited
+ 77         D          D      supplied, audited
+ 78         C          C      supplied, audited
+ 79         B          B      supplied, audited
+ 80         -          C      solved missing
+ 81         -          A      solved missing
+ 82         -          A      solved missing
+ 83         -          C      solved missing
+ 84         A          A      supplied, audited
+ 85         D          D      supplied, audited
+
+DERIVATIONS FOR COMPLETED BLANKS
+
+Q4 (B): K3,3 is non-planar with 9 edges and 6 vertices. Every non-planar graph has a subdivision of K5 or K3,3, requiring at least 9 edges; K5 requires 10.
+
+Q8 (C): Use one 3-to-8 decoder on the high 3 bits to enable eight decoders of the low 3 bits: 1+8=9.
+
+Q9 (B): The listed minterms are exactly x XOR z. Both w and y are independent variables.
+
+Q10 (D): 128 lines / 4 ways = 32 sets, so set/LINE bits=5. A line of 64 words needs 6 WORD bits. TAG=20−5−6=9.
+
+Q11 (A): Capacity = 16×128×256×512 = 2^28 bytes = 256 MiB. There are 2^(4+7+8)=2^19 sectors, requiring 19 sector-address bits.
+
+Q16 (A): Gang scheduling schedules related threads together (3); rate-monotonic scheduling is real-time scheduling (2); fair-share scheduling supplies scheduling shares/guarantees (1).
+
+Q17 (D): The kernel can block one kernel-level thread while scheduling another; blocking one does not block all related kernel threads.
+
+Q19 (A): Manchester uses two signal elements per data bit, so bit rate is half the conventional signal-element/baud rate.
+
+Q20 (C): DNS uses UDP for ordinary queries, while the listed HTTP, Telnet and SMTP protocols use TCP in the historical context of the paper. DNS can also use TCP.
+
+Q21 (A): The two isomorphism classes are cyclic C4 and the Klein four-group C2×C2.
+
+Q23 (C): The complement of C25 is connected and every vertex has degree 24−2=22, so it has an Eulerian circuit. An arbitrary even-regular graph need not be connected; K90 has odd degree 89.
+
+Q25 (C): For Av=λv, vectors (v,v) and (v,−v) give eigenvalues λ+1 and λ−1 of the block matrix. Its spectrum is {−6,−4,−3,−1,0,2,3,5}; only option 2 occurs.
+
+Q27 (A): Both vectors lie in the plane x1+x2+x3=0 and are independent. Every vector in that plane equals (−x2)(1,−1,0)+(−x3)(1,0,−1).
+
+Q32 (D): Truth-table enumeration gives P=Q=R={0,4,5,7,8,9,13,15}, while S={0,2,3,6,7,8,9}. Thus S only is not equivalent.
+
+Q34 (C): Choose n−1 variables as select lines of a 2^(n−1):1 mux. Each residual one-variable function is 0,1,x or NOT x, with one shared inverter enough. Fewer select lines leave arbitrary two-variable functions at data inputs, which cannot all be supplied with one inverter.
+
+Q35 (B): Expanding C1 through C4 in parallel gives respectively 1,2,3,4 nontrivial AND product terms and one OR gate per carry. Hence 10 AND and 4 OR gates; the sum XOR gates are outside the requested AND/OR count.
+
+Q36 (C): The diagram connects A3 and A1 to an AND feeding asynchronous Clear. The first count asserting both is binary 0101=5, which immediately clears with negligible delay. Stable observed sequence is 0,1,2,3,4.
+
+Q37 (B): ADD IF1 ID2 EX3 WB4; MUL IF2 ID3 EX4–6 WB7; SUB IF3 ID4–6 (held) EX7 WB8. Forwarding removes additional data stalls; completion is cycle 8.
+
+Q56 (B): P is Belady's anomaly for FIFO. Q can be true, but lack of locality is not the reason FIFO can fault more when its frame allocation increases.
+
+Q57 (C): The actual image table gives allocated vectors P0=(1,2,1), P1=(2,0,1), P2=(2,2,1), hence available=(0,1,2). Only P1 can finish first; available becomes (2,1,3), allowing P0; P2 finishes last. Text extraction misaligns P0's row.
+
+Q59 (B): The Cartesian product lists every female student/course pair. Removing enroll leaves missing female enrolments. Projection returns courses missing at least one female student; since at least one female is enrolled in each, their female enrolments form a proper subset.
+
+Q60 (C): For every employee x, if e directly supervises x then x is male. Thus e has no immediate female subordinate, including employees with no subordinates.
+
+Q61 (A): Q1 excludes e precisely if some department-5 employee has salary greater than or equal to e's salary, so it selects salaries above the department maximum. Q2 uses ANY, requiring only one smaller salary. Conventional non-null salary model is implicit in the exam.
+
+Q62 (D): BCNF disallows a nontrivial dependency with a non-superkey determinant, preventing the nonkey-intermediary transitive dependency intended here. 3NF permits it for a prime right-hand attribute. Two-attribute relations are BCNF under the usual exam assumptions, and single-attribute candidate keys cannot have partial dependencies.
+
+Q63 (A): A leaf reserves a 6-byte next-leaf block pointer. Each value/record-pointer pair takes 9+7=16 bytes. floor((1024-6)/16)=63.
+
+Q64 (C): S1 has T1->T2 through Y and T2->T1 through X, a cycle. S2 has only T2->T1, hence is conflict serializable in order T2,T1.
+
+Q65 (A): There are n choices of the sole transmitter, each with probability p(1-p)^(n-1), assuming independent attempts.
+
+Q66 (C): One bit lasts 1/10^7 second=0.1 microsecond. At 200 metres/microsecond this equals 20 metres.
+
+Q67 (C): The historical convention intended by these options excludes all-zero and all-one subnet identifiers: 2^6-2=62. Class B leaves 16-6=10 host bits, hence 2^10-2=1022 hosts.
+
+Q68 (B): Modulo-2 division of 11001001000 by generator 1001 yields remainder 011, so append 011 to obtain 11001001011.
+
+Q69 (A): With propagation Lt and frame transmission K/R, continuous operation needs a sender window at least 1+2LtR/K. The conventional Go-Back-N sequence space is at least one greater than its window, giving ceil(log2((2LtR+2K)/K)).
+
+Q70 (B): SMTP is application layer, TCP transport, and PPP data link. Only option B has those three matches; it places BGP at the network layer by routing function.
+
+Q80 (C): Start 0x1100=4352 is 64-byte aligned, block68. The 2500-byte array spans 40 blocks,68..107. The first scan has40 misses. Eight direct-mapped line collisions overwrite blocks68..75 with100..107. Scan2 misses on both these groups,16 misses. Total56.
+
+Q81 (A): Blocks68..75 and100..107 both map modulo32 to lines4..11, the lines replaced in scan2. Other array lines retain their matching blocks.
+
+Q82 (A): Optimal faults on references1,2,3,7,4,5,6 only. At7 evict2 (never used again), then evict each one-use replacement while retaining1 and3. Final3 and1 hit:7 faults.
+
+Q83 (C): LRU faults on every access except the second reference to1:9 faults. Optimal has7, so LRU has2 more.
+
+INDEPENDENT VERIFICATION FIXTURE
+
+  tests/fixtures/gate-cse-2007-key.json
+  Stores the full independent transcription, reconciled choices, supplied blanks,
+  marking rules, linked dependencies, source hashes, source-page mapping, and
+  supplemental crop provenance. It was authored independently from quiz-data.js.

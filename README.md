@@ -6,7 +6,7 @@ Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local ser
 
 The home page and quizzes share remembered light/dark mode, blue accents, and soft card shadows. Dark mode uses deeper royal-blue controls on a pitch-black page; the light palette keeps its existing colors and pale background. **Theme** is a keyboard-accessible toggle switch.
 
-The home page uses stacked cards: green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified score out of 100 and a score bar. Scores are recomputed from the saved responses and answer key; stale or invalid submissions show **Last score unavailable**. Negative scores remain visible, with an empty bar.
+The home page uses stacked cards: green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified score against that paper's total and a score bar. Scores are recomputed from the saved responses and answer key; stale or invalid submissions show **Last score unavailable**. Negative scores remain visible, with an empty bar.
 
 Turn on the **Unsolved only** switch to hide attempted papers. **Reset saved attempts** asks for confirmation and removes all saved submissions, marking papers unsolved and hiding their scores; unfinished browser drafts remain intact.
 
@@ -54,8 +54,11 @@ Available quizzes, after starting the server:
 - [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
 - [GATE CSE 2021, Set 1, session 5](http://127.0.0.1:8765/gate-cse-2021-set-1/index.html)
 - [GATE CSE 2021, Set 2, session 6](http://127.0.0.1:8765/gate-cse-2021-set-2/index.html)
+- [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
-All papers total 100 marks. The 2009 paper has 60 MCQs; the later papers each have 65 questions. Original question crops preserve diagrams and equations. New quizzes record source filenames and hashes without duplicating supplied PDFs. Builder guidance: `AGENTS.md`.
+The 2007 paper has 85 MCQs totaling 150 marks. The 2009 paper has 60 MCQs totaling 100 marks; the later papers each have 65 questions totaling 100 marks. Original question crops preserve diagrams and equations. New quizzes record source filenames and hashes without duplicating supplied PDFs. Builder guidance: `AGENTS.md`.
+
+The 2007 quiz completes all 36 missing key entries, corrects four supplied answers, and explicitly clarifies Q15's defective loop-count wording. Its 97 original image crops include a restored grammar from the original exam scan. It uses the 2007 penalties (-0.25/-0.5) and five linked pairs, 76/77 through 84/85. The completed key and derivations are in `gate-cse-2007/KEY-NOTES.txt`; checks run with `node tests/quiz-2007.test.cjs`.
 
 The 2009 quiz preserves the supplied paper and screenshot key, with 69 sharp image parts. Its practice key completes eight blanks, corrects Q11/Q13, preserves the supplied alternatives, and documents Q47's ambiguous wording in `gate-cse-2009/KEY-NOTES.txt`. Original-exam scan crops restore missing notation in affected questions. Linked-answer rules apply to 57/58 and 59/60: the second scores only when the first is correct and has no negative marking. Its checks run with `node tests\quiz-2009.test.cjs` and `node tests\quiz-linked.test.cjs`.
 

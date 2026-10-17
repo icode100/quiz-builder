@@ -39,7 +39,7 @@ The server binds loopback at port 8765, serves local quiz files, and confines at
 
 The home page lists quiz folders in a responsive, single-column grid of stacked paper cards and loads `/_template/styles.css`, `/_template/theme.js`, and `/_template/home.js`. It shares the remembered theme without loading quiz data/runtime in the browser. A readable `attempt.json` with object `answers` containing any value other than `null` marks **Attempted before** in green; zero and non-null arrays count. Missing, all-null, malformed, or unreadable records show **Not attempted** in red. **Unsolved only** and **Theme** use keyboard-accessible switches with exposed on/off states. Filtering changes only the visible list.
 
-Attempted cards show the last score against the quiz's total marks (100 for current papers) and a native progress bar. The server validates saved identity, signature, timestamps, question IDs, and response formats, then recomputes marks from that folder's verified key; never trust stored summary/results. An invalid or stale submission shows **Last score unavailable**, while its attempted badge still follows the non-null rule. Preserve negative scores in the label; clamp only the visual bar to zero through the maximum. Listing/filtering never changes attempts or browser cache.
+Attempted cards show the last score against the quiz's total marks (150 for 2007; 100 for the other current papers) and a native progress bar. The server validates saved identity, signature, timestamps, question IDs, and response formats, then recomputes marks from that folder's verified key; never trust stored summary/results. An invalid or stale submission shows **Last score unavailable**, while its attempted badge still follows the non-null rule. Preserve negative scores in the label; clamp only the visual bar to zero through the maximum. Listing/filtering never changes attempts or browser cache.
 
 **Reset saved attempts** asks for confirmation, then POSTs `{confirm:true}` to `/reset-attempts` with a same-origin JSON request. It removes existing regular `attempt.json` files from quiz folders, including malformed records, so every paper becomes unsolved and its score/bar is hidden. It never creates blank attempt files, touches originals/nonquiz/template files, or clears unfinished browser drafts/theme. Preflight rejects symlinks/directories before deleting anything; concurrent reset/Submit writes are refused. A filesystem failure can leave a partial reset: show an error and advise refreshing. Test reset with temporary fixtures only; never reset real user attempts during development. Restart the server after editing generated home-page HTML or server behavior.
 
@@ -69,6 +69,7 @@ Quiz/
     quiz.js
     quiz-data.js
     home.js                    Home-page controls only
+  gate-cse-2007/                85 MCQs, 150 marks; 97 crops; five linked pairs
   gate-cse-2009/                60 MCQs; linked pairs 57/58 and 59/60
   gate-cse-2018/                65 questions; supplied PDFs remain outside the folder
   gate-cse-2019/
@@ -81,6 +82,8 @@ Quiz/
   gate-cse-2021-set-2/           Same self-contained layout
   tests/quiz-runtime.test.cjs
   tests/quiz-timer.test.cjs
+  tests/quiz-2007.test.cjs
+  tests/fixtures/gate-cse-2007-key.json
   tests/quiz-2009.test.cjs
   tests/quiz-linked.test.cjs
   tests/fixtures/gate-cse-2009-key.json
@@ -95,7 +98,7 @@ Quiz/
 
 Copy `_template` into a new descriptive folder, assign a stable unique paper/year/set/session ID, and change its title/data. Inspect the destination first: never overwrite an existing quiz or its user's state. Each quiz must remain self-contained with relative local asset/script paths.
 
-Reusable UI/runtime fixes apply to `_template`, 2009, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
+Reusable UI/runtime fixes apply to `_template`, 2007, 2009, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
 
 ## Building from a new paper
 
@@ -125,7 +128,7 @@ Keep personal `attempt.json` files, server `.attempt-*.tmp` intermediates, and `
 - NAT preserves raw strings. Signed integers/decimals, `.5`, and `12.` are valid; fractions, commas, scientific notation, hexadecimal, `NaN`, and `Infinity` are invalid. Whitespace is unanswered. Do not round responses or widen ranges with epsilon.
 - Official MTA uses `marksToAll: true`, awards full marks even unanswered, and reports `awarded` separately from ordinary correct questions.
 - Linked-answer MCQs may use `requiresCorrect: "CS-57"` to reference an earlier ordinary MCQ. The dependent question must have zero wrong-answer penalty; chains and awards are disallowed. An answered dependent whose prerequisite is wrong/unanswered reports `blocked` (Not evaluated), an explicit reason and zero marks; a blank remains unanswered. Both browser and server enforce the dependency and validate the response even when blocked. Existing papers without the field retain their scoring/signatures.
-- Verify the applicable paper's marking rules. Established GATE MCQ wrong-answer deduction is one-third of marks; MSQ/NAT have no negative marking. Ordinary unanswered questions get zero. Store penalties at full precision. Per-question marks override `scoring`; marks must be positive and wrong-answer marks zero or negative. Use the template fallback of 1 correct/0 wrong only when no applicable rule is established, and state it.
+- Verify the applicable paper's marking rules. Later included GATE papers deduct one-third of marks for wrong MCQs; the 2007 paper instead deducts one-quarter. MSQ/NAT have no negative marking. Ordinary unanswered questions get zero. Store penalties at full precision. Per-question marks override `scoring`; marks must be positive and wrong-answer marks zero or negative. Use the template fallback of 1 correct/0 wrong only when no applicable rule is established, and state it.
 - Do not shuffle options or expose correct answers/explanations in the question UI before submission. Recompute reports from the verified key; never trust stored scores.
 
 Validate draft/attempt identity, signature, question IDs, response formats, and timestamps before restoration or review. Submitted attempts use the existing version-1 JSON envelope with quiz ID, signature, timestamps, answers, summary, and results; accept compatible legacy submissions. Preserve existing question data for UI-only changes; its signature is `JSON.stringify({questions: data.questions, scoring: data.scoring ?? null})`. Invalid data must not corrupt current answers; stored scores never determine a reviewed report.
@@ -140,6 +143,7 @@ The map groups GA/CS numbering, uses response existence rather than correctness,
 
 | Paper | Folder / unique ID | Sources | Questions / assets |
 | --- | --- | --- | --- |
+| 2007 | `gate-cse-2007` / `gate-cse-2007` | External originals `CS-2007.pdf` (19 pages), `Gate-2007-Cse-answer-key.pdf` (2 pages); supplemental original-exam scan (21 pages) | 85 MCQ, 150 marks; 97 crops |
 | 2009 | `gate-cse-2009` / `gate-cse-2009` | `CS-2009.pdf` (13 pages), `answer-key-screenshot.png`, supplemental `GATE2009-original-exam-reference.pdf` (14 pages) | 60 MCQ, 100 marks; 69 crops |
 | 2018 | `gate-cse-2018` / `gate-cse-2018` | External originals `GATE2018.pdf` (23 pages), `Keys2018.pdf` (3 pages); filenames/hashes recorded in data | 65, 100 marks; 41 MCQ/24 NAT; 65 crops |
 | 2019 | `gate-cse-2019` / `gate-cse-2019` | `2019_CS_Paper1.pdf` (16 physical pages), `2019-Keys1.pdf` (3 pages) | 65, 100 marks; 41 MCQ/24 NAT; 65 crops |
@@ -148,6 +152,8 @@ The map groups GA/CS numbering, uses response existence rather than correctness,
 | 2021 Set 2, official session 6 | `gate-cse-2021-set-2` / `gate-cse-2021-set-2-session-6` | `GATE2021_QP_CS-2.pdf` (43 pages), `2021-CS2-S6-Keys.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 
 The 2009 paper uses CS 1–60 only; later papers keep GA 1–10 and CS 1–55 separate. Preserve these key exceptions:
+
+- 2007 uses a reconciled practice key, not an authenticated official final key. All 36 supplied-key blanks were independently solved. Correct Q24 A to B, Q43 D to C, Q48 C to A and Q51 A to B. Q15 has no printed option for all loop-condition evaluations; the quiz visibly clarifies successful comparisons/iterations and uses D instead of supplied A. Preserve that clarification. Q67 states the historical subnet convention; Q69 states Go-Back-N. Original-exam page 20 restores the Q78/79 shared grammar's `A -> bAA`, misprinted `S -> bAA` in the supplied reproduction. All 19 supplied pages, both key pages and 97 final 240 DPI crops were visually inspected; originals remain external and unchanged. Q1–20: +1/-0.25; Q21–85: +2/-0.5, except linked second questions 77/79/81/83/85 have zero penalty and require their preceding question correct. Common-data 71–73 and 74–75 remain independent. Blank 0/150, perfect 150/150, all wrong -35/150. Full completed key, derivations, original-scan scoring provenance and other wording caveats: `gate-cse-2007/KEY-NOTES.txt`; independent fixture: `tests/fixtures/gate-cse-2007-key.json`. Never apply the later one-third penalty or 100-mark total to this paper.
 
 - 2018 has 41 MCQ and 24 NAT questions, with no alternate MCQ answers or MTA. CS-15 accepts 0.021–0.024, CS-16 0.27–0.30, CS-23 59–60, and CS-44 0.60–0.62, all inclusive; the remaining NAT keys are exact values. Blank: 0/100; perfect: 100/100; all wrong: -21/100. The 23-page supplied paper contains 3 GA pages (Set-3) and 20 CS pages; no session number is inferred. All 23 paper pages, 3 key pages, and 65 final crops were visually checked. Crops use 240 DPI and recorded PDF-point rectangles; CS-38 retains the source diagram's inherent raster softness. Originals remain at their supplied external locations, with filenames and SHA-256 hashes recorded in data and the independent fixture; no PDF copies are stored in this quiz folder. Marking follows IIT Guwahati's GATE 2018 Information Brochure section 5.2.1 ([mirrored copy](https://acetheraceonline.com/wp-content/uploads/2017/11/GATE-2018-Information-Brochure.pdf), search-index verified; direct fetch unavailable during preparation).
 
@@ -163,6 +169,8 @@ The 2009 paper uses CS 1–60 only; later papers keep GA 1–10 and CS 1–55 se
 Marking references used during preparation: [official GATE guidance](https://gate2024.iisc.ac.in/question-papers/), [GATE 2021 brochure section 5.2.1](https://bt.iitkgp.ac.in/GATE-2021_IB_V3_09_09_2020.pdf), and [GATE 2019 brochure section 5.2.1](https://gate.iitm.ac.in/gate2019/pdfs/GATE_2019_Information_Brochure.pdf) (official search index verified; direct fetch currently returns 404). The [official archive](https://gate.iitb.ac.in/G21/prev_qp.php) lists one CS paper/key for 2019. Prefer relevant-year official rules for new papers.
 
 ## Verification and delivery
+
+The 2007 build passed `quiz-2007.test.cjs`: independent 85-entry key, all 340 choices, 45 linked combinations, 97 original PNGs (105 displayed image parts with repeated shared context), 150-mark blank/perfect/mixed/negative grades, full reports/Save/Print/maps, draft/flag/Submit/Retry/review/storage failures and disposable-server verified scores. `quiz-runtime.test.cjs`, `quiz-timer.test.cjs` (all seven quizzes), and new-script syntax checks passed. Every source page, key page and final crop was visually reviewed; an independent pixel/metadata audit matched all crops to their 240 DPI source renders with no clipped text. Actual HTTP health/quiz/PNG requests succeeded. In-app browser checks at its narrow viewport confirmed 85 questions, 340 radio controls, 105 images, disabled initial Review, unobscured map jump to CS78 and restored grammar, no horizontal overflow, and no console errors. No real attempt was created or reset; existing source, data, image and attempt hashes matched their baseline. Native browser shutdown/reopen and desktop viewport resizing were not automated.
 
 The timer and blue-theme update passed `quiz-timer.test.cjs` across all six quizzes and the blank template, plus `quiz-runtime.test.cjs` and actual-script syntax checks. The 2009, linked-answer, 2019, 2018, and Set 2 suites passed in an isolated temporary workspace using the current runtime/assets and historical source PDFs restored only there; some older suites still require source copies that are absent from the real folders. Browser checks used the supported in-app browser: fixed presets, Start/Pause/Reset, running-timer refresh recovery, sticky controls and unobscured map jumps, blue accents with exact `#000`/`#fff8fc` backgrounds, desktop/mobile layouts, and no console errors or horizontal overflow. Timer controls and Clear/Retry targets leave room for the sticky bar. All 404 existing question-data, crop, PDF, and saved-attempt files matched their pre-change hashes. No real submission was created; native browser shutdown/reopen was not automated.
 
@@ -185,6 +193,8 @@ For new papers or scoring changes, reconcile every source/key entry and crop. Te
 Run syntax checks on actual scripts and `node tests\quiz-runtime.test.cjs` for runtime changes. For Set 2 data/scoring/runtime changes, also run `node tests\quiz-set-2.test.cjs`; it covers the independent key fixture, source hashes/assets, all MCQ options, 208 MSQ subsets, NAT boundaries, scores/reports/maps, draft lifecycle, and isolation. For server changes, run `node tests\quiz-server.test.cjs`, including verified card scores, tampered/stale submissions, negative scores, and progress markup. For home controls, run `node tests\quiz-home.test.cjs` (filtering, confirmation/cancel, reset success/errors, score visibility, and no storage access). Syntax-check Mac scripts with Bash, and distinguish that check from actual macOS verification. Do not rerun unrelated checks after they pass.
 
 For 2019 data/scoring/runtime changes, run `node tests\quiz-2019.test.cjs`. Its independent key fixture checks all 65 entries, supplied PDF hashes, local PNGs and metadata, every MCQ option including CS-12 alternatives, numerical endpoints and CS-42's excluded gap, blank/perfect/mixed/wrong scores, and simulated draft/report/review/flag/theme behavior. Never create a real attempt while testing.
+
+For 2007 data/scoring/runtime changes, run `node tests/quiz-2007.test.cjs`. It checks the independent 85-entry supplied/completed key, 340 MCQ choices, 45 linked combinations, original-source metadata, all 97 crops, 150-mark grades, full reports/maps, draft/flag/review/storage behavior, and disposable-server scores. Preserve Q15's stated practice interpretation and all historical caveats. No real attempt is written.
 
 For 2018 data/scoring/runtime changes, run `node tests/quiz-2018.test.cjs`. It checks the independent key/source-page fixture, provenance hashes without depending on external originals, all options and numerical boundaries, scores, crops/local resources, persistence/review/flags, and disposable-server scores. Never create a real attempt while testing.
 
