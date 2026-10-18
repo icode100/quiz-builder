@@ -33,10 +33,10 @@ async function run() {
     await fs.mkdir(path.join(root, 'not-a-quiz'));
     await fs.writeFile(path.join(root, 'not-a-quiz', 'attempt.json'), 'preserve nonquiz attempt');
     for (const filename of ['styles.css', 'theme.js', 'home.js']) await fs.copyFile(path.join(__dirname, '..', '_template', filename), path.join(root, '_template', filename));
-    async function fixture(name, answers) {
+    async function fixture(name, answers, title = name) {
       const directory = path.join(root, name);
       await fs.mkdir(directory);
-      await fs.writeFile(path.join(directory, 'index.html'), `<title>${name}</title>`);
+      await fs.writeFile(path.join(directory, 'index.html'), `<title>${title}</title>`);
       await fs.writeFile(path.join(directory, 'quiz-data.js'), keySource);
       if (answers !== undefined) await fs.writeFile(path.join(directory, 'attempt.json'), JSON.stringify({ ...attempt, answers }));
       return directory;
@@ -102,6 +102,58 @@ async function run() {
       const asset = await request(`/_template/${filename}`);
       assert.equal(asset.status, 200);
       assert.equal(asset.body, await fs.readFile(path.join(root, '_template', filename), 'utf8'));
+    }
+    const orderingFixtures = [
+      ['order-set-ten', 'GATE CSE 2021: Set 10'],
+      ['order-2022-fallback', 'Computer Science practice'],
+      ['order-set-two', 'GATE CSE 2021 - Set 2'],
+      ['order-unknown', 'Extra practice'],
+      ['order-2099-title-priority', 'GATE CSE 2025'],
+      ['order-set-one-copy-10', 'GATE CSE 2021 — Set 1'],
+      ['order-set-one-copy-2', 'GATE CSE 2021 — Set 1']
+    ];
+    const orderingNames = orderingFixtures.map(([name]) => name);
+    async function attemptSnapshot() {
+      const snapshot = {};
+      for (const item of await fs.readdir(root, { withFileTypes: true })) {
+        if (!item.isDirectory()) continue;
+        const file = path.join(root, item.name, 'attempt.json');
+        try {
+          const stat = await fs.stat(file);
+          snapshot[item.name] = { content: await fs.readFile(file, 'utf8'), mtime: stat.mtimeMs, ctime: stat.ctimeMs };
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error;
+          snapshot[item.name] = null;
+        }
+      }
+      return snapshot;
+    }
+    function orderedNames(html) {
+      return [...html.matchAll(/<a\b[^>]*class="question-card paper-card"[^>]*href="\/([^"/]+)\/"/g)]
+        .map(match => decodeURIComponent(match[1]));
+    }
+    try {
+      for (const [name, title] of orderingFixtures) await fixture(name, name === 'order-set-two' ? { 'GA-1': 'D' } : undefined, title);
+      const expected = ['order-2099-title-priority', 'order-2022-fallback', 'order-set-one-copy-2', 'order-set-one-copy-10', 'order-set-two', 'order-set-ten', 'order-unknown'];
+      const beforeListing = await attemptSnapshot();
+      const firstOrder = orderedNames((await request('/')).body);
+      assert.deepEqual(firstOrder.filter(name => orderingNames.includes(name)), expected, 'Home lists newest years first, using title years before folder years and natural title/folder ties');
+      const dated = expected.slice(0, -1);
+      assert.ok(dated.every(name => firstOrder.indexOf(name) < firstOrder.indexOf('order-unknown')), 'Undated quizzes follow every dated paper');
+      assert.deepEqual(orderedNames((await request('/')).body), firstOrder, 'Repeated home requests keep a stable paper order');
+      assert.deepEqual(await attemptSnapshot(), beforeListing, 'Listing never creates or rewrites saved attempts');
+
+      const newestName = 'order-new-paper';
+      orderingNames.push(newestName);
+      await fixture(newestName, undefined, 'GATE CSE 2026');
+      const afterAddition = await attemptSnapshot();
+      const updatedOrder = orderedNames((await request('/')).body);
+      assert.equal(updatedOrder[0], newestName, 'A newly discovered latest-year quiz becomes the first card without restarting');
+      assert.deepEqual(updatedOrder.filter(name => orderingNames.includes(name)), [newestName, ...expected]);
+      assert.deepEqual(orderedNames((await request('/')).body), updatedOrder, 'The updated order remains stable');
+      assert.deepEqual(await attemptSnapshot(), afterAddition, 'Discovering a new quiz leaves every saved attempt untouched');
+    } finally {
+      for (const name of orderingNames) await fs.rm(path.join(root, name), { recursive: true, force: true });
     }
     assert.match((await request('/gate-test/')).body, /<h1>Quiz/);
     assert.equal((await request('/gate-test/quiz-data.js')).status, 200);
@@ -206,7 +258,7 @@ async function run() {
     } catch (error) { if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error; }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
     assert.equal((await fs.readdir(quiz)).filter(name => name.startsWith('.attempt-')).length, 0);
-    console.log('Quiz server tests passed: verified card scores/bars, attempt badges/toggles/reset controls, reset isolation and guards, themed assets, submitted attempts, validation, and paths.');
+    console.log('Quiz server tests passed: newest-year-first discovery and natural ties, verified card scores/bars, attempt badges/toggles/reset controls, reset isolation and guards, themed assets, submitted attempts, validation, and paths.');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));

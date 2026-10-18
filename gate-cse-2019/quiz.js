@@ -10,6 +10,74 @@
   let serverBusy = false, reviewState = null, hasSavedAttempt = false, reviewCheck = 0;
   const timerPresets = [180, 150, 120, 90, 60, 30];
   let timerMinutes = 180, timerRemainingMs = 180 * 60000, timerEndsAt = null, timerInterval = null;
+  let currentQuestionIndex = 0, currentQuestionFrame = false, currentQuestionInteraction = null;
+
+  function setCurrentQuestion(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
+    currentQuestionIndex = index;
+    data.questions.forEach((question, number) => {
+      byId(`nav-question-${number}`)?.setAttribute("aria-current", number === index ? "location" : "false");
+    });
+  }
+  function questionTarget(index) {
+    return byId(`${submittedAt ? "result" : "question"}-card-${index}`);
+  }
+  function noteCurrentQuestion(index) {
+    setCurrentQuestion(index);
+    currentQuestionInteraction = { index, scrollY: window.scrollY ?? 0 };
+  }
+  function jumpToQuestion(index) {
+    setCurrentQuestion(index);
+    const target = questionTarget(index);
+    target?.scrollIntoView({ block: "start" });
+    target?.focus({ preventScroll: true });
+    noteCurrentQuestion(index);
+  }
+  function updateCurrentQuestionFromViewport() {
+    const height = window.innerHeight;
+    if (!Number.isFinite(height) || height <= 0) return;
+    const first = questionTarget(0);
+    if (!first?.getBoundingClientRect) return;
+    const timer = byId("quiz-timer"), timerRect = !timer.hidden && timer.getBoundingClientRect?.();
+    const scrollMargin = parseFloat(window.getComputedStyle?.(first).scrollMarginTop) || 0;
+    const line = Math.min(height - 1, Math.max(16, scrollMargin + 1, timerRect && timerRect.top < height && timerRect.bottom > 0 ? timerRect.bottom + 16 : 0));
+    if (currentQuestionInteraction) {
+      const target = questionTarget(currentQuestionInteraction.index), rect = target?.getBoundingClientRect?.();
+      if (currentQuestionInteraction.scrollY === (window.scrollY ?? 0) && rect && rect.bottom > line && rect.top < height) {
+        setCurrentQuestion(currentQuestionInteraction.index);
+        return;
+      }
+      currentQuestionInteraction = null;
+    }
+    let index = -1, distance = Infinity;
+    data.questions.forEach((question, number) => {
+      const rect = questionTarget(number)?.getBoundingClientRect?.();
+      if (!rect || rect.bottom <= line || rect.top >= height) return;
+      const nextDistance = Math.max(0, rect.top - line);
+      if (nextDistance < distance) { index = number; distance = nextDistance; }
+    });
+    if (index >= 0) setCurrentQuestion(index);
+  }
+  function scheduleCurrentQuestion() {
+    if (currentQuestionFrame) return;
+    currentQuestionFrame = true;
+    const update = () => { currentQuestionFrame = false; updateCurrentQuestionFromViewport(); };
+    if (window.requestAnimationFrame) window.requestAnimationFrame(update);
+    else update();
+  }
+  function setupCurrentQuestion() {
+    const trackInteraction = (event) => {
+      const card = event.target.closest?.(".question-card, .result-card");
+      const match = card?.id.match(/^(question|result)-card-(\d+)$/);
+      if (match && match[1] === (submittedAt ? "result" : "question")) noteCurrentQuestion(Number(match[2]));
+    };
+    document.addEventListener("focusin", trackInteraction);
+    document.addEventListener("pointerdown", trackInteraction);
+    document.addEventListener("load", scheduleCurrentQuestion, true);
+    window.addEventListener("scroll", scheduleCurrentQuestion, { passive: true });
+    window.addEventListener("resize", scheduleCurrentQuestion);
+    window.addEventListener("pageshow", scheduleCurrentQuestion);
+  }
 
   function timerSnapshot() {
     return { durationMinutes: timerMinutes, remainingMs: timerEndsAt === null ? timerRemainingMs : Math.max(0, Math.min(timerMinutes * 60000, timerEndsAt - Date.now())), endsAt: timerEndsAt };
@@ -308,7 +376,7 @@
       setSavedAttempt(record);
       if (!hasSavedAttempt) throw new Error("This paper has not been attempted before.");
       const saved = validateSubmission(record);
-      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], submittedAt, updatedAt };
+      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], submittedAt, updatedAt, currentQuestionIndex };
       restoreState(saved);
       renderReport();
       status("Reviewing your last submitted attempt. Your current draft is unchanged.");
@@ -397,16 +465,20 @@
       button.id = `nav-question-${index}`;
       icon.setAttribute("aria-hidden", "true");
       button.append(element("span", "nav-number", String(question.number ?? questionLabel(question))), icon);
-      button.addEventListener("click", () => {
-        const target = byId(`${submittedAt ? "result" : "question"}-card-${index}`);
-        target?.scrollIntoView({ block: "start" });
-        target?.focus({ preventScroll: true });
-      });
+      button.addEventListener("click", () => jumpToQuestion(index));
       groups.get(section).grid.append(button);
     });
     byId("nav-groups").replaceChildren(...Array.from(groups.values(), ({ group }) => group));
     byId("question-nav").hidden = !data.questions.length;
     document.querySelector(".quiz-shell").classList.toggle("has-navigator", data.questions.length > 0);
+    if (!byId("nav-current-legend")) {
+      const legend = element("span"), dot = element("span", "nav-dot current-question");
+      legend.id = "nav-current-legend";
+      dot.setAttribute("aria-hidden", "true");
+      legend.append(dot, element("span", "", "Current question"));
+      document.querySelector(".nav-legend")?.append(legend);
+    }
+    setCurrentQuestion(currentQuestionIndex);
   }
   function numericError(input, error, raw) {
     const invalid = Boolean(raw.trim()) && numericValue(raw) === null;
@@ -487,6 +559,7 @@
         save();
         renderQuestions();
         byId(`question-card-${index}`).focus();
+        noteCurrentQuestion(index);
       });
       const actions = element("div", "question-actions"), mark = element("button", "button button-secondary mark-review");
       mark.type = "button";
@@ -524,6 +597,8 @@
     return line;
   }
   function renderReport(moveFocus = true) {
+    currentQuestionInteraction = null;
+    if (moveFocus) setCurrentQuestion(0);
     results = grade();
     const { counts, score, maximum, awardedMarks } = summarize(results);
     byId("report-title").textContent = `${data.title} — result`;
@@ -557,6 +632,7 @@
     updateProgress();
     setControls();
     if (moveFocus) { byId("report-title").focus(); byId("report").scrollIntoView({ block: "start" }); }
+    scheduleCurrentQuestion();
   }
   function showAttempt() {
     renderQuestions();
@@ -565,12 +641,15 @@
     byId("quiz-timer").hidden = false;
     renderTimer();
     if (submittedAt) renderReport(false);
+    else scheduleCurrentQuestion();
   }
   function clearAttempt(moveFocus = true) {
     if (serverBusy) return false;
     Object.keys(answers).forEach((id) => delete answers[id]);
     reviewFlags.clear();
     submittedAt = "";
+    currentQuestionIndex = 0;
+    currentQuestionInteraction = null;
     results = [];
     save();
     showAttempt();
@@ -583,7 +662,9 @@
       const current = reviewState;
       reviewState = null;
       restoreState(current);
+      currentQuestionIndex = current.currentQuestionIndex ?? 0;
       showAttempt();
+      jumpToQuestion(currentQuestionIndex);
       status("Returned to your current quiz.");
       return true;
     }
@@ -626,6 +707,7 @@
     byId("quiz-meta").hidden = false;
     setupStorage();
     setupTimer();
+    setupCurrentQuestion();
     byId("quiz-form").addEventListener("submit", submitAttempt);
     byId("review-attempt").addEventListener("click", reviewLastAttempt);
     byId("clear-answers").addEventListener("click", () => clearAttempt());

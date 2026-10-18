@@ -3,11 +3,12 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")" && pwd -P)"
 address='http://127.0.0.1:8765'
-no_browser=false
+no_browser=true
 case "${1:-}" in
   '') ;;
+  --with-browser) no_browser=false ;;
   --no-browser) no_browser=true ;;
-  *) echo 'Usage: bash start-quiz.command [--no-browser]' >&2; exit 1 ;;
+  *) echo 'Usage: bash start-quiz.command [--with-browser|--no-browser]' >&2; exit 1 ;;
 esac
 if (( $# > 1 )); then echo 'Too many arguments.' >&2; exit 1; fi
 

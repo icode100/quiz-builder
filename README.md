@@ -6,17 +6,23 @@ Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local ser
 
 The home page and quizzes share remembered light/dark mode, blue accents, and soft card shadows. Dark mode uses deeper royal-blue controls on a pitch-black page; the light palette keeps its existing colors and pale background. **Theme** is a keyboard-accessible toggle switch.
 
-The home page uses stacked cards: green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified score against that paper's total and a score bar. Scores are recomputed from the saved responses and answer key; stale or invalid submissions show **Last score unavailable**. Negative scores remain visible, with an empty bar.
+Click **Calculator** at the bottom right of the quiz or home page to open the shared scientific calculator. It supports editable expressions, parentheses, powers, roots, logarithms, trigonometry with **DEG/RAD**, factorials, combinations/permutations, **Ans**, and memory controls. Move it by dragging its heading (or focus the heading and use arrow keys), close it with **×** or **Escape**, or use **↗** to open it in a separate tab. Closing and reopening the panel preserves its current calculation; reloading starts fresh. Calculations use JavaScript floating-point arithmetic.
+
+The calculator is available whenever the quiz server runs, also at [http://127.0.0.1:8765/_calculator/](http://127.0.0.1:8765/_calculator/). Its files live once in `_calculator/`; the server adds the launcher to quiz pages, including future quizzes, without copying or changing their files. The calculator itself loads on first opening, uses no extra process or package, follows the page theme, and stays out of printed reports. It never changes quiz responses, timer state, browser drafts, or saved submissions.
+
+The home page lists papers by year, newest first, and automatically places new quizzes in order. Sets within a year stay in natural order (Set 1, Set 2, Set 10). Cards show green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified score against that paper's total and a score bar. Scores are recomputed from the saved responses and answer key; stale or invalid submissions show **Last score unavailable**. Negative scores remain visible, with an empty bar.
 
 Turn on the **Unsolved only** switch to hide attempted papers. **Reset saved attempts** asks for confirmation and removes all saved submissions, marking papers unsolved and hiding their scores; unfinished browser drafts remain intact.
 
-On macOS, with Node.js available, run this from the project folder (or double-click `start-quiz.command`):
+On macOS, with Node.js available, run this from the project folder (or double-click `start-quiz.command`) to start/reuse the server without opening a browser:
 
 ```bash
 bash start-quiz.command
 ```
 
-Use `bash stop-quiz.command` to stop the recorded server; `bash start-quiz.command --no-browser` starts it without opening a browser. Copy your existing quiz `attempt.json` files into matching folders on the Mac to retain reports and attempted markers, since Git excludes them. Unfinished browser drafts do not transfer automatically between computers.
+Add `--with-browser` to open the quiz list automatically: `bash start-quiz.command --with-browser`. With the existing Mac shell alias, use `quiz-start` for no browser or `quiz-start --with-browser` to open it. The existing `--no-browser` flag is also accepted. Open the list manually at [http://127.0.0.1:8765/](http://127.0.0.1:8765/).
+
+Use `bash stop-quiz.command` (or the Mac `quiz-stop` alias) to stop the recorded server. Copy your existing quiz `attempt.json` files into matching folders on the Mac to retain reports and attempted markers, since Git excludes them. Unfinished browser drafts do not transfer automatically between computers.
 
 For PowerShell terminal commands, create your profile if missing and open it:
 
@@ -42,18 +48,20 @@ Clicking **Submit** resets the timer, including when numerical input is invalid 
 
 **Mark for review** beside **Clear response** toggles a solid blue marker in the question map. Flags restore with your browser draft and never enter `attempt.json` or affect scoring. Clear response keeps its flag; Clear answers and fresh Attempt again clear flags. A successful saved Submit clears the draft and flags; invalid input or a failed save keeps them. Reviewing the saved report hides current flags, and Back to quiz restores them.
 
+The question map highlights your current question with an extra blue ring as you scroll, focus a question, or jump using a map number. It also follows the current entry in a report. The ring stays separate from attempted, marked-for-review, and invalid-answer indicators and is announced with `aria-current` for assistive technology.
+
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 
 Submit displays your score and question-by-question report and saves the latest submission to that quiz's `attempt.json`. The draft clears only after saving succeeds. **Review last attempt** is enabled only if that file has at least one non-null answer; otherwise its disabled button shows **This paper has not been attempted before.** on hover. Review opens the saved report without changing current practice; **Back to quiz** returns to your prior view. **Attempt again** starts fresh practice while preserving the saved submission. Save report and Print report remain available.
 
 Available quizzes, after starting the server:
 
-- [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
-- [GATE CSE 2018](http://127.0.0.1:8765/gate-cse-2018/)
-- [GATE CSE 2019](http://127.0.0.1:8765/gate-cse-2019/index.html)
-- [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
 - [GATE CSE 2021, Set 1, session 5](http://127.0.0.1:8765/gate-cse-2021-set-1/index.html)
 - [GATE CSE 2021, Set 2, session 6](http://127.0.0.1:8765/gate-cse-2021-set-2/index.html)
+- [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
+- [GATE CSE 2019](http://127.0.0.1:8765/gate-cse-2019/index.html)
+- [GATE CSE 2018](http://127.0.0.1:8765/gate-cse-2018/)
+- [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
 - [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
 The 2007 paper has 85 MCQs totaling 150 marks. The 2009 paper has 60 MCQs totaling 100 marks; the later papers each have 65 questions totaling 100 marks. Original question crops preserve diagrams and equations. New quizzes record source filenames and hashes without duplicating supplied PDFs. Builder guidance: `AGENTS.md`.
@@ -69,3 +77,7 @@ The 2018 quiz has 41 MCQ and 24 NAT questions, with 65 original 240 DPI question
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
 
 Timer and shared-interface checks: `node tests/quiz-timer.test.cjs` and `node tests/quiz-runtime.test.cjs`; tests use simulated storage or temporary folders.
+
+Current-question map checks: `node tests/quiz-current-question.test.cjs`.
+
+Calculator checks: `node tests/calculator-engine.test.cjs`, `node tests/calculator-ui.test.cjs`, `node tests/calculator-launcher.test.cjs`, and `node tests/quiz-calculator.test.cjs`; the HTTP tests use disposable quiz folders.

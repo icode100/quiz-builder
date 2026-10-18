@@ -8,6 +8,9 @@ const { randomUUID } = require('node:crypto');
 const PORT = 8765;
 const MARKER = 'gate-cse-quiz-server-v1';
 const MAX_BODY = 2 * 1024 * 1024;
+const CALCULATOR_FILES = new Set(['index.html', 'engine.js', 'calculator.js', 'calculator.css', 'launcher.js', 'launcher.css']);
+const calculatorAssets = '<link rel="stylesheet" href="/_calculator/launcher.css">\n<script src="/_calculator/launcher.js" defer></script>\n';
+const withCalculator = html => /<\/head\s*>/i.test(html) ? html.replace(/<\/head\s*>/i, calculatorAssets + '$&') : html + '\n' + calculatorAssets;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.txt': 'text/plain; charset=utf-8' };
 const inside = (parent, child) => { const relative = path.relative(parent, child); return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -108,9 +111,11 @@ function createServer({ root = __dirname, port = PORT } = {}) {
         const { attempted, result } = await lastAttempt(folder);
         const scoreLabel = result ? `Last score: ${formatMarks(result.score)} / ${formatMarks(result.maximum)}` : 'Last score unavailable';
         const score = `<span class="paper-score"${attempted ? '' : ' hidden'}><span class="paper-score-value">${scoreLabel}</span><progress class="paper-score-bar"${result ? ` value="${Math.max(0, Math.min(result.maximum, result.score))}" max="${result.maximum}" aria-label="Last score: ${formatMarks(result.score)} out of ${formatMarks(result.maximum)} marks"` : ' hidden'}></progress></span>`;
-        links.push(`<li data-attempted="${attempted}"><a class="question-card paper-card" href="/${encodeURIComponent(name)}/"><div class="paper-details"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-status ${attempted ? 'attempted' : 'unattempted'}">${attempted ? 'Attempted before' : 'Not attempted'}</span></div>${score}<span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>`);
+        const year = Number((title.match(/(?:^|\D)((?:19|20)\d{2})(?!\d)/) || name.match(/(?:^|\D)((?:19|20)\d{2})(?!\d)/))?.[1] || 0);
+        links.push({ name, title, year, html: `<li data-attempted="${attempted}"><a class="question-card paper-card" href="/${encodeURIComponent(name)}/"><div class="paper-details"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-status ${attempted ? 'attempted' : 'unattempted'}">${attempted ? 'Attempted before' : 'Not attempted'}</span></div>${score}<span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>` });
       } catch { /* Ignore folders that are not quizzes. */ }
     }
+    links.sort((a, b) => b.year - a.year || a.title.localeCompare(b.title, 'en', { numeric: true, sensitivity: 'base', ignorePunctuation: true }) || a.name.localeCompare(b.name, 'en', { numeric: true }));
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -137,7 +142,7 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     </div>
     <p id="home-status" class="status-message" role="status" aria-live="polite" hidden></p>
     <p id="paper-count" class="home-count" role="status" aria-live="polite">${links.length} paper${links.length === 1 ? '' : 's'} available</p>
-    <ul id="home-papers" class="home-papers" aria-label="Available question papers">${links.join('')}</ul>
+    <ul id="home-papers" class="home-papers" aria-label="Available question papers">${links.map(paper => paper.html).join('')}</ul>
     <p id="no-papers" class="empty-state"${links.length ? ' hidden' : ''}>${links.length ? 'No unsolved papers left. Turn off the filter to see all papers.' : 'No papers are ready yet. Add a quiz folder to get started.'}</p>
     <p class="home-note subtitle">Your unfinished answers stay in this browser. Submit saves your latest result for review.</p>
   </main>
@@ -151,7 +156,24 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       const pathname = decodeURIComponent(req.url.split('?')[0]);
       if (!pathname.startsWith('/') || pathname.includes('\\') || pathname.includes('\0') || pathname.split('/').some(part => part === '..' || part === '.')) return reply(res, 400, 'Invalid path.');
       if (req.method === 'GET' && pathname === '/health') return reply(res, 200, JSON.stringify({ server: MARKER }), mime['.json']);
-      if (req.method === 'GET' && pathname === '/') return reply(res, 200, await landing(), mime['.html']);
+      if (req.method === 'GET' && pathname === '/') return reply(res, 200, withCalculator(await landing()), mime['.html']);
+      if (pathname === '/_calculator' || pathname.startsWith('/_calculator/')) {
+        if (req.method !== 'GET' && req.method !== 'HEAD') return reply(res, 405, 'The calculator is read-only.');
+        const filename = pathname.replace(/^\/_calculator\/?/, '') || 'index.html';
+        if (!CALCULATOR_FILES.has(filename)) return reply(res, 404, 'File not found.');
+        const directory = path.join(root, '_calculator');
+        if ((await fsp.lstat(directory)).isSymbolicLink()) return reply(res, 403, 'Invalid calculator path.');
+        const target = path.join(directory, filename);
+        if ((await fsp.lstat(target)).isSymbolicLink()) return reply(res, 403, 'Invalid calculator path.');
+        const file = await fsp.realpath(target);
+        if (!inside(directory, file) || !inside(root, file)) return reply(res, 403, 'Invalid calculator path.');
+        const stat = await fsp.stat(file);
+        if (!stat.isFile()) return reply(res, 404, 'File not found.');
+        res.writeHead(200, { 'Content-Type': mime[path.extname(file)], 'Content-Length': stat.size, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+        if (req.method === 'HEAD') return res.end();
+        const stream = fs.createReadStream(file); stream.on('error', () => res.destroy()); stream.pipe(res);
+        return;
+      }
       if (pathname === '/reset-attempts') {
         if (req.method !== 'POST') return reply(res, 405, 'Method not allowed.');
         if (req.headers.origin !== origin || (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site']))) return reply(res, 403, 'Use the local home page to reset attempts.');
@@ -199,6 +221,11 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       if (!inside(folder, file) || !inside(root, file)) return reply(res, 403, 'Invalid file path.');
       const stat = await fsp.stat(file);
       if (!stat.isFile()) return reply(res, 404, 'File not found.');
+      if (name !== '_template' && relative === 'index.html') {
+        const html = withCalculator(await fsp.readFile(file, 'utf8'));
+        res.writeHead(200, { 'Content-Type': mime['.html'], 'Content-Length': Buffer.byteLength(html), 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+        return res.end(req.method === 'HEAD' ? undefined : html);
+      }
       res.writeHead(200, { 'Content-Type': mime[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Content-Length': stat.size, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
       if (req.method === 'HEAD') return res.end();
       const stream = fs.createReadStream(file); stream.on('error', () => res.destroy()); stream.pipe(res);
