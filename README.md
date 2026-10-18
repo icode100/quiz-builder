@@ -63,6 +63,8 @@ Available quizzes, after starting the server:
 - [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
 - [GATE CSE 2019](http://127.0.0.1:8765/gate-cse-2019/index.html)
 - [GATE CSE 2018](http://127.0.0.1:8765/gate-cse-2018/)
+- [GATE CSE 2017, Set 1, session 1](http://127.0.0.1:8765/gate-cse-2017-set-1/)
+- [GATE CSE 2016, Set 1](http://127.0.0.1:8765/gate-cse-2016-set-1/)
 - [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
 - [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
@@ -75,6 +77,10 @@ The 2009 quiz preserves the supplied paper and screenshot key, with 69 sharp ima
 The 2019 quiz has 41 MCQ and 24 NAT questions. Its verified key retains the C/D alternative for CS-12 and the two separate numerical ranges for CS-42. Source filenames and printed set labels are preserved; no session number is inferred. Its independent checks run with `node tests\quiz-2019.test.cjs`.
 
 The 2018 quiz has 41 MCQ and 24 NAT questions, with 65 original 240 DPI question crops. It preserves the supplied inclusive ranges for CS-15, CS-16, CS-23, and CS-44. The original PDFs remain in their supplied location; the quiz works entirely from its local crops and verified data. Its independent checks run with `node tests/quiz-2018.test.cjs`.
+
+The 2017 Set 1 quiz has 45 MCQ and 20 NAT questions, totaling 100 marks, from 11 February 2017, session 1. It preserves the source order and numbering: CS 1–55, then GA 56–65. Its 65 original 240 DPI crops retain the supplied images and notation; the two source PDFs remain unchanged in Downloads. CS-45 accepts 86.5–89.5 and CS-50 accepts 1.49–1.52, inclusive; CS-49 is exactly −16. MCQ penalties use the official full-precision one-third rule. Independent key, crop, grading, persistence, and disposable-server checks run with `node tests/quiz-2017-set-1.test.cjs`.
+
+The 2016 Set 1 quiz has 39 MCQ and 26 NAT questions, totaling 100 marks, with 65 original 240 DPI crops. It retains GA 1–10 followed by CS 1–55 and records the printed GA Set-5 / CS Set A labels without inferring a session. CS-8 accepts 3–4, CS-27 accepts 197.9–198.1, CS-29 accepts 0.33–0.34, and CS-32 accepts 33–34, all inclusive. Other NAT keys are exact. Its source PDFs remain unchanged in Downloads. Independent checks run with `node tests/quiz-2016-set-1.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
 
