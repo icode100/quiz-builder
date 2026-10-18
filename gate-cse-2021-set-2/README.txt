@@ -4,6 +4,11 @@ Unfinished answers cache automatically and restore across browser restarts; clea
 Attempt again remains usable when caching fails and keeps the failure warning visible.
 Submit displays every question's response, outcome, correct answer, and marks and saves this folder's attempt.json. The draft clears only after saving succeeds; only Submit writes the file. Invalid nonblank numerical input blocks Submit and retains the draft.
 Review last attempt reads the saved report without replacing current practice; Back to quiz returns to your prior view. Attempt again starts fresh and preserves attempt.json. Save report and Print report remain available.
+
+After Submit and in Review last attempt, the map uses green for Correct, red for Incorrect, and neutral for Unanswered. Linked answers that cannot be evaluated are amber; marks-to-all awards are blue. Marked questions show ★ instead of the usual status symbol, keeping their outcome color.
+
+Submit saves review flags in attempt.json without changing scoring. A successful save clears draft/practice flags while keeping report stars; a failed save keeps the draft, flags, and report. Saved Review uses the submitted flags; Back to quiz restores the prior draft/view and its flags. Older submissions remain readable but cannot recover past review flags.
+
 MCQ penalties: one-third of marks; MSQ: exact set, no partial credit; NAT/MSQ: no penalty. Unanswered questions score zero. CS-13 is MSQ even with only one correct option.
 Includes 65 original question PNG crops at 240 DPI, with full-resolution image links and source pages. The question map and remembered light/dark mode work offline.
 Unchanged source copies: GATE2021_QP_CS-2.pdf (43 pages) and 2021-CS2-S6-Keys.pdf (3 pages). GA 1-10 and CS 1-55 retain their separate numbering.

@@ -169,10 +169,12 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
     assert.equal(button.textContent, marked ? 'Unmark review' : 'Mark for review');
     assert(button.attrs['aria-label'].includes(question.displayLabel || question.id));
     const map = h.document.getElementById(`nav-question-${index}`);
-    assert.equal(map.className.split(' ').includes('marked-review'), marked && visible);
-    assert.equal(map.attrs['aria-label'].includes(', Marked for review'), marked && visible);
+    if (visible) {
+      assert.equal(map.className.split(' ').includes('marked-review'), marked);
+      assert.equal(map.attrs['aria-label'].includes(', Marked for review'), marked);
+    }
   }
-  assert.equal(h.ids['nav-review-legend'].hidden, !visible, 'Review legend is practice-only');
+  if (visible) assert.equal(h.ids['nav-review-legend'].hidden, false, 'Practice shows the review legend');
 }
 
 (async () => {
@@ -199,7 +201,7 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
     }
   }
 
-  // Review flags belong only to the current draft. A flag neither answers a
+  // Practice review flags belong to the current draft. A flag neither answers a
   // question nor makes a saved report available, and toggling never fetches.
   const marked = await load(), markedSignature = JSON.stringify(marked.data);
   const markedDialogs = rejectFileDialogs(marked);
@@ -323,7 +325,7 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
   assertReviewAvailability(refreshed, true);
   assertFlags(refreshed, []);
   const submittedAttempt = refreshed.server.get(attemptUrl(refreshed));
-  assert(!Object.hasOwn(submittedAttempt, 'reviewFlags'), 'Submitted attempt JSON excludes draft-only flags');
+  assert.deepEqual(submittedAttempt.reviewFlags, ['GA-1', 'CS-16'], 'Submitted attempt keeps the report review markers');
   assert(submittedAttempt.results.every(result => !Object.hasOwn(result, 'reviewFlags')), 'Scored results exclude flags');
   assert.deepEqual(Object.keys(submittedAttempt.answers).sort(), refreshed.data.questions.map(question => question.id).sort());
   assert.equal(submittedAttempt.version, 1); assert(submittedAttempt.submittedAt && submittedAttempt.updatedAt);
@@ -372,7 +374,7 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
   assert.equal(review.requests.length, 2); assert(getRequests(review).every(request => request.url === attemptUrl(review) && request.cache === 'no-store'));
   assert.equal(postRequests(review).length, 0);
   assert.equal(review.ids.report.hidden, false); assert.equal(review.t.answers['GA-1'], 'C');
-  assertFlags(review, []);
+  assertFlags(review, ['GA-1', 'CS-16']);
   assert(review.ids['nav-progress'].textContent.startsWith('3 attempted'));
   assert.equal(review.storage.get(draftKey(review)), workingDraft, 'Review must not replace an unfinished browser draft');
   assert.equal(JSON.stringify(review.server.get(attemptUrl(review))), diskBeforeReview, 'Review never rewrites attempt.json');
@@ -405,7 +407,8 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
     { ...submittedAttempt, answers: { ...submittedAttempt.answers, 'GA-1': 'Z' } },
     { ...submittedAttempt, answers: { ...submittedAttempt.answers, 'CS-11': ['Z'] } },
     { ...submittedAttempt, answers: { ...submittedAttempt.answers, 'CS-11': ['A', 'A'] } },
-    { ...submittedAttempt, answers: { ...submittedAttempt.answers, 'CS-16': '-' } }
+    { ...submittedAttempt, answers: { ...submittedAttempt.answers, 'CS-16': '-' } },
+    ...[null, 'GA-1', {}, [null], [1], ['unknown-question'], ['GA-1', 'GA-1']].map(reviewFlags => ({ ...submittedAttempt, reviewFlags }))
   ];
   for (const attempt of damagedAttempts) {
     const badReview = await load('gate-cse-2021-set-1', { server: [[attemptUrl(refreshed), attempt]] });
@@ -499,15 +502,15 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
     const retainedDraft = JSON.parse(failed.storage.get(draftKey(failed)));
     assert.deepEqual(retainedDraft.answers, JSON.parse(prior).answers); assert(!retainedDraft.submittedAt);
     assert.deepEqual(retainedDraft.reviewFlags, ['GA-1']);
-    assert(!Object.hasOwn(JSON.parse(postRequests(failed)[0].body), 'reviewFlags'));
+    assert.deepEqual(JSON.parse(postRequests(failed)[0].body).reviewFlags, ['GA-1']);
     assert.equal(failed.server.size, 0); assert.equal(failed.ids['retry-quiz'].disabled, false); assertEditable(failed);
     const recovered = await load('gate-cse-2021-set-1', { storage: failed.storage });
     assert.equal(recovered.t.answers['GA-1'], 'C'); assert.equal(recovered.ids.report.hidden, true);
     assertFlags(recovered, ['GA-1']);
     await failed.ids['retry-quiz'].click(); assertFlags(failed, []);
   }
-  // Review also preserves flags from a failed-save report and returns to that
-  // same report. The saved record never acquires current draft metadata.
+  // Review preserves the separate markers of a failed-save report and returns
+  // to that same report without changing the saved record.
   const failedReport = await load('gate-cse-2021-set-1', {
     server: [[attemptUrl(refreshed), submittedAttempt]],
     fetch: (request, perform, response) => request.method === 'POST' ? response(503, { error: 'Disk unavailable' }) : perform()
@@ -515,7 +518,7 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
   await editResponse(failedReport, 'GA-2', 'A'); await reviewButton(failedReport, 'GA-2').click();
   await failedReport.ids['quiz-form'].fire('submit'); assertFlags(failedReport, ['GA-2']);
   const failedReportDraft = failedReport.storage.get(draftKey(failedReport)), failedReportScore = failedReport.ids['score-value'].textContent;
-  await failedReport.ids['review-attempt'].click(); assertFlags(failedReport, []);
+  await failedReport.ids['review-attempt'].click(); assertFlags(failedReport, ['GA-1', 'CS-16']);
   assert.equal(failedReport.storage.get(draftKey(failedReport)), failedReportDraft);
   await failedReport.ids['retry-quiz'].click(); assertFlags(failedReport, ['GA-2']);
   assert.equal(failedReport.ids.report.hidden, false); assert.equal(failedReport.ids['score-value'].textContent, failedReportScore);
@@ -550,7 +553,7 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
   assert(pendingReview.ids['quiz-form'].querySelectorAll('input, button').every(node => node.disabled));
   assert.equal(pendingReview.storage.get(draftKey(pendingReview)), pendingReviewDraft);
   finishReview(); await reviewingPromise;
-  assertFlags(pendingReview, []);
+  assertFlags(pendingReview, ['GA-1', 'CS-16']);
   assert.equal(pendingReview.ids['review-attempt'].disabled, false); assert.equal(pendingReview.ids['retry-quiz'].disabled, false);
   assert.equal(pendingReview.storage.get(draftKey(pendingReview)), pendingReviewDraft);
   const filePage = await load('gate-cse-2021-set-1', { url: 'file:///test/gate-cse-2021-set-1/index.html' });
@@ -671,5 +674,5 @@ function assertFlags(h, expected, visible = !h.ids['quiz-form'].hidden) {
   assert.equal(old.ids['report-list'].querySelectorAll('img').length, 67);
   assert.equal(old.ids['retry-quiz'].disabled, false); await old.ids['retry-quiz'].click(); assertEditable(old); oldDialogs();
   const template = await load('_template'); assert.equal(template.ids['empty-state'].hidden, false);
-  console.log('PASS: grading/assets, MSQ/NAT/MCQ/MTA, maps/reports/theme, browser draft reopen/clear/isolation/failures, draft-only review flags with toggle/cache/restore/validation/clear/report/Submit isolation, Submit-only server write and success-only cache clearing, saved-answer Review gating/tooltips/blank saves/failures/stale opening reads, read-only last-attempt review/resume/validation/recomputed scores, server failure recovery/busy controls, no file dialogs, blank template.');
+  console.log('PASS: grading/assets, MSQ/NAT/MCQ/MTA, maps/reports/theme, browser draft reopen/clear/isolation/failures, review flags with toggle/cache/restore/validation/clear and submitted report snapshots, Submit-only server write and success-only cache clearing, saved-answer Review gating/tooltips/blank saves/failures/stale opening reads, read-only last-attempt review/resume/validation/recomputed scores, server failure recovery/busy controls, no file dialogs, blank template.');
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });

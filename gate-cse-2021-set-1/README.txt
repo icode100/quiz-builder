@@ -3,6 +3,11 @@ Launch ..\start-quiz.cmd (Windows) or ..\start-quiz.command (macOS), then open h
 Unfinished answers cache automatically and restore across browser restarts; clearing browser data or ending a private session can erase them.
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 Submit shows your report and saves this folder's attempt.json, then clears the draft only after saving succeeds. Only Submit writes the file. Review last attempt reads the saved report without replacing your current draft; Back to quiz returns to your prior view. Attempt again starts fresh and preserves attempt.json. Save report and Print report remain available.
+
+After Submit and in Review last attempt, the map uses green for Correct, red for Incorrect, and neutral for Unanswered. Linked answers that cannot be evaluated are amber; marks-to-all awards are blue. Marked questions show ★ instead of the usual status symbol, keeping their outcome color.
+
+Submit saves review flags in attempt.json without changing scoring. A successful save clears draft/practice flags while keeping report stars; a failed save keeps the draft, flags, and report. Saved Review uses the submitted flags; Back to quiz restores the prior draft/view and its flags. Older submissions remain readable but cannot recover past review flags.
+
 MCQ penalties: one-third of marks; MSQ: exact set, no partial credit; NAT/MSQ: no penalty. Original PDFs and question crops remain in this folder.
 Home: Attempted before means at least one non-null saved answer. Unsolved only filters the list. Reset saved attempts removes submitted reports after confirmation; browser drafts stay intact.
 

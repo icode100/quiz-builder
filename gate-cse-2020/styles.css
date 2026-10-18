@@ -13,6 +13,15 @@
   --muted: #596b84;
   --shadow: 0 8px 26px rgba(21, 58, 104, 0.07), 0 1px 3px rgba(21, 58, 104, 0.04);
   --nav-surface: #fff;
+  --map-correct: #166534;
+  --map-correct-border: #15803d;
+  --map-correct-bg: #dcfce7;
+  --map-incorrect: #b91c1c;
+  --map-incorrect-border: #dc2626;
+  --map-incorrect-bg: #fff1f2;
+  --map-blocked: #854d0e;
+  --map-blocked-border: #a16207;
+  --map-blocked-bg: #fef3c7;
 }
 
 * { box-sizing: border-box; }
@@ -101,7 +110,7 @@ a { color: var(--accent); }
 .nav-legend > span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .nav-dot { display: inline-block; width: 0.65rem; height: 0.65rem; border: 1px solid var(--control-border); border-radius: 50%; background: #f4f7fc; }
 .nav-dot.answered { border-color: var(--accent); background: var(--accent); }
-.nav-dot.marked-review { border-color: var(--accent); border-radius: 0.15rem; background: var(--accent); }
+.nav-dot.marked-review:not(.report-review) { border-color: var(--accent); border-radius: 0.15rem; background: var(--accent); }
 .nav-dot.needs-check { border-color: #a16207; background: #f59e0b; }
 .nav-dot.current-question { border-color: var(--accent); border-radius: 0.15rem; background: transparent; box-shadow: 0 0 0 1px var(--nav-surface), 0 0 0 2px var(--accent); }
 .nav-section + .nav-section { margin-top: 1rem; }
@@ -124,9 +133,9 @@ a { color: var(--accent); }
 }
 .nav-number { font-weight: 650; }
 .nav-state-icon { font-size: 0.7rem; }
-.nav-question.answered { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.nav-question.answered:not(.report-question) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .nav-question.needs-check { border-color: #a16207; background: #fef3c7; color: #854d0e; }
-.nav-question.marked-review { border-color: var(--accent); background: var(--accent); color: #fff; }
+.nav-question.marked-review:not(.report-question) { border-color: var(--accent); background: var(--accent); color: #fff; }
 .nav-question.marked-review.needs-check { border-color: #a16207; outline: 2px solid #a16207; outline-offset: 0; }
 .nav-question:hover { box-shadow: inset 0 0 0 1px currentColor; }
 .nav-question[aria-current="location"] { box-shadow: 0 0 0 2px var(--nav-surface), 0 0 0 4px var(--accent); }
@@ -326,6 +335,15 @@ a { color: var(--accent); }
     --border: #303b4c;
     --control-border: #7488a3;
     --muted: #a8b7cf;
+    --map-correct: #86efac;
+    --map-correct-border: #428659;
+    --map-correct-bg: #123023;
+    --map-incorrect: #fca5a5;
+    --map-incorrect-border: #b65b6b;
+    --map-incorrect-bg: #331015;
+    --map-blocked: #fde68a;
+    --map-blocked-border: #b68a32;
+    --map-blocked-bg: #443416;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 24px rgba(65, 105, 225, 0.035);
   }
 
@@ -354,12 +372,12 @@ a { color: var(--accent); }
   :root[data-theme="dark"] .timer-expired #timer-display { color: #fcd34d; }
   :root[data-theme="dark"] .nav-question { border-color: var(--control-border); background: #11162a; color: #dae7f7; }
   :root[data-theme="dark"] .nav-dot { border-color: var(--control-border); background: #11162a; }
-  :root[data-theme="dark"] .nav-question.answered { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  :root[data-theme="dark"] .nav-question.answered:not(.report-question) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
   :root[data-theme="dark"] .nav-dot.answered { border-color: var(--accent-fill); background: var(--accent-fill); }
   :root[data-theme="dark"] .nav-dot.needs-check { border-color: #fcd34d; background: #fcd34d; }
   :root[data-theme="dark"] .nav-question.needs-check { border-color: #fcd34d; background: #443416; color: #fde68a; }
-  :root[data-theme="dark"] .nav-dot.marked-review { border-color: var(--accent-fill); background: var(--accent-fill); }
-  :root[data-theme="dark"] .nav-question.marked-review { border-color: var(--accent-fill); background: var(--accent-fill); color: #fff; }
+  :root[data-theme="dark"] .nav-dot.marked-review:not(.report-review) { border-color: var(--accent-fill); background: var(--accent-fill); }
+  :root[data-theme="dark"] .nav-question.marked-review:not(.report-question) { border-color: var(--accent-fill); background: var(--accent-fill); color: #fff; }
   :root[data-theme="dark"] .nav-question.marked-review.needs-check { border-color: #fcd34d; outline-color: #fcd34d; }
   :root[data-theme="dark"] .nav-question.marked-review.needs-check:focus-visible { outline-color: var(--accent); }
 
@@ -399,6 +417,17 @@ a { color: var(--accent); }
   /* Preserve every diagram and equation in its original PDF colors. */
   :root[data-theme="dark"] .question-image { background: #fff; border-color: #46576e; }
 }
+
+/* Report stars keep the question's result color instead of the practice blue. */
+.nav-question.report-question.result-correct { border-color: var(--map-correct-border); background: var(--map-correct-bg); color: var(--map-correct); }
+.nav-question.report-question.result-incorrect { border-color: var(--map-incorrect-border); background: var(--map-incorrect-bg); color: var(--map-incorrect); }
+.nav-question.report-question.result-blocked { border-color: var(--map-blocked-border); background: var(--map-blocked-bg); color: var(--map-blocked); }
+.nav-question.report-question.result-awarded { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+:root .nav-dot.result-correct { border-color: var(--map-correct-border); background: var(--map-correct); }
+:root .nav-dot.result-incorrect { border-color: var(--map-incorrect-border); background: var(--map-incorrect); }
+:root .nav-dot.result-blocked { border-color: var(--map-blocked-border); background: var(--map-blocked); }
+:root .nav-dot.result-awarded { border-color: var(--accent); background: var(--accent); }
+:root .nav-dot.report-review { display: inline-flex; align-items: center; justify-content: center; width: 0.9rem; height: 0.9rem; border: 0; background: transparent; color: var(--muted); font-size: 0.9rem; }
 
 @media screen and (min-width: 901px) and (max-width: 1100px) {
   .quiz-shell.has-navigator { grid-template-columns: minmax(0, 900px) 320px; }

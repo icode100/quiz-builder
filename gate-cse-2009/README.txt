@@ -33,13 +33,17 @@ are recorded in quiz-data.js. Other questions use the sharper supplied PDF.
 Draft responses and Mark for review flags cache automatically in the same
 browser/profile at the address above. Refresh restores them. Clear response
 keeps its flag; Clear answers and Attempt again clear flags. Theme is remembered
-separately. Flags do not affect marks or enter the saved submission.
+separately. Flags do not affect marks.
 
 Submit shows every response, correct answer, outcome and marks. Only Submit
 writes the latest attempt.json. A successful save clears the browser draft;
 a failed save retains it. Review last attempt reads the saved report without
 replacing current practice; Back to quiz restores it. Attempt again preserves
 the submitted file. Save report and Print report are available.
+
+After Submit and in Review last attempt, the map uses green for Correct, red for Incorrect, and neutral for Unanswered. Linked answers that cannot be evaluated are amber; marks-to-all awards are blue. Marked questions show ★ instead of the usual status symbol, keeping their outcome color.
+
+Submit saves review flags in attempt.json without changing scoring. A successful save clears draft/practice flags while keeping report stars; a failed save keeps the draft, flags, and report. Saved Review uses the submitted flags; Back to quiz restores the prior draft/view and its flags. Older submissions remain readable but cannot recover past review flags.
 
 Verified with tests/quiz-2009.test.cjs (all 240 choices, source hashes/assets,
 scores, map/report and draft/review lifecycle), tests/quiz-linked.test.cjs

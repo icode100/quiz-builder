@@ -164,6 +164,18 @@ async function run() {
     assert.match(card, /Last score: 50 \/ 100/);
     assert.match(card, /<progress class="paper-score-bar" value="50" max="100" aria-label="Last score: 50 out of 100 marks">/);
     assert.doesNotMatch(card, /999/);
+    for (const reviewFlags of [['GA-1', 'CS-2'], []]) {
+      const flaggedAttempt = { ...attempt, reviewFlags };
+      assert.equal((await post(flaggedAttempt)).status, 200);
+      assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), flaggedAttempt, 'Submitted flags round-trip without changing the version-1 envelope or signature');
+      assert.match(checkStatus((await request('/')).body, 'gate-test', true), /Last score: 50 \/ 100/, 'Flags on answered or unanswered questions never affect scoring');
+    }
+    const invalidReviewFlags = [null, 'GA-1', {}, [null], [1], [''], ['unknown'], ['GA-1', 'GA-1'], ['GA-1', 'unknown']];
+    const beforeFlagRejections = await attemptSnapshot();
+    for (const reviewFlags of invalidReviewFlags) assert.equal((await post({ ...attempt, reviewFlags })).status, 400, `Reject invalid review flags: ${JSON.stringify(reviewFlags)}`);
+    assert.deepEqual(await attemptSnapshot(), beforeFlagRejections, 'Rejected flags leave every saved attempt untouched');
+    assert.equal((await post(attempt)).status, 200, 'Legacy submissions without flags remain compatible');
+    assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), attempt);
     const scoreCases = [
       [{ 'GA-1': 'D', 'CS-1': '13', 'CS-2': ['C', 'A'] }, 100],
       [{ 'GA-1': 'A', 'CS-1': '12', 'CS-2': ['A'] }, Number((50 - 25 / 3).toFixed(4))],
@@ -178,6 +190,7 @@ async function run() {
       { quizId: 'another-paper' }, { quizSignature: 'stale key' }, { version: 2 }, { submittedAt: 'invalid' }, { updatedAt: null },
       { answers: { unknown: null, 'GA-1': 'B' } }, { answers: { 'GA-1': 'unknown' } },
       { answers: { 'CS-2': [] } }, { answers: { 'CS-2': ['A', 'A'] } }, { answers: { 'CS-2': ['A', 'unknown'] } },
+      ...invalidReviewFlags.map(reviewFlags => ({ reviewFlags })),
       ...['-', ' ', '1e1', 'NaN', 'Infinity', '0x0', '1/2', '1,2'].map(answer => ({ answers: { 'CS-1': answer } }))
     ]) {
       await fs.writeFile(path.join(quiz, 'attempt.json'), JSON.stringify({ ...attempt, ...invalid }));
@@ -258,7 +271,7 @@ async function run() {
     } catch (error) { if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error; }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
     assert.equal((await fs.readdir(quiz)).filter(name => name.startsWith('.attempt-')).length, 0);
-    console.log('Quiz server tests passed: newest-year-first discovery and natural ties, verified card scores/bars, attempt badges/toggles/reset controls, reset isolation and guards, themed assets, submitted attempts, validation, and paths.');
+    console.log('Quiz server tests passed: newest-year-first discovery and natural ties, verified card scores/bars, attempt badges/toggles/reset controls, reset isolation and guards, themed assets, submitted attempts and review flags, validation, and paths.');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));

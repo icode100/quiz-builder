@@ -14,6 +14,7 @@ const withCalculator = html => /<\/head\s*>/i.test(html) ? html.replace(/<\/head
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.txt': 'text/plain; charset=utf-8' };
 const inside = (parent, child) => { const relative = path.relative(parent, child); return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const validReviewFlags = (attempt, ids) => !Object.hasOwn(attempt, 'reviewFlags') || (Array.isArray(attempt.reviewFlags) && new Set(attempt.reviewFlags).size === attempt.reviewFlags.length && attempt.reviewFlags.every(id => typeof id === 'string' && ids.has(id)));
 const escapeHtml = value => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const formatMarks = value => Number(value.toFixed(4)).toLocaleString('en-US', { maximumFractionDigits: 4 });
 
@@ -22,7 +23,7 @@ function scoreAttempt(attempt, data) {
   if (!object(data) || typeof data.id !== 'string' || !Array.isArray(data.questions) || !data.questions.length || attempt.version !== 1 || attempt.quizId !== data.id || attempt.quizSignature !== JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null })) invalid();
   for (const key of ['submittedAt', 'updatedAt']) if (typeof attempt[key] !== 'string' || !Number.isFinite(Date.parse(attempt[key]))) invalid();
   const ids = new Set(data.questions.map(question => question?.id));
-  if (ids.size !== data.questions.length || [...ids].some(id => typeof id !== 'string' || !id.trim()) || Object.keys(attempt.answers).some(id => !ids.has(id))) invalid();
+  if (ids.size !== data.questions.length || [...ids].some(id => typeof id !== 'string' || !id.trim()) || Object.keys(attempt.answers).some(id => !ids.has(id)) || !validReviewFlags(attempt, ids)) invalid();
   let score = 0, maximum = 0;
   const verified = new Map();
   for (const question of data.questions) {
@@ -88,6 +89,10 @@ function createServer({ root = __dirname, port = PORT } = {}) {
     }
     return quizzes;
   }
+  async function quizData(folder) {
+    const source = await fsp.readFile(path.join(folder, 'quiz-data.js'), 'utf8');
+    return JSON.parse(vm.runInNewContext(source + '\n;JSON.stringify(window.QUIZ_DATA);', { window: {} }, { timeout: 100, contextCodeGeneration: { strings: false, wasm: false } }));
+  }
   async function lastAttempt(folder) {
     try {
       const file = path.join(folder, 'attempt.json'), stat = await fsp.lstat(file);
@@ -96,9 +101,7 @@ function createServer({ root = __dirname, port = PORT } = {}) {
       const attempted = object(attempt) && object(attempt.answers) && Object.values(attempt.answers).some(answer => answer !== null);
       if (!attempted) return { attempted: false };
       try {
-        const source = await fsp.readFile(path.join(folder, 'quiz-data.js'), 'utf8');
-        const data = JSON.parse(vm.runInNewContext(source + '\n;JSON.stringify(window.QUIZ_DATA);', { window: {} }, { timeout: 100, contextCodeGeneration: { strings: false, wasm: false } }));
-        return { attempted: true, result: scoreAttempt(attempt, data) };
+        return { attempted: true, result: scoreAttempt(attempt, await quizData(folder)) };
       } catch { return { attempted: true }; }
     } catch { return { attempted: false }; }
   }
@@ -205,6 +208,10 @@ function createServer({ root = __dirname, port = PORT } = {}) {
         if ((req.headers.origin && req.headers.origin !== origin) || (req.headers['sec-fetch-site'] && req.headers['sec-fetch-site'] !== 'same-origin' && req.headers['sec-fetch-site'] !== 'none')) return reply(res, 403, 'Use the local quiz page to submit.');
         const attempt = await jsonBody(req);
         if (!object(attempt) || attempt.version !== 1 || typeof attempt.quizId !== 'string' || !attempt.quizId.trim() || attempt.quizId.length > 200 || !object(attempt.answers) || !object(attempt.summary) || !Array.isArray(attempt.results) || typeof attempt.submittedAt !== 'string' || !Number.isFinite(Date.parse(attempt.submittedAt)) || typeof attempt.updatedAt !== 'string' || !Number.isFinite(Date.parse(attempt.updatedAt))) return reply(res, 400, 'A completed quiz attempt is required.');
+        if (Object.hasOwn(attempt, 'reviewFlags')) {
+          const data = await quizData(folder);
+          if (!Array.isArray(data?.questions) || !validReviewFlags(attempt, new Set(data.questions.map(question => question?.id)))) return reply(res, 400, 'Review flags must be unique question IDs from this quiz.');
+        }
         if (resetting) return reply(res, 409, 'A reset is in progress. Try submitting again.');
         saving++;
         try {

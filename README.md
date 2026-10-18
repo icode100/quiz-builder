@@ -46,7 +46,9 @@ Each quiz has a countdown with six presets: **180, 150, 120, 90, 60, or 30 minut
 
 Clicking **Submit** resets the timer, including when numerical input is invalid or saving fails. Clear answers preserves it. Reviewing a saved report hides the timer while a running timer keeps counting; Back to quiz shows the remaining time. Timer state never enters saved submissions, and the timer is hidden in reports and print.
 
-**Mark for review** beside **Clear response** toggles a solid blue marker in the question map. Flags restore with your browser draft and never enter `attempt.json` or affect scoring. Clear response keeps its flag; Clear answers and fresh Attempt again clear flags. A successful saved Submit clears the draft and flags; invalid input or a failed save keeps them. Reviewing the saved report hides current flags, and Back to quiz restores them.
+**Mark for review** beside **Clear response** toggles a solid blue marker in the practice map. Flags restore with your browser draft and do not affect scoring. Clear response keeps its flag; Clear answers and fresh Attempt again clear flags. Submit keeps a flag snapshot in the report and saves it in `attempt.json`. A successful save clears the draft and practice flags; invalid input or a failed save keeps them. Saved Review uses the submitted flags, and Back to quiz restores your prior draft/view and flags. Older submissions without saved flags remain readable but cannot show past review marks.
+
+After Submit and in **Review last attempt**, the map shows green **Correct**, red **Incorrect**, and neutral **Unanswered** questions. Linked answers that cannot be evaluated appear amber; marks-to-all awards appear blue. Marked questions show **★** instead of the usual status symbol while keeping their outcome color.
 
 The question map highlights your current question with an extra blue ring as you scroll, focus a question, or jump using a map number. It also follows the current entry in a report. The ring stays separate from attempted, marked-for-review, and invalid-answer indicators and is announced with `aria-current` for assistive technology.
 
@@ -78,6 +80,6 @@ Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they
 
 Timer and shared-interface checks: `node tests/quiz-timer.test.cjs` and `node tests/quiz-runtime.test.cjs`; tests use simulated storage or temporary folders.
 
-Current-question map checks: `node tests/quiz-current-question.test.cjs`.
+Report-map and saved-review-flag checks: `node tests/quiz-report-map.test.cjs`. Current-question map checks: `node tests/quiz-current-question.test.cjs`.
 
 Calculator checks: `node tests/calculator-engine.test.cjs`, `node tests/calculator-ui.test.cjs`, `node tests/calculator-launcher.test.cjs`, and `node tests/quiz-calculator.test.cjs`; the HTTP tests use disposable quiz folders.

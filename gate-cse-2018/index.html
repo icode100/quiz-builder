@@ -92,8 +92,13 @@
     <h2 id="nav-title">Question map</h2>
     <p id="nav-progress" class="nav-progress" role="status" aria-live="polite"></p>
     <div class="nav-legend">
-      <span><span class="nav-dot answered" aria-hidden="true"></span> Attempted</span>
-      <span><span class="nav-dot unanswered" aria-hidden="true"></span> Not attempted</span>
+      <span id="nav-attempted-legend"><span class="nav-dot answered" aria-hidden="true"></span> Attempted</span>
+      <span id="nav-unattempted-legend"><span class="nav-dot unanswered" aria-hidden="true"></span> Not attempted</span>
+      <span id="nav-correct-legend" hidden><span class="nav-dot result-correct" aria-hidden="true"></span> Correct</span>
+      <span id="nav-incorrect-legend" hidden><span class="nav-dot result-incorrect" aria-hidden="true"></span> Incorrect</span>
+      <span id="nav-unanswered-legend" hidden><span class="nav-dot unanswered" aria-hidden="true"></span> Unanswered</span>
+      <span id="nav-awarded-legend" hidden><span class="nav-dot result-awarded" aria-hidden="true"></span> Marks to all</span>
+      <span id="nav-blocked-legend" hidden><span class="nav-dot result-blocked" aria-hidden="true"></span> Not evaluated</span>
       <span id="nav-review-legend"><span class="nav-dot marked-review" aria-hidden="true"></span> Marked for review</span>
       <span id="nav-check-legend" hidden><span class="nav-dot needs-check" aria-hidden="true"></span> Check number</span>
     </div>

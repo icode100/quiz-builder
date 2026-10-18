@@ -253,8 +253,8 @@ async function markReview(h, id) {
 }
 function assertReviewMark(h, id, marked, icon = marked ? '★' : null) {
   assert.equal(reviewToggle(h, id).attrs['aria-pressed'], String(marked), `${id} accessible review toggle state`);
-  assert.equal(nav(h, id).className.split(' ').includes('marked-review'), marked, `${id} map review marker`);
-  if (icon !== null) assert.equal(nav(h, id).querySelector('.nav-state-icon').textContent, icon, `${id} review map icon`);
+  if (!h.ids['quiz-form'].hidden) assert.equal(nav(h, id).className.split(' ').includes('marked-review'), marked, `${id} map review marker`);
+  if (icon !== null && !h.ids['quiz-form'].hidden) assert.equal(nav(h, id).querySelector('.nav-state-icon').textContent, icon, `${id} review map icon`);
 }
 const result = (h, id) => h.t.grade().find(row => row.question.id === id);
 function reset(h) {
@@ -416,8 +416,8 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert.equal(nav(h, nat.id).querySelector('.nav-state-icon').textContent, '!');
   await nav(h, nat.id).click(); assert(card(h, nat.id).focused);
   const cached = JSON.parse(h.storage.get(draftKey(h)));
-  assert(Array.isArray(cached.reviewFlags), 'Review flags use a draft-only ID array');
-  same([...cached.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Review flags belong only to the browser draft');
+  assert(Array.isArray(cached.reviewFlags), 'Review flags use a known-question ID array');
+  same([...cached.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Review flags match the current practice draft');
   assert.equal(cached.answers[nat.id], '-'); assert(cached.updatedAt);
   assert.equal(cached.signature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
   assert(!Object.hasOwn(cached, 'score') && !Object.hasOwn(cached, 'results'));
@@ -444,8 +444,8 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert.equal(restored.requests[1].url, attemptUrl(restored));
   assert(!restored.ids['review-attempt'].disabled, 'Saving non-null responses enables Review');
   const submission = restored.server.get(attemptUrl(restored));
-  assert(!Object.hasOwn(submission, 'reviewFlags'), 'Submitted attempts never contain draft review flags');
-  assert.deepStrictEqual(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'The submitted envelope remains unchanged');
+  same([...submission.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Submission retains its report review markers');
+  assert.deepStrictEqual(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'reviewFlags', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Version 1 envelope includes report review markers');
   assert(!Object.hasOwn(submission.answers, 'reviewFlags'));
   assert(submission.results.every(row => !Object.hasOwn(row, 'reviewFlags')), 'Per-question stored results omit draft review flags');
   assert.equal(submission.quizId, data.id); assert.equal(submission.version, 1);
@@ -501,7 +501,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert.equal(reviewing.requests.length, 2); assert.equal(reviewing.requests[1].method, 'GET');
   assert.equal(reviewing.requests[1].cache, 'no-store'); assert(!reviewing.ids.report.hidden);
   assert.equal(reviewing.t.answers[mcq.id], correctResponse(mcq));
-  assert(!reviewing.ids['nav-groups'].querySelectorAll('.marked-review').length, 'Reviewing the submitted report does not display current draft flags');
+  same(reviewing.ids['nav-groups'].querySelectorAll('.marked-review').map(button => data.questions[Number(button.id.replace('nav-question-', ''))].id).sort(), [...submission.reviewFlags].sort(), 'Report uses saved review markers');
   assert.equal(reviewing.storage.get(draftKey(reviewing)), activeDraft);
   assert.equal(JSON.stringify(reviewing.server.get(attemptUrl(reviewing))), savedDisk);
   assert.equal(reviewing.t.summarize(reviewing.t.grade()).score, mcq.marks + msq.marks + nat.marks);
@@ -556,13 +556,13 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert(!failedSave.ids.report.hidden, 'A failed server save still displays the grade report');
   same(JSON.parse(failedSave.storage.get(draftKey(failedSave))).reviewFlags, [mcq.id], 'Failed Submit retains cached review flags');
   assert.equal(reviewToggle(failedSave, mcq.id).attrs['aria-pressed'], 'true', 'Failed save retains the draft review toggle');
-  assert(!nav(failedSave, mcq.id).className.split(' ').includes('marked-review'), 'A submitted report hides practice review markers');
+  assert(nav(failedSave, mcq.id).className.split(' ').includes('marked-review'), 'A failed-save report retains its review star');
   assert(!failedSave.server.size, 'Failed Submit does not create a saved attempt');
-  assert(!Object.hasOwn(JSON.parse(failedSave.requests.at(-1).body), 'reviewFlags'), 'Even a failed POST excludes review flags');
+  same(JSON.parse(failedSave.requests.at(-1).body).reviewFlags, [mcq.id], 'POST includes report markers even if the save fails');
   const failedReopen = await load(FOLDER, { storage: failedSave.storage });
   assertReviewMark(failedReopen, mcq.id, true);
   await failedSave.ids['retry-quiz'].click(); assertReviewMark(failedSave, mcq.id, false);
   assert(!failedSave.server.size, 'Retry does not write draft review flags to disk');
   noDialogs(); unavailableDialogs();
-  console.log(`PASS: Set 2 independent 65-question key, original PDF hashes, source PNGs/local paths/shared runtime, blank/perfect/mixed/wrong scores, ${msqSelections} MSQ subsets, ${natBoundaryChecks} NAT boundary checks, every MCQ option, maps/full reports, raw browser draft and review-flag reopen, invalid/failed Submit retaining flags, unchanged Submit envelope/cache clear, saved review/draft flag resume, Retry/clear disk preservation, paper/theme/flag isolation, legacy drafts, storage failures, no file dialogs.`);
+  console.log(`PASS: Set 2 independent 65-question key, original PDF hashes, source PNGs/local paths/shared runtime, blank/perfect/mixed/wrong scores, ${msqSelections} MSQ subsets, ${natBoundaryChecks} NAT boundary checks, every MCQ option, maps/full reports, raw browser draft and review-flag reopen, invalid/failed Submit retaining flags, submitted report flags/cache clear, saved review/draft flag resume, Retry/clear disk preservation, paper/theme/flag isolation, legacy drafts, storage failures, no file dialogs.`);
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });

@@ -127,7 +127,7 @@ async function checkHome(data) {
   await restored.ids['quiz-form'].fire('submit');
   const submission=restored.server.get(attemptUrl(restored));
   assert.equal(submission.results.length,60); assert.equal(Object.keys(submission.answers).length,60);
-  assert(!restored.storage.has(draftKey(restored))); assert(!Object.hasOwn(submission,'reviewFlags'));
+  assert(!restored.storage.has(draftKey(restored))); same(submission.reviewFlags,['CS-1']);
   close(submission.summary.score,1); assert.equal(submission.results[57].outcome,'blocked');
   const reportText=text(restored.ids['report-list']);
   assert(reportText.includes('Not evaluated') && reportText.includes('Correct answer:') && reportText.includes('Your answer:'));

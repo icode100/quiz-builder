@@ -8,9 +8,13 @@ The supplied key is partial, not an official final key. This practice key fills 
 
 The supplied CS-2007.pdf and Gate-2007-Cse-answer-key.pdf remain unchanged at their supplied locations and are not duplicated here. quiz-data.js records source filenames, SHA-256 hashes and crop provenance, including the supplemental original-exam reference. Original question images retain mathematics, figures, tables, code and all options. Resources needed to run the quiz are local.
 
-Unfinished answers and Mark for review flags cache automatically in this browser. Clearing browser data or ending a private session can erase them. Clear response preserves its flag; Clear answers and fresh Attempt again clear flags. Flags do not affect scoring or enter attempt.json. If browser caching fails, keep the tab open.
+Unfinished answers and Mark for review flags cache automatically in this browser. Clearing browser data or ending a private session can erase them. Clear response preserves its flag; Clear answers and fresh Attempt again clear flags. Flags do not affect scoring. If browser caching fails, keep the tab open.
 
 Submit grades every question and saves only the latest attempt.json. A successful save clears the draft and flags; a failed save retains them and the report. Review last attempt rechecks saved responses without replacing the current draft; Back to quiz restores the prior view. Attempt again starts fresh practice and preserves the saved submission. Save report and Print report are available.
+
+After Submit and in Review last attempt, the map uses green for Correct, red for Incorrect, and neutral for Unanswered. Linked answers that cannot be evaluated are amber; marks-to-all awards are blue. Marked questions show ★ instead of the usual status symbol, keeping their outcome color.
+
+Submit saves review flags in attempt.json without changing scoring. A successful save clears draft/practice flags while keeping report stars; a failed save keeps the draft, flags, and report. Saved Review uses the submitted flags; Back to quiz restores the prior draft/view and its flags. Older submissions remain readable but cannot recover past review flags.
 
 Timer presets are 180, 150, 120, 90, 60 or 30 minutes, default 180. Start, Pause and Reset control it. A running timer counts elapsed time while closed; zero never submits or locks the quiz. Submit resets it before validation. Clear answers preserves it. Reports and print hide timer controls. Theme is remembered separately.
 

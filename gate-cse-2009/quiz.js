@@ -5,6 +5,7 @@
   const data = window.QUIZ_DATA;
   const answers = Object.create(null);
   const reviewFlags = new Set();
+  const reportReviewFlags = new Set();
   let results = [], submittedAt = "", updatedAt = "", signature = "", storageKey = "";
   let storageAvailable = false;
   let serverBusy = false, reviewState = null, hasSavedAttempt = false, reviewCheck = 0;
@@ -215,11 +216,14 @@
     }
     return restored;
   }
+  function validateReviewFlags(flags = []) {
+    if (!Array.isArray(flags) || new Set(flags).size !== flags.length || flags.some(id => typeof id !== "string" || !data.questions.some(question => question.id === id))) throw new Error("Invalid review flags.");
+    return flags;
+  }
   function restoreDraft(saved) {
     if (!saved || saved.signature !== signature || saved.submittedAt) throw new Error("This cached draft is invalid or already submitted.");
     const restored = validateAnswers(saved.answers);
-    const flags = saved.reviewFlags === undefined ? [] : saved.reviewFlags;
-    if (!Array.isArray(flags) || new Set(flags).size !== flags.length || flags.some(id => !data.questions.some(question => question.id === id))) throw new Error("Invalid cached review flags.");
+    const flags = validateReviewFlags(saved.reviewFlags);
     if (saved.updatedAt && (typeof saved.updatedAt !== "string" || !Number.isFinite(Date.parse(saved.updatedAt)))) throw new Error("Invalid draft timestamp.");
     Object.keys(answers).forEach((id) => delete answers[id]);
     Object.assign(answers, restored);
@@ -337,6 +341,7 @@
       version: 1, quizId: data.id, quizTitle: data.title, quizSignature: signature,
       updatedAt, submittedAt,
       answers: Object.fromEntries(data.questions.map((q) => [q.id, answers[q.id] ?? null])),
+      reviewFlags: [...reportReviewFlags],
       summary: { score, maximum, ...counts, awardedMarks },
       results: scored.map((result) => ({ questionId: result.question.id, answer: result.selected ?? null,
         correctAnswer: correctAnswerText(result.question), outcome: result.outcome,
@@ -347,16 +352,19 @@
     if (!saved?.submittedAt) throw new Error("No submitted attempt has been saved yet.");
     if (saved.version !== 1 || saved.quizId !== data.id || saved.quizSignature !== signature) throw new Error("The saved attempt belongs to a different paper or answer key.");
     const restored = validateAnswers(saved.answers, true);
+    const flags = validateReviewFlags(saved.reviewFlags);
     for (const key of ["submittedAt", "updatedAt"]) {
       if (typeof saved[key] !== "string" || !Number.isFinite(Date.parse(saved[key]))) throw new Error("Invalid saved timestamp.");
     }
-    return { answers: restored, submittedAt: saved.submittedAt, updatedAt: saved.updatedAt };
+    return { answers: restored, reviewFlags: flags, submittedAt: saved.submittedAt, updatedAt: saved.updatedAt };
   }
   function restoreState(state) {
     Object.keys(answers).forEach((id) => delete answers[id]);
     Object.assign(answers, state.answers);
     reviewFlags.clear();
     (state.reviewFlags || []).forEach(id => reviewFlags.add(id));
+    reportReviewFlags.clear();
+    (state.reportReviewFlags || state.reviewFlags || []).forEach(id => reportReviewFlags.add(id));
     submittedAt = state.submittedAt;
     updatedAt = state.updatedAt;
   }
@@ -376,7 +384,7 @@
       setSavedAttempt(record);
       if (!hasSavedAttempt) throw new Error("This paper has not been attempted before.");
       const saved = validateSubmission(record);
-      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], submittedAt, updatedAt, currentQuestionIndex };
+      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], reportReviewFlags: [...reportReviewFlags], submittedAt, updatedAt, currentQuestionIndex };
       restoreState(saved);
       renderReport();
       status("Reviewing your last submitted attempt. Your current draft is unchanged.");
@@ -392,6 +400,8 @@
     if (invalid) { if (timerChanged) save(); status("Check the highlighted number, or clear it to skip the question.", true); invalid.focus(); invalid.scrollIntoView({ block: "center" }); return; }
     submittedAt = new Date().toISOString();
     save();
+    reportReviewFlags.clear();
+    reviewFlags.forEach(id => reportReviewFlags.add(id));
     renderReport();
     serverBusy = true;
     setControls();
@@ -425,12 +435,16 @@
   }
   function updateProgress() {
     byId("progress").textContent = `${Object.keys(answers).length} of ${data.questions.length} answered`;
+    const reporting = Boolean(submittedAt);
+    const outcomeLabels = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated" };
+    const outcomeIcons = { correct: "✓", incorrect: "×", unanswered: "·", awarded: "+", blocked: "–" };
     let attempted = 0, invalidCount = 0;
     data.questions.forEach((question, index) => {
       const button = byId(`nav-question-${index}`);
       if (!button) return;
       const answered = Object.hasOwn(answers, question.id), invalid = answered && questionType(question) === "nat" && numericValue(answers[question.id]) === null;
-      const flagged = reviewFlags.has(question.id), marked = !submittedAt && flagged, markButton = byId(`mark-review-${index}`);
+      const flagged = reviewFlags.has(question.id), marked = (reporting ? reportReviewFlags : reviewFlags).has(question.id), markButton = byId(`mark-review-${index}`);
+      const outcome = reporting ? results[index]?.outcome : null;
       if (markButton) {
         markButton.textContent = flagged ? "Unmark review" : "Mark for review";
         markButton.classList.toggle("marked-review", flagged);
@@ -441,15 +455,26 @@
       invalidCount += Number(invalid);
       button.classList.toggle("answered", answered);
       button.classList.toggle("unanswered", !answered);
-      button.classList.toggle("needs-check", invalid);
+      button.classList.toggle("needs-check", !reporting && invalid);
       button.classList.toggle("marked-review", marked);
-      button.querySelector(".nav-state-icon").textContent = invalid ? "!" : marked ? "★" : answered ? "✓" : "·";
-      button.title = `${questionLabel(question)}: ${answered ? "Attempted" : "Not attempted"}${invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}`;
+      button.classList.toggle("report-question", reporting);
+      Object.keys(outcomeLabels).forEach(value => button.classList.toggle(`result-${value}`, outcome === value));
+      button.querySelector(".nav-state-icon").textContent = reporting ? (marked ? "★" : outcomeIcons[outcome] || "·") : invalid ? "!" : marked ? "★" : answered ? "✓" : "·";
+      button.title = `${questionLabel(question)}: ${reporting ? outcomeLabels[outcome] || "Unanswered" : answered ? "Attempted" : "Not attempted"}${!reporting && invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}`;
       button.setAttribute("aria-label", button.title);
     });
     byId("nav-progress").textContent = `${attempted} attempted · ${data.questions.length - attempted} not attempted`;
-    byId("nav-check-legend").hidden = invalidCount === 0;
-    byId("nav-review-legend").hidden = Boolean(submittedAt);
+    byId("nav-check-legend").hidden = reporting || invalidCount === 0;
+    byId("nav-review-legend").hidden = false;
+    const reviewDot = byId("nav-review-legend").querySelector(".nav-dot");
+    if (reviewDot) {
+      reviewDot.classList.toggle("report-review", reporting);
+      reviewDot.textContent = reporting ? "★" : "";
+    }
+    for (const id of ["nav-attempted-legend", "nav-unattempted-legend"]) byId(id).hidden = reporting;
+    Object.keys(outcomeLabels).forEach(outcome => {
+      byId(`nav-${outcome}-legend`).hidden = !reporting || (["awarded", "blocked"].includes(outcome) && !results.some(result => result.outcome === outcome));
+    });
   }
   function renderNavigator() {
     const groups = new Map();
@@ -647,6 +672,7 @@
     if (serverBusy) return false;
     Object.keys(answers).forEach((id) => delete answers[id]);
     reviewFlags.clear();
+    reportReviewFlags.clear();
     submittedAt = "";
     currentQuestionIndex = 0;
     currentQuestionInteraction = null;

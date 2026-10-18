@@ -171,9 +171,9 @@ async function checkHome(data) {
   const submission = restored.server.get(attemptUrl(restored));
   assert.equal(submission.results.length, 85); assert.equal(Object.keys(submission.answers).length, 85); close(submission.summary.score, 1);
   assert.equal(submission.results[76].outcome, 'blocked'); assert(!restored.storage.has(draftKey(restored)));
-  assert(!Object.hasOwn(submission, 'reviewFlags') && !Object.hasOwn(submission, 'timer'));
+  same(submission.reviewFlags, ['CS-1', 'CS-2']); assert(!Object.hasOwn(submission, 'timer'));
   assert(submission.results.every(result => !Object.hasOwn(result, 'reviewFlags')));
-  assert(!restored.ids['review-attempt'].disabled); assert(restored.ids['nav-review-legend'].hidden);
+  assert(!restored.ids['review-attempt'].disabled); assert(!restored.ids['nav-review-legend'].hidden);
   assert.equal(restored.ids['report-list'].querySelectorAll('.result-card').length, 85);
   assert.equal(restored.ids['report-list'].querySelectorAll('img').length, imageCount);
   for (let i = 0; i < 85; i++) {
@@ -196,7 +196,7 @@ async function checkHome(data) {
   const draft = restored.storage.get(draftKey(restored)); submission.summary.score = 999; submission.results = [];
   await restored.ids['review-attempt'].click(); close(restored.t.summarize(restored.t.grade()).score, 1);
   assert.equal(restored.ids['retry-quiz'].textContent, 'Back to quiz'); assert.equal(restored.storage.get(draftKey(restored)), draft);
-  assert(!restored.ids['nav-groups'].querySelectorAll('.marked-review').length);
+  same(restored.ids['nav-groups'].querySelectorAll('.marked-review').map(button => data.questions[Number(button.id.replace('nav-question-', ''))].id), submission.reviewFlags);
   await restored.ids['retry-quiz'].click(); assert.equal(restored.t.answers['CS-2'], wrong(key[1])); assert.equal(flag(restored, 2).attrs['aria-pressed'], 'true');
   await restored.ids['clear-answers'].click(); assert.equal(flag(restored, 2).attrs['aria-pressed'], 'false');
   assert.equal(JSON.stringify(restored.server.get(attemptUrl(restored))), JSON.stringify(submission));

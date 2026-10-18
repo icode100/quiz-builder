@@ -2,9 +2,13 @@ GATE CSE 2018: 65 questions, 100 marks; 41 MCQ and 24 NAT.
 
 Launch ../start-quiz.command (macOS) or ../start-quiz.cmd (Windows), then open http://127.0.0.1:8765/gate-cse-2018/ in the same browser/profile each time. Node.js is required. No npm packages or internet connection are needed. Direct file:// opening is unsupported.
 
-Unfinished responses and Mark for review flags cache automatically in the browser. Clearing browser data or ending a private session can erase them. If caching fails, keep the tab open. Clear response preserves its flag; Clear answers and fresh Attempt again clear flags. Flags do not affect scoring or enter attempt.json.
+Unfinished responses and Mark for review flags cache automatically in the browser. Clearing browser data or ending a private session can erase them. If caching fails, keep the tab open. Clear response preserves its flag; Clear answers and fresh Attempt again clear flags. Flags do not affect scoring.
 
 Submit shows each response, outcome, correct answer, and marks, and saves the latest attempt.json. A successful save clears the draft/flags; invalid numerical input or a failed save preserves them. Review last attempt is enabled only when a readable saved file has a non-null answer. Review regrades saved responses without replacing the current draft; Back to quiz restores the previous view. Attempt again starts fresh practice and preserves the saved submission. Save report and Print report are available.
+
+After Submit and in Review last attempt, the map uses green for Correct, red for Incorrect, and neutral for Unanswered. Linked answers that cannot be evaluated are amber; marks-to-all awards are blue. Marked questions show ★ instead of the usual status symbol, keeping their outcome color.
+
+Submit saves review flags in attempt.json without changing scoring. A successful save clears draft/practice flags while keeping report stars; a failed save keeps the draft, flags, and report. Saved Review uses the submitted flags; Back to quiz restores the prior draft/view and its flags. Older submissions remain readable but cannot recover past review flags.
 
 MCQ wrong answers deduct one-third of their marks; NAT has no negative marking. Unanswered questions score zero. CS-15 accepts 0.021-0.024, CS-16 0.27-0.30, CS-23 59-60, and CS-44 0.60-0.62, all inclusive. Remaining NAT keys are exact values. No alternate MCQ keys or marks-to-all entries. Blank: 0/100; perfect: 100/100; all wrong: -21/100.
 

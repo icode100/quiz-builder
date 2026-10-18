@@ -178,8 +178,8 @@ async function markReview(h, id) {
 }
 function assertReviewMark(h, id, marked, icon = marked ? '★' : null) {
   assert.equal(reviewToggle(h, id).attrs['aria-pressed'], String(marked), `${id} accessible toggle state`);
-  assert.equal(nav(h, id).className.split(' ').includes('marked-review'), marked, `${id} map review marker`);
-  if (icon !== null) assert.equal(nav(h, id).querySelector('.nav-state-icon').textContent, icon, `${id} map icon`);
+  if (!h.ids['quiz-form'].hidden) assert.equal(nav(h, id).className.split(' ').includes('marked-review'), marked, `${id} map review marker`);
+  if (icon !== null && !h.ids['quiz-form'].hidden) assert.equal(nav(h, id).querySelector('.nav-state-icon').textContent, icon, `${id} map icon`);
 }
 const result = (h, id) => h.t.grade().find(row => row.question.id === id);
 function reset(h) {
@@ -390,7 +390,7 @@ async function testHomeIntegration(data) {
   await nav(h, nat.id).click(); assert(card(h, nat.id).focused);
   assert.equal(h.requests.length, 1, 'Edits and flags write no saved attempt');
   const cached = JSON.parse(h.storage.get(draftKey(h)));
-  same([...cached.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Only draft stores flags');
+  same([...cached.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Draft stores active practice flags');
   assert.equal(cached.answers[nat.id], '-'); assert(cached.updatedAt);
   assert.equal(cached.signature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
   assert(!Object.hasOwn(cached, 'score') && !Object.hasOwn(cached, 'results'));
@@ -411,17 +411,18 @@ async function testHomeIntegration(data) {
   assert.equal(restored.requests[1].url, attemptUrl(restored));
   for (const id of [mcq.id, nat.id, 'GA-2']) assertReviewMark(restored, id, false);
   const submission = restored.server.get(attemptUrl(restored));
-  same(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Unchanged v1 attempt envelope');
+  same(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'reviewFlags', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Version 1 envelope includes report review markers');
   assert.equal(submission.quizId, data.id); assert.equal(submission.version, 1);
   assert.equal(submission.quizSignature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
   assert.equal(Object.keys(submission.answers).length, 65); assert.equal(submission.results.length, 65);
-  assert(!Object.hasOwn(submission, 'reviewFlags') && !Object.hasOwn(submission.answers, 'reviewFlags'));
+  same([...submission.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Submission retains its report review markers');
+  assert(!Object.hasOwn(submission.answers, 'reviewFlags'));
   assert(submission.results.every(row => !Object.hasOwn(row, 'reviewFlags')));
   assert.equal(submission.answers[mcq.id], correctResponse(mcq)); assert.equal(submission.answers[nat.id], correctResponse(nat));
   assert.equal(submission.answers['GA-2'], null); assert.equal(submission.summary.score, mcq.marks + nat.marks);
   assert.equal(restored.ids['report-list'].querySelectorAll('.result-card').length, 65);
   assert.equal(restored.ids['report-list'].querySelectorAll('img').length, imageCount);
-  assert(restored.ids['nav-review-legend'].hidden, 'Reports hide flag legend');
+  assert(!restored.ids['nav-review-legend'].hidden, 'Reports show the review star legend');
   for (let i = 0; i < data.questions.length; i++) {
     const text = allText(restored.document.getElementById(`result-card-${i}`));
     assert(text.includes('Your answer:') && text.includes('Correct answer:') && text.includes('marks'), `${data.questions[i].id} complete report`);
@@ -459,7 +460,7 @@ async function testHomeIntegration(data) {
   assert(!reviewing.ids.report.hidden); assert.equal(reviewing.ids['retry-quiz'].textContent, 'Back to quiz');
   assert.equal(reviewing.t.answers[mcq.id], correctResponse(mcq));
   assert.equal(reviewing.t.summarize(reviewing.t.grade()).score, mcq.marks + nat.marks, 'Review ignores stored score/results');
-  assert(!reviewing.ids['nav-groups'].querySelectorAll('.marked-review').length);
+  same(reviewing.ids['nav-groups'].querySelectorAll('.marked-review').map(button => data.questions[Number(button.id.replace('nav-question-', ''))].id).sort(), [...submission.reviewFlags].sort(), 'Report uses saved review markers');
   assert.equal(reviewing.storage.get(draftKey(reviewing)), activeDraft);
   await reviewing.ids['retry-quiz'].click();
   assert(reviewing.ids.report.hidden); assert.equal(reviewing.t.answers[mcq.id], wrongResponse(mcq)); assert.equal(reviewing.t.answers[nat.id], '-');
@@ -495,7 +496,7 @@ async function testHomeIntegration(data) {
   same(retainedCache.reviewFlags, failedCache.reviewFlags, 'Failed save preserves flags');
   assert.equal(retainedCache.signature, failedCache.signature);
   assert.equal(reviewToggle(failedSave, mcq.id).attrs['aria-pressed'], 'true'); assert(!failedSave.server.size);
-  assert(!Object.hasOwn(JSON.parse(failedSave.requests.at(-1).body), 'reviewFlags'));
+  same(JSON.parse(failedSave.requests.at(-1).body).reviewFlags, [mcq.id]);
   const failedReopen = await load(FOLDER, { storage: failedSave.storage });
   assertReviewMark(failedReopen, mcq.id, true); assert.equal(failedReopen.t.answers[mcq.id], correctResponse(mcq));
   await failedSave.ids['retry-quiz'].click(); assertReviewMark(failedSave, mcq.id, false); assert(!failedSave.server.size);
