@@ -6,7 +6,7 @@ Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local ser
 
 The home page and quizzes share remembered light/dark mode, blue accents, and soft card shadows. Dark mode uses deeper royal-blue controls on a pitch-black page; the light palette keeps its existing colors and pale background. **Theme** is a keyboard-accessible toggle switch.
 
-Question images display white text on black paper in both themes, including reports. CSS inverts their screen colors while the original PNGs, diagrams, and equations stay intact. Click an image to open its original colors at full resolution; printed reports use those original white-paper colors. New quizzes inherit the same styling from `_template`.
+Question images follow the theme, including reports: original white paper with dark text in light mode, and CSS-inverted black paper with white text in dark mode. Original PNGs, diagrams, and equations stay intact. Click an image to open its original colors at full resolution; printed reports use those original white-paper colors. New quizzes inherit the same styling from `_template`.
 
 Click **Calculator** at the bottom right of the quiz or home page to open the shared scientific calculator. It supports editable expressions, parentheses, powers, roots, logarithms, trigonometry with **DEG/RAD**, factorials, combinations/permutations, **Ans**, and memory controls. Move it by dragging its heading (or focus the heading and use arrow keys), close it with **×** or **Escape**, or use **↗** to open it in a separate tab. Closing and reopening the panel preserves its current calculation; reloading starts fresh. Calculations use JavaScript floating-point arithmetic.
 

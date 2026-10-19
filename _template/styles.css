@@ -223,7 +223,7 @@ a { color: var(--accent); }
 .question-number { flex-shrink: 0; font-weight: 700; }
 .question-content, .question-text, .option-text { overflow-wrap: anywhere; }
 .question-text { margin-bottom: 1rem; white-space: pre-wrap; }
-.question-image { display: block; width: 100%; height: auto; margin: 0 auto; border: 1px solid #e2e8f0; }
+.question-image { display: block; width: 100%; height: auto; margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; filter: none; }
 .source-figure { margin: 1rem 0; }
 .image-link { display: block; cursor: zoom-in; }
 .source-caption { margin-top: 0.35rem; font-size: 0.8rem; color: var(--muted); }
@@ -414,8 +414,8 @@ a { color: var(--accent); }
   :root[data-theme="dark"] .awarded .result-status { color: var(--accent); }
   :root[data-theme="dark"] .explanation { color: #dae7f7; border-top-color: var(--border); }
 
-  /* Invert only the screen rendering; retain every source pixel and print color. */
-  .question-image { background: #fff; filter: invert(1); border-color: #b9a891; }
+  /* Match dark screens without changing source pixels or print colors. */
+  :root[data-theme="dark"] .question-image { filter: invert(1); border-color: #b9a891; }
 }
 
 /* Report stars keep the question's result color instead of the practice blue. */
