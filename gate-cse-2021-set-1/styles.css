@@ -414,8 +414,8 @@ a { color: var(--accent); }
   :root[data-theme="dark"] .awarded .result-status { color: var(--accent); }
   :root[data-theme="dark"] .explanation { color: #dae7f7; border-top-color: var(--border); }
 
-  /* Preserve every diagram and equation in its original PDF colors. */
-  :root[data-theme="dark"] .question-image { background: #fff; border-color: #46576e; }
+  /* Invert only the screen rendering; retain every source pixel and print color. */
+  .question-image { background: #fff; filter: invert(1); border-color: #b9a891; }
 }
 
 /* Report stars keep the question's result color instead of the practice blue. */
@@ -479,7 +479,7 @@ a { color: var(--accent); }
   .report-summary { gap: 0.5rem 1.25rem; }
   .result-card { padding: 0.75rem; margin-bottom: 0.75rem; border-color: #aaa; border-radius: 0; break-inside: avoid; }
   .result-heading { break-after: avoid; }
-  .question-image { max-height: 170mm; object-fit: contain; }
+  .question-image { max-height: 170mm; object-fit: contain; filter: none; }
   .source-caption { display: none; }
   .result-status { margin-left: auto; }
   a { color: inherit; text-decoration: none; }
