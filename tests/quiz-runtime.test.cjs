@@ -62,7 +62,11 @@ function createHarness(folder, options = {}) {
   for (const id of ['save-attempt', 'load-attempt', 'connect-attempt', 'practice-without-file', 'download-attempt']) {
     assert(!ids[id], `Extra persistence control ${id} must be absent`);
   }
-  ids['quiz-form'].append(ids.questions, ids.progress, ids['clear-answers']);
+  // Match the real carousel nesting so busy-state checks include its controls.
+  if (ids['question-carousel']) {
+    ids['question-carousel'].append(ids['previous-question'], ids['carousel-position'], ids['next-question']);
+    ids['quiz-form'].append(ids['question-carousel'], ids.questions, ids.progress, ids['clear-answers']);
+  } else ids['quiz-form'].append(ids.questions, ids.progress, ids['clear-answers']);
   const submit = new El('button'); submit.type = 'submit'; ids['quiz-form'].append(submit);
   const document = {
     body, documentElement: new El('html'), createElement: tag => new El(tag),
@@ -140,14 +144,16 @@ function assertReviewAvailability(h, available) {
   assert.equal(h.ids['review-attempt-wrap'].title, title, 'The disabled button has a hoverable tooltip wrapper');
 }
 function assertEditable(h) {
-  assert(h.ids['quiz-form'].querySelectorAll('input, button').every(node => !node.disabled), 'practice remains usable without file access');
+  assert(h.ids['quiz-form'].querySelectorAll('input, button').filter(node => !['previous-question', 'next-question'].includes(node.id)).every(node => !node.disabled), 'practice remains usable without file access');
 }
 
 async function editResponse(h, id, value) {
   const index = h.data.questions.findIndex(question => question.id === id);
   assert(index >= 0, `Unknown test question ${id}`);
   const question = h.data.questions[index];
-  const inputs = h.document.getElementById(`question-card-${index}`).querySelectorAll('input');
+  const card = h.document.getElementById(`question-card-${index}`);
+  if (card.hidden) await h.document.getElementById(`nav-question-${index}`).click();
+  const inputs = card.querySelectorAll('input');
   if (question.type === 'nat') {
     inputs[0].value = value; await inputs[0].fire('input');
   } else if (question.type === 'msq') {

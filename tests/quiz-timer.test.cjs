@@ -166,7 +166,7 @@ function draftWith(h, timer) {
   assertRemaining(expired, 0); assertStopped(expired);
   assert(/time|finished|expired|complete/i.test(expired.ids['timer-status'].textContent));
   assert.equal(expired.ids['quiz-form'].hidden, false, 'Expiration does not auto-submit');
-  assert(expired.ids['quiz-form'].querySelectorAll('input, button').every(node => !node.disabled), 'Expiration leaves answers editable');
+  assert(expired.ids['quiz-form'].querySelectorAll('input, button').filter(node => !['previous-question', 'next-question'].includes(node.id)).every(node => !node.disabled), 'Expiration leaves answers editable');
   assert.equal(harness.postRequests(expired).length, 0);
 
   // Clicking Submit resets even when invalid NAT input blocks grading.

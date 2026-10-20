@@ -13,12 +13,25 @@
   let timerMinutes = 180, timerRemainingMs = 180 * 60000, timerEndsAt = null, timerInterval = null;
   let currentQuestionIndex = 0, currentQuestionFrame = false, currentQuestionInteraction = null;
 
+  function renderCarouselControls() {
+    byId("question-carousel").hidden = Boolean(submittedAt) || !data.questions.length;
+    const question = data.questions[currentQuestionIndex];
+    if (!question) return;
+    const last = currentQuestionIndex === data.questions.length - 1;
+    byId("carousel-position").textContent = `${questionLabel(question)} · ${currentQuestionIndex + 1} of ${data.questions.length}`;
+    byId("previous-question").disabled = serverBusy || currentQuestionIndex === 0;
+    byId("next-question").disabled = serverBusy || last;
+    byId("next-question").textContent = last ? "Last question" : Object.hasOwn(answers, question.id) ? "Next question" : "Skip question";
+  }
   function setCurrentQuestion(index) {
     if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
     currentQuestionIndex = index;
     data.questions.forEach((question, number) => {
       byId(`nav-question-${number}`)?.setAttribute("aria-current", number === index ? "location" : "false");
+      const card = byId(`question-card-${number}`);
+      if (card && !submittedAt) card.hidden = number !== index;
     });
+    renderCarouselControls();
   }
   function questionTarget(index) {
     return byId(`${submittedAt ? "result" : "question"}-card-${index}`);
@@ -28,13 +41,18 @@
     currentQuestionInteraction = { index, scrollY: window.scrollY ?? 0 };
   }
   function jumpToQuestion(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
     setCurrentQuestion(index);
     const target = questionTarget(index);
-    target?.scrollIntoView({ block: "start" });
+    (submittedAt ? target : byId("question-carousel"))?.scrollIntoView({ block: "start" });
     target?.focus({ preventScroll: true });
     noteCurrentQuestion(index);
   }
+  function moveQuestion(direction) {
+    if (!serverBusy && !submittedAt && !reviewState) jumpToQuestion(currentQuestionIndex + direction);
+  }
   function updateCurrentQuestionFromViewport() {
+    if (!submittedAt) return;
     const height = window.innerHeight;
     if (!Number.isFinite(height) || height <= 0) return;
     const first = questionTarget(0);
@@ -60,6 +78,7 @@
     if (index >= 0) setCurrentQuestion(index);
   }
   function scheduleCurrentQuestion() {
+    if (!submittedAt) return;
     if (currentQuestionFrame) return;
     currentQuestionFrame = true;
     const update = () => { currentQuestionFrame = false; updateCurrentQuestionFromViewport(); };
@@ -70,7 +89,10 @@
     const trackInteraction = (event) => {
       const card = event.target.closest?.(".question-card, .result-card");
       const match = card?.id.match(/^(question|result)-card-(\d+)$/);
-      if (match && match[1] === (submittedAt ? "result" : "question")) noteCurrentQuestion(Number(match[2]));
+      if (match && match[1] === (submittedAt ? "result" : "question")) {
+        const index = Number(match[2]);
+        if (submittedAt || !card.hidden) noteCurrentQuestion(index);
+      }
     };
     document.addEventListener("focusin", trackInteraction);
     document.addEventListener("pointerdown", trackInteraction);
@@ -313,6 +335,7 @@
     byId("review-attempt-wrap").title = hint;
     byId("retry-quiz").disabled = serverBusy || !submittedAt;
     byId("retry-quiz").textContent = reviewState ? "Back to quiz" : "Attempt again";
+    renderCarouselControls();
   }
 
   function attemptUrl() {
@@ -397,7 +420,14 @@
     const timerChanged = timerEndsAt !== null || timerRemainingMs !== timerMinutes * 60000;
     resetTimer(false);
     const invalid = byId("questions").querySelector('.numeric-answer[aria-invalid="true"]');
-    if (invalid) { if (timerChanged) save(); status("Check the highlighted number, or clear it to skip the question.", true); invalid.focus(); invalid.scrollIntoView({ block: "center" }); return; }
+    if (invalid) {
+      if (timerChanged) save();
+      const index = data.questions.findIndex((question, number) => byId(`answer-${number}`) === invalid);
+      if (index >= 0) jumpToQuestion(index);
+      status("Check the highlighted number, or clear it to skip the question.", true);
+      invalid.focus(); invalid.scrollIntoView({ block: "center" });
+      return;
+    }
     submittedAt = new Date().toISOString();
     save();
     reportReviewFlags.clear();
@@ -475,6 +505,7 @@
     Object.keys(outcomeLabels).forEach(outcome => {
       byId(`nav-${outcome}-legend`).hidden = !reporting || (["awarded", "blocked"].includes(outcome) && !results.some(result => result.outcome === outcome));
     });
+    renderCarouselControls();
   }
   function renderNavigator() {
     const groups = new Map();
@@ -570,6 +601,7 @@
             options.querySelectorAll("label").forEach((item) => item.classList.toggle("selected", item.querySelector("input").checked));
             updateProgress();
             save();
+            if (type === "mcq" && index === currentQuestionIndex && index < data.questions.length - 1) moveQuestion(1);
           });
           options.append(label);
         });
@@ -583,8 +615,7 @@
         delete answers[question.id];
         save();
         renderQuestions();
-        byId(`question-card-${index}`).focus();
-        noteCurrentQuestion(index);
+        jumpToQuestion(index);
       });
       const actions = element("div", "question-actions"), mark = element("button", "button button-secondary mark-review");
       mark.type = "button";
@@ -735,6 +766,17 @@
     setupTimer();
     setupCurrentQuestion();
     byId("quiz-form").addEventListener("submit", submitAttempt);
+    byId("questions").addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || !event.target.matches?.("input")) return;
+      event.preventDefault();
+      if (event.target.getAttribute("aria-invalid") === "true") {
+        status("Check the highlighted number, or clear it to skip the question.", true);
+        return;
+      }
+      moveQuestion(1);
+    });
+    byId("previous-question").addEventListener("click", () => moveQuestion(-1));
+    byId("next-question").addEventListener("click", () => moveQuestion(1));
     byId("review-attempt").addEventListener("click", reviewLastAttempt);
     byId("clear-answers").addEventListener("click", () => clearAttempt());
     byId("retry-quiz").addEventListener("click", restartAttempt);

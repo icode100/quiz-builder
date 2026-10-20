@@ -44,6 +44,10 @@ function quiz-stop  { powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C
 
 Unfinished answers cache automatically in your browser and restore after reopening. Always use the same browser/profile and `http://127.0.0.1:8765`; opening HTML files directly uses a different, unreliable storage origin. Clearing browser data or ending a private session can erase drafts.
 
+Practice shows one question at a time, using the paper's original numbers. Choosing an MCQ option saves it and advances; use **Next** or Enter from an answer input for multiple-select and numerical answers. Enter keeps invalid numerical input on its question and never submits. **Previous**, **Next**, and **Skip question** keep your existing responses and review marks. The first and last questions do not wrap, and reaching the end never submits automatically. You can also select any question from the existing map. **Clear response** and **Mark for review** remain beside each question; Submit remains available.
+
+Use **Home** at the top to return to the paper list with your browser draft preserved. Refresh opens the first question with cached answers restored. **Back to quiz** after saved Review restores your prior question; **Clear answers** and a fresh **Attempt again** start at the first question. Reports remain a scrolling question-by-question list.
+
 Each quiz has a countdown with six presets: **180, 150, 120, 90, 60, or 30 minutes** (default 180). Choose a duration, then use **Start**, **Pause**, or **Reset**. Choosing another preset or Reset leaves the timer paused at that duration. It restores with your browser draft, counting elapsed time while closed if it was running. At zero it stops and displays a message; you can keep answering.
 
 Clicking **Submit** resets the timer, including when numerical input is invalid or saving fails. Clear answers preserves it. Reviewing a saved report hides the timer while a running timer keeps counting; Back to quiz shows the remaining time. Timer state never enters saved submissions, and the timer is hidden in reports and print.
@@ -52,7 +56,7 @@ Clicking **Submit** resets the timer, including when numerical input is invalid 
 
 After Submit and in **Review last attempt**, the map shows green **Correct**, red **Incorrect**, and neutral **Unanswered** questions. Linked answers that cannot be evaluated appear amber; marks-to-all awards appear blue. Marked questions show **★** instead of the usual status symbol while keeping their outcome color.
 
-The question map highlights your current question with an extra blue ring as you scroll, focus a question, or jump using a map number. It also follows the current entry in a report. The ring stays separate from attempted, marked-for-review, and invalid-answer indicators and is announced with `aria-current` for assistive technology.
+The question map highlights the active practice question with an extra blue ring when you navigate, select an MCQ option, or choose a map number. Scrolling does not change the practice question. In reports, the ring follows scrolling, focus, and map jumps. It stays separate from attempted, marked-for-review, and invalid-answer indicators and is announced with `aria-current` for assistive technology.
 
 If caching fails, keep the tab open. Attempt again remains usable and keeps the failure warning visible.
 
