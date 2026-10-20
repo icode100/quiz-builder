@@ -75,6 +75,7 @@ Quiz/
   gate-cse-2007/                85 MCQs, 150 marks; 97 crops; five linked pairs
   gate-cse-2009/                60 MCQs; linked pairs 57/58 and 59/60
   gate-cse-2010/                65 MCQs, 100 marks; CS 1-55 then GA 56-65
+  gate-cse-2012/                65 MCQs, 100 marks; Code A, six MTA and two linked pairs
   gate-cse-2013/                Booklet A; 65 MCQs, 100 marks; 69 crops
   gate-cse-2014-set-1/           65 questions, 100 marks; 40 MCQ/25 NAT; Session 7 key
   gate-cse-2015-set-1/           65 questions, 100 marks; key order GA 1-10 then CS 11-65
@@ -98,6 +99,8 @@ Quiz/
   tests/fixtures/gate-cse-2009-key.json
   tests/quiz-2010.test.cjs
   tests/fixtures/gate-cse-2010-key.json
+  tests/quiz-2012.test.cjs
+  tests/fixtures/gate-cse-2012-key.json
   tests/quiz-2013.test.cjs
   tests/fixtures/gate-cse-2013-key.json
   tests/quiz-2019.test.cjs
@@ -119,7 +122,7 @@ Quiz/
 
 Copy `_template` into a new descriptive folder, assign a stable unique paper/year/set/session ID, and change its title/data. Inspect the destination first: never overwrite an existing quiz or its user's state. Each quiz must remain self-contained with relative local asset/script paths.
 
-Reusable UI/runtime fixes apply to `_template` and every existing quiz folder, including 2007, 2009, 2010, 2014 Set 1, 2015 Set 1, 2016 Set 1, 2017 Set 1, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
+Reusable UI/runtime fixes apply to `_template` and every existing quiz folder, including 2007, 2009, 2010, 2012, 2014 Set 1, 2015 Set 1, 2016 Set 1, 2017 Set 1, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
 
 ## Building from a new paper
 
@@ -177,6 +180,7 @@ Highlight the active practice slide or current report entry on the map with an a
 | 2007 | `gate-cse-2007` / `gate-cse-2007` | External originals `CS-2007.pdf` (19 pages), `Gate-2007-Cse-answer-key.pdf` (2 pages); supplemental original-exam scan (21 pages) | 85 MCQ, 150 marks; 97 crops |
 | 2009 | `gate-cse-2009` / `gate-cse-2009` | `CS-2009.pdf` (13 pages), `answer-key-screenshot.png`, supplemental `GATE2009-original-exam-reference.pdf` (14 pages) | 60 MCQ, 100 marks; 69 crops |
 | 2010 | `gate-cse-2010` / `gate-cse-2010` | External `CS-2010.pdf` (14 pages), supplied screenshot key; supplemental 24-page original exam scan from a third-party mirror | 65 MCQ, 100 marks; 72 crops / 77 displayed parts |
+| 2012, Booklet Code A | `gate-cse-2012` / `gate-cse-2012` | External originals `GATE2012.pdf` (20 pages), `Key_CS_2012.pdf` (2 pages); source hashes recorded in data | 65 MCQ, 100 marks; 69 crops, 73 displayed parts |
 | 2013 Booklet A | `gate-cse-2013` / `gate-cse-2013-booklet-a` | External originals `GATE2013.pdf` (20 pages), `Key_CS_2013.pdf` (2 pages); ORS key column A; hashes in data | 65 MCQ, 100 marks; 69 crops, 73 displayed image parts |
 | 2014 Set 1, session 7 | `gate-cse-2014-set-1` / `gate-cse-2014-set-1-session-7` | External originals `GATE2014-Set-1.pdf` (20 pages), `2014Key_CS_01.pdf` (1-page key); hashes recorded in data | 65, 100 marks; 40 MCQ/25 NAT; 65 crops |
 | 2015 Set 1, 7 February forenoon | `gate-cse-2015-set-1` / `gate-cse-2015-set-1-shift-1` | External primary combined question/key `2015CS_S05_compressed.pdf` (24 pages); cross-reference `GATE2015-Set-1.pdf` (21 pages), same questions in a different order | 65, 100 marks; 45 MCQ/20 NAT; 65 crops |
@@ -189,6 +193,8 @@ Highlight the active practice slide or current report entry on the map with an a
 | 2021 Set 2, official session 6 | `gate-cse-2021-set-2` / `gate-cse-2021-set-2-session-6` | `GATE2021_QP_CS-2.pdf` (43 pages), `2021-CS2-S6-Keys.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 
 The 2009 paper uses CS 1–60 only. Most later papers keep GA 1–10 and CS 1–55 separate; preserve the 2015 continuous key numbering and 2017 printed order described below. Preserve these key exceptions:
+
+- 2012 follows Booklet Code A and only that key column. Keep printed order CS 1–55, then GA 56–65. All 65 questions are single-choice MCQ; no NAT, MSQ or alternate options. CS 1–25 and GA 56–60 carry 1 mark; CS 26–55 and GA 61–65 carry 2. The supplied key awards CS-3, CS-29, CS-38, CS-39, CS-45 and GA-60 to all, even unanswered, for 10 marks. Linked pairs are CS 52→53 and 54→55; second questions use `requiresCorrect` and zero wrong-answer penalty. Common-data pairs 48/49 and 50/51 are independent. Other wrong answers deduct exact one-third/two-thirds, following supplied paper page 1 paragraphs 7–9. Blank 10/100; perfect 59 correct plus six awards, 100/100; all wrong −56/3. All 20 paper pages, both key pages and 69 unique 240 DPI crops were visually checked. Four shared contexts are repeated, giving 73 displayed parts. Pixel audit matched every PNG to recorded source rectangles. GA-56's tiny rupee is an original low-resolution raster icon, preserved unchanged. Originals stay in Downloads; hashes, dimensions and crop provenance are in data/independent fixture. Run `node tests/quiz-2012.test.cjs` for relevant data/scoring/runtime changes; never create a real attempt while testing.
 
 - 2015 Set 1 follows the user's combined question/key as its primary source: GA 1–10 then CS 11–65. The clean paper contains the same 65 questions in a different order; never transfer this key to that paper by position or a simple CS offset. `referenceQuestionMapping` records the cross-reference without affecting quiz numbering. The key's green/red answer lists are baked page content outside the question images; excluding PDF annotations alone is insufficient. Crops exclude both the answer blocks and annotations, trim only overlapping header fragments in blank top margins, and retain every option, equation, diagram and GA-8's coloured chart. Some headings precede the question body by a page; sourcePages records the body, while answerKeyPage records the actual accepted answer page. All 24 key pages, 21 reference pages and 65 final 240 DPI crops were visually checked. Both originals remain external and unchanged, with hashes in data and the independent fixture. CS-39 accepts 0.40–0.46 inclusive; other NAT keys are exact, including CS-34 = −5 and CS-58 = −1. No alternate MCQ answers, MSQ, MTA or linked dependencies. GA 1–5/CS 11–35 are one mark; GA 6–10/CS 36–65 are two marks. MCQ penalties are exactly one-third; NAT has no penalty, following supplied key annotations and the committee-authored GATE 2015 brochure referenced in data. Blank 0/100, perfect 100/100, all wrong −64/3. Run `node tests/quiz-2015-set-1.test.cjs` for relevant changes; use simulated storage and temporary server folders, never a real attempt.
 
@@ -212,6 +218,8 @@ The 2009 paper uses CS 1–60 only. Most later papers keep GA 1–10 and CS 1–
 Marking references used during preparation: [official GATE guidance](https://gate2024.iisc.ac.in/question-papers/), [GATE 2021 brochure section 5.2.1](https://bt.iitkgp.ac.in/GATE-2021_IB_V3_09_09_2020.pdf), and [GATE 2019 brochure section 5.2.1](https://gate.iitm.ac.in/gate2019/pdfs/GATE_2019_Information_Brochure.pdf) (official search index verified; direct fetch currently returns 404). The [official archive](https://gate.iitb.ac.in/G21/prev_qp.php) lists one CS paper/key for 2019. Prefer relevant-year official rules for new papers.
 
 ## Verification and delivery
+
+The 2012 build passed `quiz-2012.test.cjs`: independent Code A key, all 260 MCQ choices, 18 linked combinations, six MTA entries, blank/perfect/mixed/negative scores, crop provenance, draft/flag/report/review/storage behavior and disposable-server recomputation. Shared runtime, timer, carousel, current-question and report-map suites passed across all 15 present quizzes. All 20 paper pages, both key pages and 69 crops were visually checked; an independent pixel audit matched all final PNGs to source rectangles at 240 DPI. Actual HTTP health/page/scripts/calculator/all-asset checks passed. Browser checks confirmed one slide/current marker, 65 questions, 260 radios, 73 images, fixed timer presets, disabled initial Review, Home, unobscured diagram/map jumps, last-question boundary, original/inverted light/dark image colours, 360px/seven-column and 320px/six-column sidebars, mobile map order, no horizontal overflow or console warnings/errors. All 838 protected existing quiz files and the two supplied originals matched their baseline; no real attempt was created/reset and no source PDFs were copied into the new folder. Native browser shutdown/reopen and a native print dialog were not automated.
 
 The 2013 build passed its independent data/lifecycle/server suite, shared runtime, timer, current-question and actual-script syntax checks. Browser checks confirmed 65 cards, 260 radios, 73 images, one active slide/current marker, six timer presets, disabled initial Review, Home `/`, unobscured CS-39/map jumps, correct light/dark filters and no overflow or console warnings/errors. Pixel checks verified all 69 crops against fresh source renders. Existing quiz data/assets/originals/attempts remain unchanged; no real 2013 attempt was created or reset. Native browser shutdown/reopen was not automated.
 
