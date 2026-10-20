@@ -75,6 +75,7 @@ Quiz/
   gate-cse-2007/                85 MCQs, 150 marks; 97 crops; five linked pairs
   gate-cse-2009/                60 MCQs; linked pairs 57/58 and 59/60
   gate-cse-2010/                65 MCQs, 100 marks; CS 1-55 then GA 56-65
+  gate-cse-2013/                Booklet A; 65 MCQs, 100 marks; 69 crops
   gate-cse-2014-set-1/           65 questions, 100 marks; 40 MCQ/25 NAT; Session 7 key
   gate-cse-2015-set-1/           65 questions, 100 marks; key order GA 1-10 then CS 11-65
   gate-cse-2016-set-1/           65 questions, 100 marks; GA 1-10 then CS 1-55
@@ -97,6 +98,8 @@ Quiz/
   tests/fixtures/gate-cse-2009-key.json
   tests/quiz-2010.test.cjs
   tests/fixtures/gate-cse-2010-key.json
+  tests/quiz-2013.test.cjs
+  tests/fixtures/gate-cse-2013-key.json
   tests/quiz-2019.test.cjs
   tests/fixtures/gate-cse-2019-key.json
   tests/quiz-2018.test.cjs
@@ -167,11 +170,14 @@ Highlight the active practice slide or current report entry on the map with an a
 
 ## Existing paper references
 
+- 2013 Booklet A retains CS 1–55 then GA 56–65 and uses only the supplied key's ORS code A column. All 65 questions are MCQs totaling 100 marks. Cover instructions 5/7/8/9 establish exact one-third/two-thirds penalties, plus zero dependent penalties for linked pairs 52/53 and 54/55 (`CS-53` requires `CS-52`; `CS-55` requires `CS-54`). Common-data 48/49 and 50/51 are independent. CS-42 and CS-47 each award two marks to all. Blank 4/100; perfect 63 correct plus two awards, 100/100; all wrong −80/3 with two blocked dependents. All 20 paper pages, both key pages and 65 question composites were visually checked; pages 15–20 contain rough work only. PDFium correctly renders the supplied Symbol fonts; all 69 final 240 DPI crops match fresh source rectangles exactly and provide 73 displayed parts with repeated shared context. Original PDFs remain external and unchanged; data records filenames/hashes, booklet/key column, page sizes and crop provenance. No session/date is inferred. Run `node tests/quiz-2013.test.cjs` for relevant changes; its independent fixture covers all 260 choices, 18 linked combinations, MTA, common-data independence, score/report/draft/flag/timer/carousel behavior and disposable-server grading. Never create a real attempt while testing.
+
 | Paper | Folder / unique ID | Sources | Questions / assets |
 | --- | --- | --- | --- |
 | 2007 | `gate-cse-2007` / `gate-cse-2007` | External originals `CS-2007.pdf` (19 pages), `Gate-2007-Cse-answer-key.pdf` (2 pages); supplemental original-exam scan (21 pages) | 85 MCQ, 150 marks; 97 crops |
 | 2009 | `gate-cse-2009` / `gate-cse-2009` | `CS-2009.pdf` (13 pages), `answer-key-screenshot.png`, supplemental `GATE2009-original-exam-reference.pdf` (14 pages) | 60 MCQ, 100 marks; 69 crops |
 | 2010 | `gate-cse-2010` / `gate-cse-2010` | External `CS-2010.pdf` (14 pages), supplied screenshot key; supplemental 24-page original exam scan from a third-party mirror | 65 MCQ, 100 marks; 72 crops / 77 displayed parts |
+| 2013 Booklet A | `gate-cse-2013` / `gate-cse-2013-booklet-a` | External originals `GATE2013.pdf` (20 pages), `Key_CS_2013.pdf` (2 pages); ORS key column A; hashes in data | 65 MCQ, 100 marks; 69 crops, 73 displayed image parts |
 | 2014 Set 1, session 7 | `gate-cse-2014-set-1` / `gate-cse-2014-set-1-session-7` | External originals `GATE2014-Set-1.pdf` (20 pages), `2014Key_CS_01.pdf` (1-page key); hashes recorded in data | 65, 100 marks; 40 MCQ/25 NAT; 65 crops |
 | 2015 Set 1, 7 February forenoon | `gate-cse-2015-set-1` / `gate-cse-2015-set-1-shift-1` | External primary combined question/key `2015CS_S05_compressed.pdf` (24 pages); cross-reference `GATE2015-Set-1.pdf` (21 pages), same questions in a different order | 65, 100 marks; 45 MCQ/20 NAT; 65 crops |
 | 2016 Set 1 | `gate-cse-2016-set-1` / `gate-cse-2016-set-1` | External originals `GATE2016-Set-1.pdf` (20 pages), `2016CS-1_AnsKey.pdf` (2-page key); hashes recorded in data | 65, 100 marks; 39 MCQ/26 NAT; 65 crops |
@@ -206,6 +212,8 @@ The 2009 paper uses CS 1–60 only. Most later papers keep GA 1–10 and CS 1–
 Marking references used during preparation: [official GATE guidance](https://gate2024.iisc.ac.in/question-papers/), [GATE 2021 brochure section 5.2.1](https://bt.iitkgp.ac.in/GATE-2021_IB_V3_09_09_2020.pdf), and [GATE 2019 brochure section 5.2.1](https://gate.iitm.ac.in/gate2019/pdfs/GATE_2019_Information_Brochure.pdf) (official search index verified; direct fetch currently returns 404). The [official archive](https://gate.iitb.ac.in/G21/prev_qp.php) lists one CS paper/key for 2019. Prefer relevant-year official rules for new papers.
 
 ## Verification and delivery
+
+The 2013 build passed its independent data/lifecycle/server suite, shared runtime, timer, current-question and actual-script syntax checks. Browser checks confirmed 65 cards, 260 radios, 73 images, one active slide/current marker, six timer presets, disabled initial Review, Home `/`, unobscured CS-39/map jumps, correct light/dark filters and no overflow or console warnings/errors. Pixel checks verified all 69 crops against fresh source renders. Existing quiz data/assets/originals/attempts remain unchanged; no real 2013 attempt was created or reset. Native browser shutdown/reopen was not automated.
 
 The 2010 build passed `quiz-2010.test.cjs` (65 independent keys, 260 MCQ choices, linked combinations, common-data independence, 72 unique PNGs/77 displayed parts, source hashes/geometry, blank/perfect/mixed/negative scores, drafts/flags/review/failures and disposable-server score recomputation). Shared runtime, timer and current-question suites passed. Every final PNG matched a fresh 240 DPI source crop exactly. The live server passed health/home/page/data/calculator and all-image requests, placing 2010 between 2011 and 2009. Browser checks confirmed 260 radios, 77 images, disabled initial Review, one visible slide/current-map marker, correct linked context, last-question boundary, unobscured map jumps, seven desktop columns, and no mobile horizontal overflow at 390px; no console errors. Original PDFs/key and pre-existing attempts are unchanged; no real attempt was created/reset. Native browser shutdown/reopen was not automated.
 
