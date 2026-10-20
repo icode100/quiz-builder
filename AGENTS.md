@@ -74,6 +74,7 @@ Quiz/
     home.js                    Home-page controls only
   gate-cse-2007/                85 MCQs, 150 marks; 97 crops; five linked pairs
   gate-cse-2009/                60 MCQs; linked pairs 57/58 and 59/60
+  gate-cse-2011/                Code A, 65 MCQs, 100 marks; CS 1-55 then GA 56-65
   gate-cse-2010/                65 MCQs, 100 marks; CS 1-55 then GA 56-65
   gate-cse-2012/                65 MCQs, 100 marks; Code A, six MTA and two linked pairs
   gate-cse-2013/                Booklet A; 65 MCQs, 100 marks; 69 crops
@@ -97,6 +98,8 @@ Quiz/
   tests/quiz-2009.test.cjs
   tests/quiz-linked.test.cjs
   tests/fixtures/gate-cse-2009-key.json
+  tests/quiz-2011.test.cjs
+  tests/fixtures/gate-cse-2011-key.json
   tests/quiz-2010.test.cjs
   tests/fixtures/gate-cse-2010-key.json
   tests/quiz-2012.test.cjs
@@ -122,7 +125,7 @@ Quiz/
 
 Copy `_template` into a new descriptive folder, assign a stable unique paper/year/set/session ID, and change its title/data. Inspect the destination first: never overwrite an existing quiz or its user's state. Each quiz must remain self-contained with relative local asset/script paths.
 
-Reusable UI/runtime fixes apply to `_template` and every existing quiz folder, including 2007, 2009, 2010, 2012, 2014 Set 1, 2015 Set 1, 2016 Set 1, 2017 Set 1, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
+Reusable UI/runtime fixes apply to `_template` and every existing quiz folder. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
 
 ## Building from a new paper
 
@@ -179,6 +182,7 @@ Highlight the active practice slide or current report entry on the map with an a
 | --- | --- | --- | --- |
 | 2007 | `gate-cse-2007` / `gate-cse-2007` | External originals `CS-2007.pdf` (19 pages), `Gate-2007-Cse-answer-key.pdf` (2 pages); supplemental original-exam scan (21 pages) | 85 MCQ, 150 marks; 97 crops |
 | 2009 | `gate-cse-2009` / `gate-cse-2009` | `CS-2009.pdf` (13 pages), `answer-key-screenshot.png`, supplemental `GATE2009-original-exam-reference.pdf` (14 pages) | 60 MCQ, 100 marks; 69 crops |
+| 2011, booklet Code A | `gate-cse-2011` / `gate-cse-2011-code-a` | External originals `GATE2011.pdf` (17 pages), `Key2011.pdf` (2-page multi-code key); use only Code A | 65 MCQ, 100 marks; 69 crops / 73 displayed parts |
 | 2010 | `gate-cse-2010` / `gate-cse-2010` | External `CS-2010.pdf` (14 pages), supplied screenshot key; supplemental 24-page original exam scan from a third-party mirror | 65 MCQ, 100 marks; 72 crops / 77 displayed parts |
 | 2012, Booklet Code A | `gate-cse-2012` / `gate-cse-2012` | External originals `GATE2012.pdf` (20 pages), `Key_CS_2012.pdf` (2 pages); source hashes recorded in data | 65 MCQ, 100 marks; 69 crops, 73 displayed parts |
 | 2013 Booklet A | `gate-cse-2013` / `gate-cse-2013-booklet-a` | External originals `GATE2013.pdf` (20 pages), `Key_CS_2013.pdf` (2 pages); ORS key column A; hashes in data | 65 MCQ, 100 marks; 69 crops, 73 displayed image parts |
@@ -192,7 +196,9 @@ Highlight the active practice slide or current report entry on the map with an a
 | 2021 Set 1, official session 5 | `gate-cse-2021-set-1` / `gate-cse-2021-set-1-session-5` | `cs_2021_set_1.pdf` (41 pages), `cs_2021_set_1_key.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 | 2021 Set 2, official session 6 | `gate-cse-2021-set-2` / `gate-cse-2021-set-2-session-6` | `GATE2021_QP_CS-2.pdf` (43 pages), `2021-CS2-S6-Keys.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 
-The 2009 paper uses CS 1–60 only. Most later papers keep GA 1–10 and CS 1–55 separate; preserve the 2015 continuous key numbering and 2017 printed order described below. Preserve these key exceptions:
+The 2009 paper uses CS 1–60 only. Most later papers keep GA 1–10 and CS 1–55 separate; preserve the 2011/2017 printed order and 2015 continuous key numbering described below. Preserve these key exceptions:
+
+- 2011 is booklet Code A: use only that column of the supplied A/B/C/D key. Preserve CS 1–55 then GA 56–65. All 65 questions are MCQ, totaling 100 marks: CS 1–25/GA 56–60 carry one mark; the rest carry two. Wrong ordinary answers lose exactly one-third of their marks. Linked pairs 52→53 and 54→55 use `requiresCorrect`; the second question has no deduction and is not evaluated unless the first is correct. Common-data pairs 48/49 and 50/51 remain independent. Include each shared code/diagram/passage with both members: 69 unique lossless 240 DPI crops, 73 displayed image parts. All 17 paper pages, both key pages and final crops were visually checked; the printed 20-page denominator includes omitted rough-work pages, with all questions present. Retain harmless skewed header fragments where trimming would clip first-line question pixels; do not erase or redraw source content. Original PDFs remain external and unchanged, with hashes, page dimensions and rectangles recorded in data. No missing/alternate keys, MTA, NAT or MSQ; describe it as the supplied Code A key without claiming authenticated official final status. Cover instructions establish scoring: blank 0/100, perfect 100/100, all wrong −32/100. Independent fixture: `tests/fixtures/gate-cse-2011-key.json`; run `node tests/quiz-2011.test.cjs` for relevant changes. Never create/reset a real attempt during testing.
 
 - 2012 follows Booklet Code A and only that key column. Keep printed order CS 1–55, then GA 56–65. All 65 questions are single-choice MCQ; no NAT, MSQ or alternate options. CS 1–25 and GA 56–60 carry 1 mark; CS 26–55 and GA 61–65 carry 2. The supplied key awards CS-3, CS-29, CS-38, CS-39, CS-45 and GA-60 to all, even unanswered, for 10 marks. Linked pairs are CS 52→53 and 54→55; second questions use `requiresCorrect` and zero wrong-answer penalty. Common-data pairs 48/49 and 50/51 are independent. Other wrong answers deduct exact one-third/two-thirds, following supplied paper page 1 paragraphs 7–9. Blank 10/100; perfect 59 correct plus six awards, 100/100; all wrong −56/3. All 20 paper pages, both key pages and 69 unique 240 DPI crops were visually checked. Four shared contexts are repeated, giving 73 displayed parts. Pixel audit matched every PNG to recorded source rectangles. GA-56's tiny rupee is an original low-resolution raster icon, preserved unchanged. Originals stay in Downloads; hashes, dimensions and crop provenance are in data/independent fixture. Run `node tests/quiz-2012.test.cjs` for relevant data/scoring/runtime changes; never create a real attempt while testing.
 

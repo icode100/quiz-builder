@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GATE CSE 2011 - Code A</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="quiz-data.js" defer></script>
+  <script src="quiz.js" defer></script>
+</head>
+<body>
+  <div class="quiz-shell">
+  <main class="container">
+    <header class="page-header">
+      <div class="header-top">
+        <p class="eyebrow">Practice quiz</p>
+        <a id="quiz-home" class="button button-secondary" href="/">Home</a>
+        <span id="review-attempt-wrap" class="review-attempt-control" title="This paper has not been attempted before.">
+          <button id="review-attempt" class="button button-secondary" type="button" title="This paper has not been attempted before." disabled>Review last attempt</button>
+        </span>
+        <button id="theme-toggle" class="toggle-switch theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Theme">
+          <span class="switch-label">Theme</span>
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        </button>
+      </div>
+      <h1 id="quiz-title">GATE CSE 2011 - Code A</h1>
+      <p id="quiz-source" class="subtitle" hidden></p>
+      <p id="quiz-instructions" class="subtitle" hidden></p>
+      <div id="quiz-meta" class="quiz-meta" hidden></div>
+    </header>
+
+    <section id="quiz-timer" class="quiz-timer" aria-label="Quiz timer" hidden>
+      <div class="timer-options">
+        <label for="timer-duration">Timer duration</label>
+        <select id="timer-duration">
+          <option value="180">180 mins</option>
+          <option value="150">150 mins</option>
+          <option value="120">120 mins</option>
+          <option value="90">90 mins</option>
+          <option value="60">60 mins</option>
+          <option value="30">30 mins</option>
+        </select>
+      </div>
+      <div class="timer-readout">
+        <output id="timer-display" role="timer" aria-live="off" aria-label="Time remaining">03:00:00</output>
+        <p id="timer-status" class="timer-status" role="status" aria-live="polite">Ready</p>
+      </div>
+      <div class="timer-actions">
+        <button id="timer-start" class="button" type="button">Start</button>
+        <button id="timer-pause" class="button button-secondary" type="button" disabled>Pause</button>
+        <button id="timer-reset" class="button button-secondary" type="button">Reset</button>
+      </div>
+    </section>
+
+    <p id="status-message" class="status-message" role="status" aria-live="polite" hidden></p>
+
+    <section id="empty-state" class="empty-state" hidden>
+      <h2>Ready for your question paper</h2>
+      <p>This is the blank quiz template. Send the question paper PDF and its answer key in the chat, and a separate folder will be prepared for that quiz.</p>
+      <p>Run <strong>start-quiz.cmd</strong> (Windows) or <strong>start-quiz.command</strong> (macOS) from the Quiz folder, then choose your paper at <strong>http://127.0.0.1:8765/</strong>.</p>
+    </section>
+
+    <form id="quiz-form" class="quiz-form" hidden>
+      <fieldset id="quiz-session" class="session-controls">
+      <nav id="question-carousel" class="question-carousel" aria-label="Question navigation" hidden>
+        <button id="previous-question" class="button button-secondary" type="button">Previous question</button>
+        <span id="carousel-position" role="status" aria-live="polite"></span>
+        <button id="next-question" class="button button-secondary" type="button">Skip question</button>
+      </nav>
+      <div id="questions"></div>
+      <div class="quiz-actions">
+        <p id="progress" class="progress" role="status" aria-live="polite"></p>
+        <button class="button" type="submit">Submit and check answers</button>
+        <button id="clear-answers" class="button button-secondary" type="button">Clear answers</button>
+      </div>
+      </fieldset>
+    </form>
+
+    <section id="report" class="report" aria-labelledby="report-title" hidden>
+      <div class="score-card">
+        <h2 id="report-title" tabindex="-1">Your result</h2>
+        <p id="report-source" class="subtitle" hidden></p>
+        <p id="score-value" class="score-value"></p>
+        <p id="score-detail" class="score-detail"></p>
+        <div id="report-summary" class="report-summary"></div>
+      </div>
+      <div class="report-actions">
+        <button id="retry-quiz" class="button" type="button">Attempt again</button>
+        <button id="download-report" class="button button-secondary" type="button">Save report</button>
+        <button id="print-report" class="button button-secondary" type="button">Print report</button>
+      </div>
+      <div id="report-list" class="report-list"></div>
+    </section>
+    <noscript><p>Enable JavaScript in your browser to attempt and score this quiz.</p></noscript>
+  </main>
+  <aside id="question-nav" class="question-nav" aria-labelledby="nav-title" hidden>
+    <h2 id="nav-title">Question map</h2>
+    <p id="nav-progress" class="nav-progress" role="status" aria-live="polite"></p>
+    <div class="nav-legend">
+      <span id="nav-attempted-legend"><span class="nav-dot answered" aria-hidden="true"></span> Attempted</span>
+      <span id="nav-unattempted-legend"><span class="nav-dot unanswered" aria-hidden="true"></span> Not attempted</span>
+      <span id="nav-correct-legend" hidden><span class="nav-dot result-correct" aria-hidden="true"></span> Correct</span>
+      <span id="nav-incorrect-legend" hidden><span class="nav-dot result-incorrect" aria-hidden="true"></span> Incorrect</span>
+      <span id="nav-unanswered-legend" hidden><span class="nav-dot unanswered" aria-hidden="true"></span> Unanswered</span>
+      <span id="nav-awarded-legend" hidden><span class="nav-dot result-awarded" aria-hidden="true"></span> Marks to all</span>
+      <span id="nav-blocked-legend" hidden><span class="nav-dot result-blocked" aria-hidden="true"></span> Not evaluated</span>
+      <span id="nav-review-legend"><span class="nav-dot marked-review" aria-hidden="true"></span> Marked for review</span>
+      <span id="nav-check-legend" hidden><span class="nav-dot needs-check" aria-hidden="true"></span> Check number</span>
+    </div>
+    <nav id="nav-groups" class="nav-groups" aria-label="Jump to a question"></nav>
+  </aside>
+  </div>
+</body>
+</html>

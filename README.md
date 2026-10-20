@@ -75,6 +75,7 @@ Available quizzes, after starting the server:
 - [GATE CSE 2012, Booklet Code A](http://127.0.0.1:8765/gate-cse-2012/)
 - [GATE CSE 2010](http://127.0.0.1:8765/gate-cse-2010/)
 - [GATE CSE 2013, Booklet A](http://127.0.0.1:8765/gate-cse-2013/)
+- [GATE CSE 2011, Code A](http://127.0.0.1:8765/gate-cse-2011/)
 - [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
 - [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
@@ -83,6 +84,8 @@ The 2007 paper has 85 MCQs totaling 150 marks. The 2009 paper has 60 MCQs totali
 The 2007 quiz completes all 36 missing key entries, corrects four supplied answers, and explicitly clarifies Q15's defective loop-count wording. Its 97 original image crops include a restored grammar from the original exam scan. It uses the 2007 penalties (-0.25/-0.5) and five linked pairs, 76/77 through 84/85. The completed key and derivations are in `gate-cse-2007/KEY-NOTES.txt`; checks run with `node tests/quiz-2007.test.cjs`.
 
 The 2009 quiz preserves the supplied paper and screenshot key, with 69 sharp image parts. Its practice key completes eight blanks, corrects Q11/Q13, preserves the supplied alternatives, and documents Q47's ambiguous wording in `gate-cse-2009/KEY-NOTES.txt`. Original-exam scan crops restore missing notation in affected questions. Linked-answer rules apply to 57/58 and 59/60: the second scores only when the first is correct and has no negative marking. Its checks run with `node tests\quiz-2009.test.cjs` and `node tests\quiz-linked.test.cjs`.
+
+The 2011 quiz matches booklet Code A to that column of the supplied multi-code key. It preserves CS 1–55 then GA 56–65, with 65 MCQs and 100 marks. Shared passages, code and diagrams accompany both members of their pairs. Linked 52→53 and 54→55 follow the cover's dependency and zero-penalty rules; common-data questions remain independent. The 69 original crops form 73 displayed parts. Source PDFs stay unchanged outside the quiz folder. Independent checks run with `node tests/quiz-2011.test.cjs`.
 
 The 2012 quiz uses Booklet Code A with 65 MCQs, 100 marks, and printed CS 1–55 then GA 56–65 order. Its six marks-to-all entries award 10 marks even unanswered; linked pairs 52/53 and 54/55 follow the supplied exam directions. All 69 sharp original crops preserve shared contexts as 73 displayed parts. The source PDFs remain unchanged in Downloads, with filenames and hashes recorded in quiz data. Independent checks run with `node tests/quiz-2012.test.cjs`.
 
