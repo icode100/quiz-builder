@@ -1,0 +1,89 @@
+GATE CSE 2010: reconciled practice key
+
+This is not an authenticated official final answer key. The supplied screenshot
+has seven incorrect nonblank entries, two blanks and two contradictory Q60
+entries. All 65 answers were independently checked against the questions.
+The original-examination scan restores six defects in the supplied reproduction.
+No answer is inferred by shifting the screenshot's columns or numbering.
+
+Reconciled key (one option per MCQ)
+ 1 C   2 D   3 C   4 A   5 B   6 A   7 B   8 A   9 B  10 A
+11 D  12 C  13 B  14 C  15 D  16 D  17 B  18 B  19 C  20 B
+21 A  22 B  23 A  24 A  25 D  26 A  27 A  28 D  29 D  30 B
+31 A  32 A  33 B  34 B  35 C  36 D  37 B  38 C  39 B  40 D
+41 C  42 A  43 A  44 D  45 A  46 B  47 D  48 C  49 C  50 D
+51 B  52 C  53 C  54 C  55 B  56 C  57 B  58 D  59 D  60 A
+61 C  62 B  63 C  64 D  65 B
+
+Corrections to nonblank screenshot entries
+Q7 D -> B: chips operate in parallel. Refreshing 1K rows takes
+1024 x 100 ns = 102400 ns; multiplying by the number of chips/cells is wrong.
+Q18 C -> B: five maximum internal keys imply six maximum children. A nonroot
+internal node needs at least ceil(6/2)=3 children, hence two keys. The minimum
+over any nonroot node is two; the leaf minimum does not make C correct.
+Q30 D -> B: forall x exists y exists t not F(x,y,t) is equivalent to
+not exists x forall y forall t F(x,y,t): no one can fool everyone all the time.
+Q34 A -> B: skip a0 to get Y, or include a0 and halve all tail weights to get
+a0 + Y/2. The answer is max(Y, a0 + Y/2). The original defines Y explicitly.
+Q49 A -> C: the L2 block has 16 words but the memory bus carries four words.
+Four transfers cost 4 x (200+20) ns, then L2-to-L1 costs 20+2 ns: total 902 ns.
+Q54 D -> C: two edges are unused by shortest paths: R1-R2 has weight 6 versus
+the alternative R1-R3-R2 of weight 5; R4-R6 has weight 8 versus R4-R5-R6 of 5.
+Q55 A -> B: after changing those two weights to 2, R5-R6 (weight 4) is unused
+because R5-R4-R6 costs 3. Exactly one edge is unused.
+
+Missing/contradictory screenshot entries
+Q37 blank -> B: a, b and c are live just before d=a+b, requiring three
+registers. Reuse registers when operands die; three registers suffice.
+Q53 blank -> C: exhaustive enumeration of all 6! insertion orders yields
+30 orders with the printed final linear-probing table. Q52 is C.
+Q60 is printed twice, with A and C. Use A only: an unemployed worker and
+fallow land are both available productive resources not currently in use.
+Q65 retains B: the original has nine digits 2,2,3,3,3,4,4,4,4. There are
+25 allowed numbers beginning with 3 and 26 beginning with 4, totaling 51.
+The supplied reproduction omits one 3, which would yield 44, absent from
+the printed options. Use the original question crop, not the defective list.
+
+Original-scan restorations, with all source pixels preserved
+Q9, original page 3: restores multiplexer input indices 0-3 and S1/S0 labels.
+Q11, original page 3: restores parameter q, matching the code's p=q statement.
+Q34, original page 8: restores the omitted definition of tail optimum Y.
+Q36, original page 9: restores the valid NULL test and q=p assignment.
+Q38, original page 9: restores option B, LR(1) but not LL(1).
+Q65, original page 16: restores the omitted third occurrence of digit 3.
+The remaining questions use complete lossless crops of the supplied paper.
+Split questions 19, 28 and 62 retain their ordered continuation images.
+Common data for 48/49 and 50/51 is repeated for independent practice. The
+52/53 hash table and 54/55 network diagram are repeated too; Q55 also shows
+Q54's question so 'previous question' is fully defined on its own slide.
+The supplied paper's final order 62,64,63,65 is retained with its numbering.
+
+Scoring from original examination page 1, instructions 7-11
+CS 1-25 and GA 56-60: +1, wrong -1/3.
+CS 26-55 and GA 61-65: +2, wrong -2/3, except linked seconds 53 and 55.
+Linked 52 -> 53 and 54 -> 55: dependent wrong answers incur no deduction;
+an answered dependent is not evaluated if its prerequisite is wrong or blank.
+Common-data questions remain independent. Unanswered questions score zero.
+No MTA, alternate accepted MCQ answers or numerical questions.
+Blank: 0/100. Perfect: 100/100. All wrong: -32/100.
+
+Source provenance (originals are unchanged and are not copied into this quiz)
+CS-2010.pdf, supplied 14-page reproduction in Downloads:
+48903e7413358472784f7b8cc2a24654972f514daac45e71c9bf15a0ff4f2bb7
+codex-clipboard-c54c8e44-05d8-4de9-91d4-2c5d5b305048.png, supplied key:
+7c79111241e1907f259566d90b82355028928ab748460e6cd71a925cbdbad3ba
+GATE2010-original-exam-reference.pdf, 24-page original exam scan:
+ee9ffb8fa5fcaa5069ffc14159fc3da77e5b99e9d92fbc4df899ff336668815a
+https://image-static.collegedunia.com/public/image/gate_2010_cs_5fa86e3940f3de254b79eb3eb17a6116.pdf
+The reference is the primary exam document hosted on a third-party mirror.
+The official archive also indexes the original examination at
+https://gate.iitk.ac.in/GATE2023/doc/papers/2010/cs_2010.pdf
+but direct retrieval of that official endpoint was unavailable during the build.
+All 14 supplied pages, the screenshot, all 24 reference pages and the final
+crops were visually inspected. Rectangles, source documents, dimensions and
+240 DPI provenance are recorded in quiz-data.js. Original raster softness is
+retained; no content was redrawn, thresholded, stretched or OCR-replaced.
+
+Independent verification: tests/fixtures/gate-cse-2010-key.json and
+node tests/quiz-2010.test.cjs. Tests use simulated storage and disposable
+server folders, never real submitted attempts.

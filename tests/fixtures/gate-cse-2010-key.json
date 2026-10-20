@@ -1,0 +1,1927 @@
+{
+  "provenance": "Independent visual transcription of every supplied screenshot entry and independent solution audit of all65 questions. Seven incorrect nonblank entries were corrected; two blanks were solved; duplicated Q60 was reconciled. This is a reconciled practice key, not an authenticated official final key.",
+  "year": 2010,
+  "paperCode": "CS",
+  "quizId": "gate-cse-2010",
+  "paperPageCount": 14,
+  "supplementalPageCount": 24,
+  "keyPageCount": 1,
+  "questionCount": 65,
+  "totalMarks": 100,
+  "typeCounts": {
+    "MCQ": 65
+  },
+  "questionOrder": [
+    "CS-1",
+    "CS-2",
+    "CS-3",
+    "CS-4",
+    "CS-5",
+    "CS-6",
+    "CS-7",
+    "CS-8",
+    "CS-9",
+    "CS-10",
+    "CS-11",
+    "CS-12",
+    "CS-13",
+    "CS-14",
+    "CS-15",
+    "CS-16",
+    "CS-17",
+    "CS-18",
+    "CS-19",
+    "CS-20",
+    "CS-21",
+    "CS-22",
+    "CS-23",
+    "CS-24",
+    "CS-25",
+    "CS-26",
+    "CS-27",
+    "CS-28",
+    "CS-29",
+    "CS-30",
+    "CS-31",
+    "CS-32",
+    "CS-33",
+    "CS-34",
+    "CS-35",
+    "CS-36",
+    "CS-37",
+    "CS-38",
+    "CS-39",
+    "CS-40",
+    "CS-41",
+    "CS-42",
+    "CS-43",
+    "CS-44",
+    "CS-45",
+    "CS-46",
+    "CS-47",
+    "CS-48",
+    "CS-49",
+    "CS-50",
+    "CS-51",
+    "CS-52",
+    "CS-53",
+    "CS-54",
+    "CS-55",
+    "GA-56",
+    "GA-57",
+    "GA-58",
+    "GA-59",
+    "GA-60",
+    "GA-61",
+    "GA-62",
+    "GA-64",
+    "GA-63",
+    "GA-65"
+  ],
+  "sourceSha256": {
+    "CS-2010.pdf": "48903e7413358472784f7b8cc2a24654972f514daac45e71c9bf15a0ff4f2bb7",
+    "codex-clipboard-c54c8e44-05d8-4de9-91d4-2c5d5b305048.png": "7c79111241e1907f259566d90b82355028928ab748460e6cd71a925cbdbad3ba",
+    "GATE2010-original-exam-reference.pdf": "ee9ffb8fa5fcaa5069ffc14159fc3da77e5b99e9d92fbc4df899ff336668815a"
+  },
+  "supplementalSource": {
+    "filename": "GATE2010-original-exam-reference.pdf",
+    "url": "https://image-static.collegedunia.com/public/image/gate_2010_cs_5fa86e3940f3de254b79eb3eb17a6116.pdf",
+    "description": "Scan of original24-page CS examination on a third-party mirror; all pages visually inspected. Question text/code/options restored only where supplied reproduction is defective."
+  },
+  "markingSource": {
+    "filename": "GATE2010-original-exam-reference.pdf",
+    "page": 1,
+    "description": "Original exam instruction11 visually verified: one-third/two-thirds negative marks; linked seconds53/55 have no deduction and are evaluated only if prerequisites52/54 are correct. Do not use erroneous quarter/half fractions in search-index OCR."
+  },
+  "linkedAnswerPairs": [
+    [
+      "CS-52",
+      "CS-53"
+    ],
+    [
+      "CS-54",
+      "CS-55"
+    ]
+  ],
+  "screenshotRows": [
+    [
+      [
+        1,
+        "C"
+      ],
+      [
+        2,
+        "D"
+      ],
+      [
+        3,
+        "C"
+      ],
+      [
+        4,
+        "A"
+      ],
+      [
+        5,
+        "B"
+      ],
+      [
+        6,
+        "A"
+      ],
+      [
+        7,
+        "D"
+      ]
+    ],
+    [
+      [
+        8,
+        "A"
+      ],
+      [
+        9,
+        "B"
+      ],
+      [
+        10,
+        "A"
+      ],
+      [
+        11,
+        "D"
+      ],
+      [
+        12,
+        "C"
+      ],
+      [
+        13,
+        "B"
+      ],
+      [
+        14,
+        "C"
+      ]
+    ],
+    [
+      [
+        15,
+        "D"
+      ],
+      [
+        16,
+        "D"
+      ],
+      [
+        17,
+        "B"
+      ],
+      [
+        18,
+        "C"
+      ],
+      [
+        19,
+        "C"
+      ],
+      [
+        20,
+        "B"
+      ],
+      [
+        21,
+        "A"
+      ]
+    ],
+    [
+      [
+        22,
+        "B"
+      ],
+      [
+        23,
+        "A"
+      ],
+      [
+        24,
+        "A"
+      ],
+      [
+        25,
+        "D"
+      ],
+      [
+        26,
+        "A"
+      ],
+      [
+        27,
+        "A"
+      ],
+      [
+        28,
+        "D"
+      ]
+    ],
+    [
+      [
+        29,
+        "D"
+      ],
+      [
+        30,
+        "D"
+      ],
+      [
+        31,
+        "A"
+      ],
+      [
+        32,
+        "A"
+      ],
+      [
+        33,
+        "B"
+      ],
+      [
+        34,
+        "A"
+      ],
+      [
+        35,
+        "C"
+      ]
+    ],
+    [
+      [
+        36,
+        "D"
+      ],
+      [
+        37,
+        null
+      ],
+      [
+        38,
+        "C"
+      ],
+      [
+        39,
+        "B"
+      ],
+      [
+        40,
+        "D"
+      ],
+      [
+        41,
+        "C"
+      ],
+      [
+        42,
+        "A"
+      ]
+    ],
+    [
+      [
+        43,
+        "A"
+      ],
+      [
+        44,
+        "D"
+      ],
+      [
+        45,
+        "A"
+      ],
+      [
+        46,
+        "B"
+      ],
+      [
+        47,
+        "D"
+      ],
+      [
+        48,
+        "C"
+      ],
+      [
+        49,
+        "A"
+      ]
+    ],
+    [
+      [
+        50,
+        "D"
+      ],
+      [
+        51,
+        "B"
+      ],
+      [
+        52,
+        "C"
+      ],
+      [
+        53,
+        null
+      ],
+      [
+        54,
+        "D"
+      ],
+      [
+        55,
+        "A"
+      ],
+      [
+        56,
+        "C"
+      ]
+    ],
+    [
+      [
+        57,
+        "B"
+      ],
+      [
+        58,
+        "D"
+      ],
+      [
+        59,
+        "D"
+      ],
+      [
+        60,
+        "A"
+      ],
+      [
+        60,
+        "C"
+      ],
+      [
+        61,
+        "C"
+      ],
+      [
+        62,
+        "B"
+      ]
+    ],
+    [
+      [
+        63,
+        "C"
+      ],
+      [
+        64,
+        "D"
+      ],
+      [
+        65,
+        "B"
+      ]
+    ]
+  ],
+  "correctedNonblankQuestions": [
+    7,
+    18,
+    30,
+    34,
+    49,
+    54,
+    55
+  ],
+  "completedBlankQuestions": [
+    37,
+    53
+  ],
+  "duplicateQuestion": {
+    "number": 60,
+    "screenshotEntries": [
+      "A",
+      "C"
+    ],
+    "practiceAnswer": "A"
+  },
+  "scoreChecks": {
+    "blank": 0,
+    "perfect": 100,
+    "allWrong": -32
+  },
+  "questions": [
+    {
+      "id": "CS-1",
+      "section": "CS",
+      "number": 1,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "The degree sum of a tree is 2(|V|-1), so equal degree sums imply equal vertex counts."
+    },
+    {
+      "id": "CS-2",
+      "section": "CS",
+      "number": 2,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "One Newton step is (3.5 + 13/3.5)/2 = 3.607142857..., selecting D."
+    },
+    {
+      "id": "CS-3",
+      "section": "CS",
+      "number": 3,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "Five diagonal pairs are compulsory; 20 off-diagonal pairs are independent: 2^20."
+    },
+    {
+      "id": "CS-4",
+      "section": "CS",
+      "number": 4,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "The cube roots of unity form a cyclic group under multiplication."
+    },
+    {
+      "id": "CS-5",
+      "section": "CS",
+      "number": 5,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "The limit (1 - 1/n)^(2n) is exp(-2)."
+    },
+    {
+      "id": "CS-6",
+      "section": "CS",
+      "number": 6,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "PQ + Q not-R + P not-R is true for minterms 2,4,6,7."
+    },
+    {
+      "id": "CS-7",
+      "section": "CS",
+      "number": 7,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "Screenshot D corrected to B. DRAM chips refresh in parallel; 1024 rows at 100 ns per row require 100*2^10 ns, not per-bit refresh over all chips."
+    },
+    {
+      "id": "CS-8",
+      "section": "CS",
+      "number": 8,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        1
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        1
+      ],
+      "keyNote": "The low 16 bits of 0xF87B shifted left three positions are 0xC3D8."
+    },
+    {
+      "id": "CS-9",
+      "section": "CS",
+      "number": 9,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        2
+      ],
+      "sourceDocument": "GATE2010-original-exam-reference.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "The multiplexer selects R, not-R, not-R, R, which is P XOR Q XOR R. Original-exam crop restores input indices0,1,2,3 and selector labelsS1/S0 omitted from the supplied reproduction."
+    },
+    {
+      "id": "CS-10",
+      "section": "CS",
+      "number": 10,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        2
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        2
+      ],
+      "keyNote": "A node with one child would have an even subtree size, contradicting every node having an odd number of descendants including itself."
+    },
+    {
+      "id": "CS-11",
+      "section": "CS",
+      "number": 11,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        2
+      ],
+      "sourceDocument": "GATE2010-original-exam-reference.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "Assigning local p=q makes *p=2 change j only; i remains zero. Original-exam crop restores q in the parameter declaration."
+    },
+    {
+      "id": "CS-12",
+      "section": "CS",
+      "number": 12,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        2
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        2
+      ],
+      "keyNote": "10*k*10^k < 0.0001*10^(2k) first holds at integer k=6."
+    },
+    {
+      "id": "CS-13",
+      "section": "CS",
+      "number": 13,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        2
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        2
+      ],
+      "keyNote": "Variable names and attributes belong in the symbol table."
+    },
+    {
+      "id": "CS-14",
+      "section": "CS",
+      "number": 14,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        3
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "Dynamic data structures require heap allocation."
+    },
+    {
+      "id": "CS-15",
+      "section": "CS",
+      "number": 15,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        3
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "TTL bounds the lifetime of packets caught in routing loops."
+    },
+    {
+      "id": "CS-16",
+      "section": "CS",
+      "number": 16,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        3
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "Ping is ICMP request/reply rather than a client-server application."
+    },
+    {
+      "id": "CS-17",
+      "section": "CS",
+      "number": 17,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        3
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "Subtracting a nonrecursive RE language from a recursive language need not leave an RE language; take L1 to be all strings."
+    },
+    {
+      "id": "CS-18",
+      "section": "CS",
+      "number": 18,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        3
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        3
+      ],
+      "keyNote": "Screenshot C corrected to B. Five maximum keys imply six maximum children in an internal B+ node. A non-root internal node can have three children and hence two keys; leaves may require three but the question asks any non-root node."
+    },
+    {
+      "id": "CS-19",
+      "section": "CS",
+      "number": 19,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        3,
+        4
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        3,
+        4
+      ],
+      "keyNote": "AC reservations matching passengers older than 65 have pid 1 and 3."
+    },
+    {
+      "id": "CS-20",
+      "section": "CS",
+      "number": 20,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        4
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        4
+      ],
+      "keyNote": "Timestamp ordering prevents deadlock and ensures conflict serializability; two-phase locking can deadlock."
+    },
+    {
+      "id": "CS-21",
+      "section": "CS",
+      "number": 21,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        4
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        4
+      ],
+      "keyNote": "Sequential composition adds decision counts: (10-1)+(10-1)+1 = 19."
+    },
+    {
+      "id": "CS-22",
+      "section": "CS",
+      "number": 22,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        4
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        4
+      ],
+      "keyNote": "Requirements/domain analysis; design/structural-behavioral modeling; implementation/module development; maintenance/performance tuning."
+    },
+    {
+      "id": "CS-23",
+      "section": "CS",
+      "number": 23,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        5
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        5
+      ],
+      "keyNote": "Complementary guards ensure mutual exclusion, but a waiting process can be prevented from progressing when the other does not request entry."
+    },
+    {
+      "id": "CS-24",
+      "section": "CS",
+      "number": 24,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        5
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        5
+      ],
+      "keyNote": "First pass faults 100 times; the last four pages hit on reverse traversal, then 96 further faults: 196."
+    },
+    {
+      "id": "CS-25",
+      "section": "CS",
+      "number": 25,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        5
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        5
+      ],
+      "keyNote": "Shortest remaining time and other preemptive policies can starve; round robin improves interactive response over FCFS."
+    },
+    {
+      "id": "CS-26",
+      "section": "CS",
+      "number": 26,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        5
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        5
+      ],
+      "keyNote": "Declared faulty = actually faulty and correctly detected, plus actually good and misclassified: pq+(1-p)(1-q)."
+    },
+    {
+      "id": "CS-27",
+      "section": "CS",
+      "number": 27,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        5
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        5
+      ],
+      "keyNote": "10^99 has 100^2 divisors; 4^2 have both exponents at least 96. Probability 16/10000 = 1/625."
+    },
+    {
+      "id": "CS-28",
+      "section": "CS",
+      "number": 28,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        5,
+        6
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        5,
+        6
+      ],
+      "keyNote": "Sequence II fails the graphical degree test and IV exceeds maximum degree 7; I and III are graphical."
+    },
+    {
+      "id": "CS-29",
+      "section": "CS",
+      "number": 29,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        6
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        6
+      ],
+      "keyNote": "Trace gives y=10, determinant gives 20-3x=32, hence x=-4."
+    },
+    {
+      "id": "CS-30",
+      "section": "CS",
+      "number": 30,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        6
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        6
+      ],
+      "keyNote": "Screenshot D corrected to B. For each x there are a y and a t with not-F(x,y,t): nobody fools everyone at every time. D would deny fooling anyone at any time."
+    },
+    {
+      "id": "CS-31",
+      "section": "CS",
+      "number": 31,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        6
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        6
+      ],
+      "keyNote": "Absorption through the NOR network eliminates P and yields not-(Q+R), shown in option A."
+    },
+    {
+      "id": "CS-32",
+      "section": "CS",
+      "number": 32,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        6
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        6
+      ],
+      "keyNote": "Tracing the T flip-flops from 00 gives 11,10,01,00."
+    },
+    {
+      "id": "CS-33",
+      "section": "CS",
+      "number": 33,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        7
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        7
+      ],
+      "keyNote": "Shared PO stage executes MUL in cycles4-6, DIV7-12, ADD13, SUB14, with final write15."
+    },
+    {
+      "id": "CS-34",
+      "section": "CS",
+      "number": 34,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        7
+      ],
+      "sourceDocument": "GATE2010-original-exam-reference.pdf",
+      "sourcePages": [
+        8
+      ],
+      "keyNote": "Screenshot A corrected to B. If a0 is omitted the maximum is Y; if retained later weights are halved, giving a0+Y/2. Original-exam crop restores the missing definition of Y."
+    },
+    {
+      "id": "CS-35",
+      "section": "CS",
+      "number": 35,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        7
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        7
+      ],
+      "keyNote": "Evaluating the recursive alternating additions/subtractions from the end yields 15."
+    },
+    {
+      "id": "CS-36",
+      "section": "CS",
+      "number": 36,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        7,
+        8
+      ],
+      "sourceDocument": "GATE2010-original-exam-reference.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "Detach the final node by q->next=NULL; link p->next=head; then head=p. Original-exam crop avoids transcription errors in the supplied reproduction."
+    },
+    {
+      "id": "CS-37",
+      "section": "CS",
+      "number": 37,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": null,
+      "screenshotEntries": [
+        null
+      ],
+      "keyProvenance": "independent-fill",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        8
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        8
+      ],
+      "keyNote": "Blank screenshot completed as B. Three values a,b,c are simultaneously live after c=20; three registers suffice by reusing dead operand registers thereafter."
+    },
+    {
+      "id": "CS-38",
+      "section": "CS",
+      "number": 38,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        8
+      ],
+      "sourceDocument": "GATE2010-original-exam-reference.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "FIRST sets of aSa, bS, c are disjoint with no epsilon production: LL(1), and thus LR(1). Original-exam crop restores option B as LR(1) but not LL(1)."
+    },
+    {
+      "id": "CS-39",
+      "section": "CS",
+      "number": 39,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        9
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "0*(10*10*)* permits precisely pairs of ones with arbitrary zero runs."
+    },
+    {
+      "id": "CS-40",
+      "section": "CS",
+      "number": 40,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        9
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "Each equality or inequality between two unary block lengths is context-free; the inequality languages are finite unions of CFLs."
+    },
+    {
+      "id": "CS-41",
+      "section": "CS",
+      "number": 41,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        9
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "An acyclic path of n+1 states accepting every interval suffices; any accepting computation for w of length n needs n+1 distinct states to avoid accepting longer words."
+    },
+    {
+      "id": "CS-42",
+      "section": "CS",
+      "number": 42,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        9
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "Conflicts order T1 before T3 before T2."
+    },
+    {
+      "id": "CS-43",
+      "section": "CS",
+      "number": 43,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        9
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        9
+      ],
+      "keyNote": "B determines A and C, so each S tuple joins at most one R tuple. All 100 S tuples can match."
+    },
+    {
+      "id": "CS-44",
+      "section": "CS",
+      "number": 44,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        10
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        10
+      ],
+      "keyNote": "T1 covers S1, T2 covers S3, and T4 covers S2 and S4."
+    },
+    {
+      "id": "CS-45",
+      "section": "CS",
+      "number": 45,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        10
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        10
+      ],
+      "keyNote": "Binary S0 may merge the releases from P1 and P2 or allow an intervening P0 wait, giving two or three prints, hence at least twice."
+    },
+    {
+      "id": "CS-46",
+      "section": "CS",
+      "number": 46,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        10
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        10
+      ],
+      "keyNote": "For n=21,k=12, P10 requests R10 then R12 while P9 requests R12 then R10, enabling a cycle. The other configurations have no opposing pair."
+    },
+    {
+      "id": "CS-47",
+      "section": "CS",
+      "number": 47,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        11
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        11
+      ],
+      "keyNote": "113 and 91 are in different /27 blocks (96 and64), while the broader masks keep them together."
+    },
+    {
+      "id": "CS-48",
+      "section": "CS",
+      "number": 48,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        11
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        11
+      ],
+      "keyNote": "The four-word L1 block crosses the four-word bus in one transfer: 20+2=22ns."
+    },
+    {
+      "id": "CS-49",
+      "section": "CS",
+      "number": 49,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        11
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        11
+      ],
+      "keyNote": "Screenshot A corrected to C. The sixteen-word L2 block requires four transfers on its four-word bus: 4*(200+20)+(20+2)=902ns."
+    },
+    {
+      "id": "CS-50",
+      "section": "CS",
+      "number": 50,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        11
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        11
+      ],
+      "keyNote": "An MST on vertices1,2,3,4 costs4+2+3=9; adding vertex0 as a leaf costs1, total10."
+    },
+    {
+      "id": "CS-51",
+      "section": "CS",
+      "number": 51,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        11
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        11
+      ],
+      "keyNote": "The minimum allowed path is1-0-4-2 with three edges and weight1+4+3=8 (B). The lighter path1-0-3-4-2 costs7 but is disallowed by the three-edge limit."
+    },
+    {
+      "id": "CS-52",
+      "section": "CS",
+      "number": 52,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        12
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        12
+      ],
+      "keyNote": "Simulating linear probing for option C produces 42,23,34,52,46,33 in slots2..7; the other options do not."
+    },
+    {
+      "id": "CS-53",
+      "section": "CS",
+      "number": 53,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 1,
+      "screenshotAnswer": null,
+      "screenshotEntries": [
+        null
+      ],
+      "keyProvenance": "independent-fill",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        12
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        12
+      ],
+      "keyNote": "Blank screenshot completed as C. Exhaustive enumeration of all720 insertion permutations produces exactly30 sequences yielding the specified table; evaluated only if CS-52 is correct.",
+      "requiresCorrect": "CS-52"
+    },
+    {
+      "id": "CS-54",
+      "section": "CS",
+      "number": 54,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        12
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        12
+      ],
+      "keyNote": "Screenshot D corrected to C. Links R1-R2 (6 > 3+2) and R4-R6 (8 > 1+4) are unused; every other edge itself lies on a shortest path."
+    },
+    {
+      "id": "CS-55",
+      "section": "CS",
+      "number": 55,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A"
+      ],
+      "keyProvenance": "independent-correction",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        12,
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        12,
+        13
+      ],
+      "keyNote": "Screenshot A corrected to B. After those two weights become2, R5-R6 (4 > 1+2) alone is unused; evaluated only if CS-54 is correct.",
+      "requiresCorrect": "CS-54"
+    },
+    {
+      "id": "GA-56",
+      "section": "GA",
+      "number": 56,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13
+      ],
+      "keyNote": "Betrayed means revealed, matching remarks exposing a lack of seriousness."
+    },
+    {
+      "id": "GA-57",
+      "section": "GA",
+      "number": 57,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13
+      ],
+      "keyNote": "Circuitous means indirect."
+    },
+    {
+      "id": "GA-58",
+      "section": "GA",
+      "number": 58,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13
+      ],
+      "keyNote": "Conserve natural resources is the appropriate expression."
+    },
+    {
+      "id": "GA-59",
+      "section": "GA",
+      "number": 59,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13
+      ],
+      "keyNote": "The union contains15+17-10=22 people, so3 play neither sport."
+    },
+    {
+      "id": "GA-60",
+      "section": "GA",
+      "number": 60,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "A",
+      "screenshotEntries": [
+        "A",
+        "C"
+      ],
+      "keyProvenance": "duplicate-reconciled",
+      "correctAnswer": "A",
+      "suppliedSourcePages": [
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13
+      ],
+      "keyNote": "Screenshot prints Q60 twice with A and C. Retain A only: fallow land is temporarily unused just as an unemployed worker is without work; wit:jester does not express that relationship."
+    },
+    {
+      "id": "GA-61",
+      "section": "GA",
+      "number": 61,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        13
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13
+      ],
+      "keyNote": "The demonstrated arithmetic is octal; 731_8+672_8=1623_8."
+    },
+    {
+      "id": "GA-62",
+      "section": "GA",
+      "number": 62,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        13,
+        14
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        13,
+        14
+      ],
+      "keyNote": "SGHI uniquely admits integer gaps below3, the G/S gap1, and H+G>I+S (choose the H/I gap2)."
+    },
+    {
+      "id": "GA-64",
+      "section": "GA",
+      "number": 64,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "D",
+      "screenshotEntries": [
+        "D"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "D",
+      "suppliedSourcePages": [
+        14
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        14
+      ],
+      "keyNote": "Daily work rate is2/100+6/200+5/300=1/15, requiring15 days."
+    },
+    {
+      "id": "GA-63",
+      "section": "GA",
+      "number": 63,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "C",
+      "screenshotEntries": [
+        "C"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "C",
+      "suppliedSourcePages": [
+        14
+      ],
+      "sourceDocument": "CS-2010.pdf",
+      "sourcePages": [
+        14
+      ],
+      "keyNote": "The passage regrets chemical warfare, so C expresses its central evaluative point."
+    },
+    {
+      "id": "GA-65",
+      "section": "GA",
+      "number": 65,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 1,
+      "screenshotAnswer": "B",
+      "screenshotEntries": [
+        "B"
+      ],
+      "keyProvenance": "supplied-screenshot-verified",
+      "correctAnswer": "B",
+      "suppliedSourcePages": [
+        14
+      ],
+      "sourceDocument": "GATE2010-original-exam-reference.pdf",
+      "sourcePages": [
+        16
+      ],
+      "keyNote": "Original-exam crop restores the nine digits2,2,3,3,3,4,4,4,4; the supplied reproduction omits one3. There are25 numbers starting3 and26 starting4, total51 (B)."
+    }
+  ]
+}

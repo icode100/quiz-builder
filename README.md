@@ -72,6 +72,7 @@ Available quizzes, after starting the server:
 - [GATE CSE 2017, Set 1, session 1](http://127.0.0.1:8765/gate-cse-2017-set-1/)
 - [GATE CSE 2016, Set 1](http://127.0.0.1:8765/gate-cse-2016-set-1/)
 - [GATE CSE 2015, Set 1, 7 February forenoon](http://127.0.0.1:8765/gate-cse-2015-set-1/)
+- [GATE CSE 2010](http://127.0.0.1:8765/gate-cse-2010/)
 - [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
 - [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
@@ -92,6 +93,8 @@ The 2016 Set 1 quiz has 39 MCQ and 26 NAT questions, totaling 100 marks, with 65
 The 2015 Set 1 quiz uses the supplied combined question/key, preserving GA 1–10 and CS 11–65. The separately supplied paper arranges the same questions differently; its order is not used for answer mapping. There are 45 MCQ, 20 NAT and 65 original crops, without answer annotations or coloured key lists. CS-39 accepts 0.40–0.46 inclusive; other numerical keys are exact. Originals stay unchanged outside the quiz folder. Independent checks run with `node tests/quiz-2015-set-1.test.cjs`.
 
 The 2014 Set 1 quiz is available at [http://127.0.0.1:8765/gate-cse-2014-set-1/](http://127.0.0.1:8765/gate-cse-2014-set-1/). It contains 65 questions, 100 marks, 40 MCQs and 25 NATs in printed GA 1–10 / CS 1–55 order. The key identifies Session 7; printed headers say GA Set-7 and CS Set-1. The separate GATE 2014 watermark objects were removed before making the 65 sharp question crops; question content and supplied originals are unchanged. Marking follows page 4 of the supplied paper. Independent checks run with `node tests/quiz-2014-set-1.test.cjs`.
+
+The [2010 quiz](http://127.0.0.1:8765/gate-cse-2010/) has 65 MCQs, 100 marks and two linked pairs, 52/53 and 54/55. Its supplied screenshot key needed seven corrections, two completed blanks and a resolved duplicate Q60; `gate-cse-2010/KEY-NOTES.txt` records the full reconciled practice key and derivations. Six original-exam crops restore defective reproduced questions, including Q65's missing third digit 3. All source files remain unchanged outside the quiz folder. Independent checks: `node tests/quiz-2010.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
 
