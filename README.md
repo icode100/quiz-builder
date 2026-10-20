@@ -71,6 +71,7 @@ Available quizzes, after starting the server:
 - [GATE CSE 2018](http://127.0.0.1:8765/gate-cse-2018/)
 - [GATE CSE 2017, Set 1, session 1](http://127.0.0.1:8765/gate-cse-2017-set-1/)
 - [GATE CSE 2016, Set 1](http://127.0.0.1:8765/gate-cse-2016-set-1/)
+- [GATE CSE 2015, Set 1, 7 February forenoon](http://127.0.0.1:8765/gate-cse-2015-set-1/)
 - [GATE CSE 2009](http://127.0.0.1:8765/gate-cse-2009/)
 - [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
@@ -87,6 +88,8 @@ The 2018 quiz has 41 MCQ and 24 NAT questions, with 65 original 240 DPI question
 The 2017 Set 1 quiz has 45 MCQ and 20 NAT questions, totaling 100 marks, from 11 February 2017, session 1. It preserves the source order and numbering: CS 1–55, then GA 56–65. Its 65 original 240 DPI crops retain the supplied images and notation; the two source PDFs remain unchanged in Downloads. CS-45 accepts 86.5–89.5 and CS-50 accepts 1.49–1.52, inclusive; CS-49 is exactly −16. MCQ penalties use the official full-precision one-third rule. Independent key, crop, grading, persistence, and disposable-server checks run with `node tests/quiz-2017-set-1.test.cjs`.
 
 The 2016 Set 1 quiz has 39 MCQ and 26 NAT questions, totaling 100 marks, with 65 original 240 DPI crops. It retains GA 1–10 followed by CS 1–55 and records the printed GA Set-5 / CS Set A labels without inferring a session. CS-8 accepts 3–4, CS-27 accepts 197.9–198.1, CS-29 accepts 0.33–0.34, and CS-32 accepts 33–34, all inclusive. Other NAT keys are exact. Its source PDFs remain unchanged in Downloads. Independent checks run with `node tests/quiz-2016-set-1.test.cjs`.
+
+The 2015 Set 1 quiz uses the supplied combined question/key, preserving GA 1–10 and CS 11–65. The separately supplied paper arranges the same questions differently; its order is not used for answer mapping. There are 45 MCQ, 20 NAT and 65 original crops, without answer annotations or coloured key lists. CS-39 accepts 0.40–0.46 inclusive; other numerical keys are exact. Originals stay unchanged outside the quiz folder. Independent checks run with `node tests/quiz-2015-set-1.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
 

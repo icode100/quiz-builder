@@ -74,6 +74,7 @@ Quiz/
     home.js                    Home-page controls only
   gate-cse-2007/                85 MCQs, 150 marks; 97 crops; five linked pairs
   gate-cse-2009/                60 MCQs; linked pairs 57/58 and 59/60
+  gate-cse-2015-set-1/           65 questions, 100 marks; key order GA 1-10 then CS 11-65
   gate-cse-2016-set-1/           65 questions, 100 marks; GA 1-10 then CS 1-55
   gate-cse-2017-set-1/           65 questions, 100 marks; CS 1-55 then GA 56-65
   gate-cse-2018/                65 questions; supplied PDFs remain outside the folder
@@ -100,6 +101,8 @@ Quiz/
   tests/fixtures/gate-cse-2017-set-1-key.json
   tests/quiz-2016-set-1.test.cjs
   tests/fixtures/gate-cse-2016-set-1-key.json
+  tests/quiz-2015-set-1.test.cjs
+  tests/fixtures/gate-cse-2015-set-1-key.json
   tests/quiz-set-2.test.cjs
   tests/quiz-server.test.cjs
   tests/quiz-home.test.cjs
@@ -107,7 +110,7 @@ Quiz/
 
 Copy `_template` into a new descriptive folder, assign a stable unique paper/year/set/session ID, and change its title/data. Inspect the destination first: never overwrite an existing quiz or its user's state. Each quiz must remain self-contained with relative local asset/script paths.
 
-Reusable UI/runtime fixes apply to `_template`, 2007, 2009, 2016 Set 1, 2017 Set 1, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
+Reusable UI/runtime fixes apply to `_template`, 2007, 2009, 2015 Set 1, 2016 Set 1, 2017 Set 1, 2018, 2019, 2020, and both 2021 sets that are present. Preserve each paper's data, source PDFs, and images. Inspect actual files rather than assuming old implementation details still apply.
 
 ## Building from a new paper
 
@@ -162,6 +165,7 @@ Highlight the active practice slide or current report entry on the map with an a
 | --- | --- | --- | --- |
 | 2007 | `gate-cse-2007` / `gate-cse-2007` | External originals `CS-2007.pdf` (19 pages), `Gate-2007-Cse-answer-key.pdf` (2 pages); supplemental original-exam scan (21 pages) | 85 MCQ, 150 marks; 97 crops |
 | 2009 | `gate-cse-2009` / `gate-cse-2009` | `CS-2009.pdf` (13 pages), `answer-key-screenshot.png`, supplemental `GATE2009-original-exam-reference.pdf` (14 pages) | 60 MCQ, 100 marks; 69 crops |
+| 2015 Set 1, 7 February forenoon | `gate-cse-2015-set-1` / `gate-cse-2015-set-1-shift-1` | External primary combined question/key `2015CS_S05_compressed.pdf` (24 pages); cross-reference `GATE2015-Set-1.pdf` (21 pages), same questions in a different order | 65, 100 marks; 45 MCQ/20 NAT; 65 crops |
 | 2016 Set 1 | `gate-cse-2016-set-1` / `gate-cse-2016-set-1` | External originals `GATE2016-Set-1.pdf` (20 pages), `2016CS-1_AnsKey.pdf` (2-page key); hashes recorded in data | 65, 100 marks; 39 MCQ/26 NAT; 65 crops |
 | 2017 Set 1, session 1 | `gate-cse-2017-set-1` / `gate-cse-2017-set-1-session-1` | External originals `GATE2017-Set-1_compressed1.pdf` (27 pages), `GATE2017-Set-1.pdf` (2-page key); hashes recorded in data | 65, 100 marks; 45 MCQ/20 NAT; 65 crops |
 | 2018 | `gate-cse-2018` / `gate-cse-2018` | External originals `GATE2018.pdf` (23 pages), `Keys2018.pdf` (3 pages); filenames/hashes recorded in data | 65, 100 marks; 41 MCQ/24 NAT; 65 crops |
@@ -170,7 +174,9 @@ Highlight the active practice slide or current report entry on the map with an a
 | 2021 Set 1, official session 5 | `gate-cse-2021-set-1` / `gate-cse-2021-set-1-session-5` | `cs_2021_set_1.pdf` (41 pages), `cs_2021_set_1_key.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 | 2021 Set 2, official session 6 | `gate-cse-2021-set-2` / `gate-cse-2021-set-2-session-6` | `GATE2021_QP_CS-2.pdf` (43 pages), `2021-CS2-S6-Keys.pdf` (3 pages) | 65, 100 marks; 34 MCQ/13 MSQ/18 NAT; 65 crops |
 
-The 2009 paper uses CS 1–60 only; later papers keep GA 1–10 and CS 1–55 separate. Preserve these key exceptions:
+The 2009 paper uses CS 1–60 only. Most later papers keep GA 1–10 and CS 1–55 separate; preserve the 2015 continuous key numbering and 2017 printed order described below. Preserve these key exceptions:
+
+- 2015 Set 1 follows the user's combined question/key as its primary source: GA 1–10 then CS 11–65. The clean paper contains the same 65 questions in a different order; never transfer this key to that paper by position or a simple CS offset. `referenceQuestionMapping` records the cross-reference without affecting quiz numbering. The key's green/red answer lists are baked page content outside the question images; excluding PDF annotations alone is insufficient. Crops exclude both the answer blocks and annotations, trim only overlapping header fragments in blank top margins, and retain every option, equation, diagram and GA-8's coloured chart. Some headings precede the question body by a page; sourcePages records the body, while answerKeyPage records the actual accepted answer page. All 24 key pages, 21 reference pages and 65 final 240 DPI crops were visually checked. Both originals remain external and unchanged, with hashes in data and the independent fixture. CS-39 accepts 0.40–0.46 inclusive; other NAT keys are exact, including CS-34 = −5 and CS-58 = −1. No alternate MCQ answers, MSQ, MTA or linked dependencies. GA 1–5/CS 11–35 are one mark; GA 6–10/CS 36–65 are two marks. MCQ penalties are exactly one-third; NAT has no penalty, following supplied key annotations and the committee-authored GATE 2015 brochure referenced in data. Blank 0/100, perfect 100/100, all wrong −64/3. Run `node tests/quiz-2015-set-1.test.cjs` for relevant changes; use simulated storage and temporary server folders, never a real attempt.
 
 - 2016 Set 1 has 39 MCQ and 26 NAT, GA 1–10 followed by CS 1–55, totaling 100 marks. The supplied filename says Set 1; printed headers say GA Set-5 and CS Set A. No session/date is inferred. CS-8 accepts 3–4, CS-27 accepts 197.9–198.1, CS-29 accepts 0.33–0.34, and CS-32 accepts 33–34, all inclusive. Other NAT keys are exact, including CS-7 = −11 and CS-54 = 1.1. No alternate MCQ keys, MTA, or linked dependencies. Blank: 0/100; perfect: 100/100; all wrong: −58/3. Marking follows the IISc-authored GATE 2016 Information Brochure sections 5.4 and 5.4.6 ([third-party mirror](https://myexam.allen.in/wp-content/uploads/2014/09/Brochure_GATE-2016-official.pdf), full text checked): full-precision one-third/two-thirds MCQ penalties and no NAT penalty. Original PDFs remain unchanged in Downloads. Crops are 240 DPI with page-relative PDF-point rectangles; GA pages have a nonzero MediaBox origin that is normalized, and their 595.44 × 841.68 point dimensions differ from the 612 × 792 point CS pages. Source dimensions/origins are recorded in data. Independent fixture: `tests/fixtures/gate-cse-2016-set-1-key.json`; run `node tests/quiz-2016-set-1.test.cjs` for relevant data/scoring/runtime changes. Never create a real attempt while testing.
 

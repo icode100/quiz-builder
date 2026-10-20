@@ -1,0 +1,996 @@
+{
+  "provenance": "Independent visual transcription of all 24 pages of the supplied combined question/key PDF, separately from quiz-data.js. Original numbered order is preserved: GA 1-10, then CS 11-65. sourcePages identifies content pages in the combined key; a preceding page that only contains the question heading is omitted when the complete question body starts on the following page. answerKeyPage identifies the page containing the accepted answer. Correct MCQ responses are baked green checkmark lists after the complete unmarked question and its options; those answer lists must not appear in practice crops. The separately supplied clean paper has different question order and section-relative numbering, and cannot be keyed with a simple CS offset.",
+  "year": 2015,
+  "paperCode": "CS",
+  "set": 1,
+  "date": "2015-02-07",
+  "shift": 1,
+  "primarySource": "2015CS_S05_compressed.pdf",
+  "supplementalSource": "GATE2015-Set-1.pdf",
+  "sourceSha256": {
+    "2015CS_S05_compressed.pdf": "2e077aa1582c755fb49101d9be897724d36b5331eae98cdc54ec560dd7f912f2",
+    "GATE2015-Set-1.pdf": "09c1f0c66cebac5b74626b0b543ce9765f2ee0b0a4bbcd1c2a12e803d3561086"
+  },
+  "paperPageCount": 21,
+  "keyPageCount": 24,
+  "questionCount": 65,
+  "totalMarks": 100,
+  "typeCounts": {
+    "MCQ": 45,
+    "NAT": 20
+  },
+  "keyExceptions": {
+    "CS-34": "Exact value -5; preserve negative sign.",
+    "CS-39": "Inclusive interval 0.40 to 0.46.",
+    "CS-41": "Exact value 0.99.",
+    "CS-54": "Exact value 14020.",
+    "CS-55": "Exact value 3.2.",
+    "CS-58": "Exact value -1; preserve negative sign."
+  },
+  "caveats": [
+    "The combined key header explicitly names CS: Computer Science and Information Technology, 7th Feb Shift1. The clean paper cover confirms GATE 2015, CS Set 1, 7th February, Forenoon Session.",
+    "Primary question numbering is continuous across sections; do not translate CS 11-65 to CS 1-55 or transfer the key by position to the separately supplied paper.",
+    "No alternate MCQ answers, MTA awards, MSQs or linked-answer dependencies occur in the supplied key.",
+    "Nine PDF annotations add marking instructions and surrounding shapes/popups; accepted responses are baked page content, not annotations. Removing annotations alone does not hide the answer lists.",
+    "Twenty numerical keys consist of nineteen exact values and one inclusive range, CS-39 0.40 to 0.46."
+  ],
+  "scoringReference": {
+    "title": "GATE 2015 Information Brochure, sections 5.4, 5.4.1, 5.4.2 and 5.4.6",
+    "author": "GATE 2015 committee, Indian Institute of Technology Kanpur",
+    "url": "https://myexam.allen.in/wp-content/uploads/2014/09/gate2015informationbrochure-140704080528-phpapp01.pdf",
+    "location": "Committee-authored brochure on a third-party mirror; full text independently checked by the source audit. Printed pages 24-25 describe MCQ penalties, NAT treatment, GA 5x1+5x2 and CS 25x1+30x2. Matching scoring instructions are added as annotations to supplied key pages 1 and 5.",
+    "rule": "GA 1-5 and CS 11-35: +1; GA 6-10 and CS 36-65: +2. Wrong MCQ loses one-third of the question marks; NAT has no negative marking."
+  },
+  "expectedScores": {
+    "blank": 0,
+    "perfect": 100,
+    "allWrong": -21.333333333333332
+  },
+  "questions": [
+    {
+      "id": "GA-1",
+      "section": "GA",
+      "number": 1,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "sourcePages": [
+        1
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "GA-2",
+      "section": "GA",
+      "number": 2,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 1,
+      "sourcePages": [
+        1
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "GA-3",
+      "section": "GA",
+      "number": 3,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 2,
+      "sourcePages": [
+        2
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "GA-4",
+      "section": "GA",
+      "number": 4,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 2,
+      "sourcePages": [
+        2
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "GA-5",
+      "section": "GA",
+      "number": 5,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 2,
+      "sourcePages": [
+        2
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "GA-6",
+      "section": "GA",
+      "number": 6,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 3,
+      "sourcePages": [
+        3
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "GA-7",
+      "section": "GA",
+      "number": 7,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 3,
+      "sourcePages": [
+        3
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "GA-8",
+      "section": "GA",
+      "number": 8,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 4,
+      "sourcePages": [
+        4
+      ],
+      "correctRanges": [
+        {
+          "min": 32.0,
+          "max": 32.0
+        }
+      ]
+    },
+    {
+      "id": "GA-9",
+      "section": "GA",
+      "number": 9,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 4,
+      "sourcePages": [
+        4
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "GA-10",
+      "section": "GA",
+      "number": 10,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 5,
+      "sourcePages": [
+        5
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-11",
+      "section": "CS",
+      "number": 11,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 5,
+      "sourcePages": [
+        5
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-12",
+      "section": "CS",
+      "number": 12,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 6,
+      "sourcePages": [
+        5
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-13",
+      "section": "CS",
+      "number": 13,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 6,
+      "sourcePages": [
+        6
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-14",
+      "section": "CS",
+      "number": 14,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 6,
+      "sourcePages": [
+        6
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-15",
+      "section": "CS",
+      "number": 15,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 6,
+      "sourcePages": [
+        6
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-16",
+      "section": "CS",
+      "number": 16,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 7,
+      "sourcePages": [
+        7
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-17",
+      "section": "CS",
+      "number": 17,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 7,
+      "sourcePages": [
+        7
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-18",
+      "section": "CS",
+      "number": 18,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 7,
+      "sourcePages": [
+        7
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-19",
+      "section": "CS",
+      "number": 19,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 8,
+      "sourcePages": [
+        8
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-20",
+      "section": "CS",
+      "number": 20,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 8,
+      "sourcePages": [
+        8
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-21",
+      "section": "CS",
+      "number": 21,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 8,
+      "sourcePages": [
+        8
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-22",
+      "section": "CS",
+      "number": 22,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 9,
+      "sourcePages": [
+        8
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-23",
+      "section": "CS",
+      "number": 23,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 9,
+      "sourcePages": [
+        9
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-24",
+      "section": "CS",
+      "number": 24,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 9,
+      "sourcePages": [
+        9
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-25",
+      "section": "CS",
+      "number": 25,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 10,
+      "sourcePages": [
+        9
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-26",
+      "section": "CS",
+      "number": 26,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 10,
+      "sourcePages": [
+        10
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-27",
+      "section": "CS",
+      "number": 27,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 10,
+      "sourcePages": [
+        10
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-28",
+      "section": "CS",
+      "number": 28,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 10,
+      "sourcePages": [
+        10
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-29",
+      "section": "CS",
+      "number": 29,
+      "type": "NAT",
+      "marks": 1,
+      "incorrectMarks": 0,
+      "answerKeyPage": 11,
+      "sourcePages": [
+        10
+      ],
+      "correctRanges": [
+        {
+          "min": 4.0,
+          "max": 4.0
+        }
+      ]
+    },
+    {
+      "id": "CS-30",
+      "section": "CS",
+      "number": 30,
+      "type": "NAT",
+      "marks": 1,
+      "incorrectMarks": 0,
+      "answerKeyPage": 11,
+      "sourcePages": [
+        11
+      ],
+      "correctRanges": [
+        {
+          "min": 3.0,
+          "max": 3.0
+        }
+      ]
+    },
+    {
+      "id": "CS-31",
+      "section": "CS",
+      "number": 31,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 11,
+      "sourcePages": [
+        11
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-32",
+      "section": "CS",
+      "number": 32,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 11,
+      "sourcePages": [
+        11
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-33",
+      "section": "CS",
+      "number": 33,
+      "type": "NAT",
+      "marks": 1,
+      "incorrectMarks": 0,
+      "answerKeyPage": 12,
+      "sourcePages": [
+        12
+      ],
+      "correctRanges": [
+        {
+          "min": 5.0,
+          "max": 5.0
+        }
+      ]
+    },
+    {
+      "id": "CS-34",
+      "section": "CS",
+      "number": 34,
+      "type": "NAT",
+      "marks": 1,
+      "incorrectMarks": 0,
+      "answerKeyPage": 12,
+      "sourcePages": [
+        12
+      ],
+      "correctRanges": [
+        {
+          "min": -5.0,
+          "max": -5.0
+        }
+      ]
+    },
+    {
+      "id": "CS-35",
+      "section": "CS",
+      "number": 35,
+      "type": "MCQ",
+      "marks": 1,
+      "incorrectMarks": -0.3333333333333333,
+      "answerKeyPage": 12,
+      "sourcePages": [
+        12
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-36",
+      "section": "CS",
+      "number": 36,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 13,
+      "sourcePages": [
+        13
+      ],
+      "correctRanges": [
+        {
+          "min": 160.0,
+          "max": 160.0
+        }
+      ]
+    },
+    {
+      "id": "CS-37",
+      "section": "CS",
+      "number": 37,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 13,
+      "sourcePages": [
+        13
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-38",
+      "section": "CS",
+      "number": 38,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 14,
+      "sourcePages": [
+        13
+      ],
+      "correctRanges": [
+        {
+          "min": 5.0,
+          "max": 5.0
+        }
+      ]
+    },
+    {
+      "id": "CS-39",
+      "section": "CS",
+      "number": 39,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 14,
+      "sourcePages": [
+        14
+      ],
+      "correctRanges": [
+        {
+          "min": 0.4,
+          "max": 0.46
+        }
+      ]
+    },
+    {
+      "id": "CS-40",
+      "section": "CS",
+      "number": 40,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 14,
+      "sourcePages": [
+        14
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-41",
+      "section": "CS",
+      "number": 41,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 14,
+      "sourcePages": [
+        14
+      ],
+      "correctRanges": [
+        {
+          "min": 0.99,
+          "max": 0.99
+        }
+      ]
+    },
+    {
+      "id": "CS-42",
+      "section": "CS",
+      "number": 42,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 15,
+      "sourcePages": [
+        15
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-43",
+      "section": "CS",
+      "number": 43,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 15,
+      "sourcePages": [
+        15
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-44",
+      "section": "CS",
+      "number": 44,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 16,
+      "sourcePages": [
+        15
+      ],
+      "correctRanges": [
+        {
+          "min": 24.0,
+          "max": 24.0
+        }
+      ]
+    },
+    {
+      "id": "CS-45",
+      "section": "CS",
+      "number": 45,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 16,
+      "sourcePages": [
+        16
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-46",
+      "section": "CS",
+      "number": 46,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 16,
+      "sourcePages": [
+        16
+      ],
+      "correctAnswer": "C"
+    },
+    {
+      "id": "CS-47",
+      "section": "CS",
+      "number": 47,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 17,
+      "sourcePages": [
+        17
+      ],
+      "correctRanges": [
+        {
+          "min": 8.0,
+          "max": 8.0
+        }
+      ]
+    },
+    {
+      "id": "CS-48",
+      "section": "CS",
+      "number": 48,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 17,
+      "sourcePages": [
+        17
+      ],
+      "correctRanges": [
+        {
+          "min": 4.0,
+          "max": 4.0
+        }
+      ]
+    },
+    {
+      "id": "CS-49",
+      "section": "CS",
+      "number": 49,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 17,
+      "sourcePages": [
+        17
+      ],
+      "correctRanges": [
+        {
+          "min": 1.0,
+          "max": 1.0
+        }
+      ]
+    },
+    {
+      "id": "CS-50",
+      "section": "CS",
+      "number": 50,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 18,
+      "sourcePages": [
+        18
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "CS-51",
+      "section": "CS",
+      "number": 51,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 18,
+      "sourcePages": [
+        18
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-52",
+      "section": "CS",
+      "number": 52,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 19,
+      "sourcePages": [
+        19
+      ],
+      "correctRanges": [
+        {
+          "min": 12.0,
+          "max": 12.0
+        }
+      ]
+    },
+    {
+      "id": "CS-53",
+      "section": "CS",
+      "number": 53,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 19,
+      "sourcePages": [
+        19
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-54",
+      "section": "CS",
+      "number": 54,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 19,
+      "sourcePages": [
+        19
+      ],
+      "correctRanges": [
+        {
+          "min": 14020.0,
+          "max": 14020.0
+        }
+      ]
+    },
+    {
+      "id": "CS-55",
+      "section": "CS",
+      "number": 55,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 20,
+      "sourcePages": [
+        20
+      ],
+      "correctRanges": [
+        {
+          "min": 3.2,
+          "max": 3.2
+        }
+      ]
+    },
+    {
+      "id": "CS-56",
+      "section": "CS",
+      "number": 56,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 20,
+      "sourcePages": [
+        20
+      ],
+      "correctRanges": [
+        {
+          "min": 10.0,
+          "max": 10.0
+        }
+      ]
+    },
+    {
+      "id": "CS-57",
+      "section": "CS",
+      "number": 57,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 20,
+      "sourcePages": [
+        20
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-58",
+      "section": "CS",
+      "number": 58,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 21,
+      "sourcePages": [
+        20
+      ],
+      "correctRanges": [
+        {
+          "min": -1.0,
+          "max": -1.0
+        }
+      ]
+    },
+    {
+      "id": "CS-59",
+      "section": "CS",
+      "number": 59,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 21,
+      "sourcePages": [
+        21
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-60",
+      "section": "CS",
+      "number": 60,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 21,
+      "sourcePages": [
+        21
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-61",
+      "section": "CS",
+      "number": 61,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 22,
+      "sourcePages": [
+        22
+      ],
+      "correctRanges": [
+        {
+          "min": 2.0,
+          "max": 2.0
+        }
+      ]
+    },
+    {
+      "id": "CS-62",
+      "section": "CS",
+      "number": 62,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 22,
+      "sourcePages": [
+        22
+      ],
+      "correctAnswer": "A"
+    },
+    {
+      "id": "CS-63",
+      "section": "CS",
+      "number": 63,
+      "type": "NAT",
+      "marks": 2,
+      "incorrectMarks": 0,
+      "answerKeyPage": 23,
+      "sourcePages": [
+        23
+      ],
+      "correctRanges": [
+        {
+          "min": 69.0,
+          "max": 69.0
+        }
+      ]
+    },
+    {
+      "id": "CS-64",
+      "section": "CS",
+      "number": 64,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 23,
+      "sourcePages": [
+        23
+      ],
+      "correctAnswer": "D"
+    },
+    {
+      "id": "CS-65",
+      "section": "CS",
+      "number": 65,
+      "type": "MCQ",
+      "marks": 2,
+      "incorrectMarks": -0.6666666666666666,
+      "answerKeyPage": 24,
+      "sourcePages": [
+        24
+      ],
+      "correctAnswer": "B"
+    }
+  ]
+}
