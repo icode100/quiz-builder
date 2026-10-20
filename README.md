@@ -91,6 +91,8 @@ The 2016 Set 1 quiz has 39 MCQ and 26 NAT questions, totaling 100 marks, with 65
 
 The 2015 Set 1 quiz uses the supplied combined question/key, preserving GA 1–10 and CS 11–65. The separately supplied paper arranges the same questions differently; its order is not used for answer mapping. There are 45 MCQ, 20 NAT and 65 original crops, without answer annotations or coloured key lists. CS-39 accepts 0.40–0.46 inclusive; other numerical keys are exact. Originals stay unchanged outside the quiz folder. Independent checks run with `node tests/quiz-2015-set-1.test.cjs`.
 
+The 2014 Set 1 quiz is available at [http://127.0.0.1:8765/gate-cse-2014-set-1/](http://127.0.0.1:8765/gate-cse-2014-set-1/). It contains 65 questions, 100 marks, 40 MCQs and 25 NATs in printed GA 1–10 / CS 1–55 order. The key identifies Session 7; printed headers say GA Set-7 and CS Set-1. The separate GATE 2014 watermark objects were removed before making the 65 sharp question crops; question content and supplied originals are unchanged. Marking follows page 4 of the supplied paper. Independent checks run with `node tests/quiz-2014-set-1.test.cjs`.
+
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
 
 Timer and shared-interface checks: `node tests/quiz-timer.test.cjs` and `node tests/quiz-runtime.test.cjs`; tests use simulated storage or temporary folders.
