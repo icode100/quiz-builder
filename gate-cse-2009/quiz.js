@@ -544,7 +544,7 @@
   function renderQuestions() {
     const fragment = document.createDocumentFragment();
     data.questions.forEach((question, index) => {
-      const card = element("fieldset", "question-card"), content = element("div", "question-content"), response = element("div", "response-controls");
+      const card = element("fieldset", "question-card"), content = element("div", "question-content"), stem = element("div", "question-stem"), response = element("div", "response-controls");
       card.id = `question-card-${index}`;
       card.tabIndex = -1;
       card.append(element("legend", "question-heading", `Question ${questionLabel(question)}`));
@@ -552,10 +552,15 @@
       content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"}`));
       if (question.requiresCorrect) {
         const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
-        content.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct. No negative marking for this question.`));
+        stem.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct. No negative marking for this question.`));
       }
-      if (question.text.trim()) content.append(element("p", "question-text", question.text));
-      addImages(content, question, `Question ${questionLabel(question)} and its original options`);
+      if (question.text.trim()) stem.append(element("p", "question-text", question.text));
+      if (imagesOf(question).length) {
+        const images = element("div", "question-images");
+        addImages(images, question, `Question ${questionLabel(question)} and its original options`);
+        stem.append(images);
+      }
+      content.append(stem);
       if (type === "nat") {
         const input = element("input", "numeric-answer"), label = element("label", "numeric-label", "Your numerical answer");
         input.type = "text";
@@ -762,6 +767,7 @@
     const maximum = data.questions.reduce((sum, question) => sum + marks(question).correct, 0);
     byId("quiz-meta").append(element("span", "meta-item", `${data.questions.length} questions · ${number(maximum)} marks`));
     byId("quiz-meta").hidden = false;
+    byId("paper-details").hidden = false;
     setupStorage();
     setupTimer();
     setupCurrentQuestion();

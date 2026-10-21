@@ -48,6 +48,8 @@ Practice shows one question at a time, using the paper's original numbers. Choos
 
 Use **Home** at the top to return to the paper list with your browser draft preserved. Refresh opens the first question with cached answers restored. **Back to quiz** after saved Review restores your prior question; **Clear answers** and a fresh **Attempt again** start at the first question. Reports remain a scrolling question-by-question list.
 
+Laptop practice uses a compact layout with images fitted to the available height, horizontal options, and numerical input beside Clear/Review. Open **Paper details and marking instructions** for the source and exam directions. Click an image for full-resolution detail on dense questions. Smaller windows and expanded details allow normal scrolling; reports and print retain their normal sizing.
+
 Each quiz has a countdown with six presets: **180, 150, 120, 90, 60, or 30 minutes** (default 180). Choose a duration, then use **Start**, **Pause**, or **Reset**. Choosing another preset or Reset leaves the timer paused at that duration. It restores with your browser draft, counting elapsed time while closed if it was running. At zero it stops and displays a message; you can keep answering.
 
 Clicking **Submit** resets the timer, including when numerical input is invalid or saving fails. Clear answers preserves it. Reviewing a saved report hides the timer while a running timer keeps counting; Back to quiz shows the remaining time. Timer state never enters saved submissions, and the timer is hidden in reports and print.
