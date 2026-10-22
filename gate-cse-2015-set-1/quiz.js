@@ -476,6 +476,15 @@
       const button = byId(`nav-question-${index}`);
       if (!button) return;
       const answered = Object.hasOwn(answers, question.id), invalid = answered && questionType(question) === "nat" && numericValue(answers[question.id]) === null;
+      const selectedOptions = questionType(question) === "nat" ? [] : question.options
+        .filter(option => Array.isArray(answers[question.id]) ? answers[question.id].includes(option.id) : answers[question.id] === option.id)
+        .map(option => option.id);
+      const selectedAnswer = questionType(question) === "nat" ? String(answers[question.id] ?? "").trim() : selectedOptions.join("");
+      const selection = button.querySelector(".nav-selection");
+      selection.textContent = questionType(question) === "nat" && selectedAnswer.length > 7
+        ? `${selectedAnswer.match(/^[+-]?(?:\d\.?\d|\.\d{2})/)?.[0] || selectedAnswer.slice(0, 2)}...` : selectedAnswer;
+      selection.classList.toggle("long-answer", selection.textContent.length > 5);
+      selection.hidden = !selectedAnswer;
       const flagged = reviewFlags.has(question.id), marked = (reporting ? reportReviewFlags : reviewFlags).has(question.id), markButton = byId(`mark-review-${index}`);
       const outcome = reporting ? results[index]?.outcome : null;
       if (markButton) {
@@ -493,7 +502,7 @@
       button.classList.toggle("report-question", reporting);
       Object.keys(outcomeLabels).forEach(value => button.classList.toggle(`result-${value}`, outcome === value));
       button.querySelector(".nav-state-icon").textContent = reporting ? (marked ? "★" : outcomeIcons[outcome] || "·") : invalid ? "!" : marked ? "★" : answered ? "✓" : "·";
-      button.title = `${questionLabel(question)}: ${reporting ? outcomeLabels[outcome] || "Unanswered" : answered ? "Attempted" : "Not attempted"}${!reporting && invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}`;
+      button.title = `${questionLabel(question)}: ${reporting ? outcomeLabels[outcome] || "Unanswered" : answered ? "Attempted" : "Not attempted"}${!reporting && invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}${selectedAnswer ? `, Selected: ${selectedOptions.length ? selectedOptions.join(", ") : selectedAnswer}` : ""}`;
       button.setAttribute("aria-label", button.title);
     });
     byId("nav-progress").textContent = `${attempted} attempted · ${data.questions.length - attempted} not attempted`;
@@ -519,11 +528,13 @@
         group.append(element("h3", "nav-section-title", section), grid);
         groups.set(section, { group, grid });
       }
-      const button = element("button", "nav-question"), icon = element("span", "nav-state-icon");
+      const button = element("button", "nav-question"), icon = element("span", "nav-state-icon"), selection = element("span", "nav-selection");
       button.type = "button";
       button.id = `nav-question-${index}`;
       icon.setAttribute("aria-hidden", "true");
-      button.append(element("span", "nav-number", String(question.number ?? questionLabel(question))), icon);
+      selection.setAttribute("aria-hidden", "true");
+      selection.hidden = true;
+      button.append(element("span", "nav-number", String(question.number ?? questionLabel(question))), icon, selection);
       button.addEventListener("click", () => jumpToQuestion(index));
       groups.get(section).grid.append(button);
     });
