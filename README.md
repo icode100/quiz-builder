@@ -66,6 +66,7 @@ Submit displays your score and question-by-question report and saves the latest 
 
 Available quizzes, after starting the server:
 
+- [GATE CSE 2025, Set 1, session 1](http://127.0.0.1:8765/gate-cse-2025-set-1/)
 - [GATE CSE 2021, Set 1, session 5](http://127.0.0.1:8765/gate-cse-2021-set-1/index.html)
 - [GATE CSE 2021, Set 2, session 6](http://127.0.0.1:8765/gate-cse-2021-set-2/index.html)
 - [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
@@ -82,6 +83,8 @@ Available quizzes, after starting the server:
 - [GATE CSE 2007](http://127.0.0.1:8765/gate-cse-2007/)
 
 The 2007 paper has 85 MCQs totaling 150 marks. The 2009 paper has 60 MCQs totaling 100 marks; the later papers each have 65 questions totaling 100 marks. Original question crops preserve diagrams and equations. New quizzes record source filenames and hashes without duplicating supplied PDFs. Builder guidance: `AGENTS.md`.
+
+The 2025 Set 1 quiz matches CS1/session 1 and preserves printed GA 1–10 / CS 11–65 numbering. Its 30 MCQs, 13 MSQs and 22 numerical questions total 100 marks. All 66 original 240 DPI crops retain the source content, including the split CS 11 question. Numerical ranges and single-answer MSQs follow the supplied key exactly; scoring follows the [official GATE 2025 rules](https://gate2025.iitr.ac.in/question-paper-pattern.html). Both supplied PDFs remain unchanged outside the quiz folder. Independent key, crop, grading, draft/review and disposable-server checks run with `node tests/quiz-2025-set-1.test.cjs`.
 
 The 2007 quiz completes all 36 missing key entries, corrects four supplied answers, and explicitly clarifies Q15's defective loop-count wording. Its 97 original image crops include a restored grammar from the original exam scan. It uses the 2007 penalties (-0.25/-0.5) and five linked pairs, 76/77 through 84/85. The completed key and derivations are in `gate-cse-2007/KEY-NOTES.txt`; checks run with `node tests/quiz-2007.test.cjs`.
 
