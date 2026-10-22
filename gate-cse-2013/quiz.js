@@ -21,7 +21,10 @@
     byId("carousel-position").textContent = `${questionLabel(question)} · ${currentQuestionIndex + 1} of ${data.questions.length}`;
     byId("previous-question").disabled = serverBusy || currentQuestionIndex === 0;
     byId("next-question").disabled = serverBusy || last;
-    byId("next-question").textContent = last ? "Last question" : Object.hasOwn(answers, question.id) ? "Next question" : "Skip question";
+    const nextLabel = last ? "Last question" : Object.hasOwn(answers, question.id) ? "Next question" : "Skip question";
+    byId("next-question").textContent = "→";
+    byId("next-question").setAttribute("aria-label", nextLabel);
+    byId("next-question").title = nextLabel;
   }
   function setCurrentQuestion(index) {
     if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
@@ -44,7 +47,7 @@
     if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
     setCurrentQuestion(index);
     const target = questionTarget(index);
-    (submittedAt ? target : byId("question-carousel"))?.scrollIntoView({ block: "start" });
+    target?.scrollIntoView({ block: "start" });
     target?.focus({ preventScroll: true });
     noteCurrentQuestion(index);
   }

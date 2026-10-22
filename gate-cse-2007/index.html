@@ -66,17 +66,17 @@
 
     <form id="quiz-form" class="quiz-form" hidden>
       <fieldset id="quiz-session" class="session-controls">
-      <nav id="question-carousel" class="question-carousel" aria-label="Question navigation" hidden>
-        <button id="previous-question" class="button button-secondary" type="button">Previous question</button>
-        <span id="carousel-position" role="status" aria-live="polite"></span>
-        <button id="next-question" class="button button-secondary" type="button">Skip question</button>
-      </nav>
-      <div id="questions"></div>
       <div class="quiz-actions">
         <p id="progress" class="progress" role="status" aria-live="polite"></p>
         <button class="button" type="submit">Submit and check answers</button>
         <button id="clear-answers" class="button button-secondary" type="button">Clear answers</button>
       </div>
+      <div id="questions"></div>
+      <nav id="question-carousel" class="question-carousel" aria-label="Question navigation" hidden>
+        <button id="previous-question" class="button button-secondary" type="button" aria-label="Previous question" title="Previous question">←</button>
+        <span id="carousel-position" role="status" aria-live="polite"></span>
+        <button id="next-question" class="button button-secondary" type="button" aria-label="Skip question" title="Skip question">→</button>
+      </nav>
       </fieldset>
     </form>
 

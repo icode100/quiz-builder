@@ -31,7 +31,7 @@ async function load(folder = 'gate-cse-2018', options = {}) {
       const top = (report ? view.reportTop + Number(match[2]) * (height + view.gap) : view.questionTop) - view.scrollY;
       return { top, bottom: top + height, height };
     }
-    if (node.id === 'question-carousel') return { top: view.questionTop - 90 - view.scrollY, bottom: view.questionTop - 16 - view.scrollY, height: 74 };
+    if (node.id === 'question-carousel') return { top: view.questionTop + view.questionHeight + 16 - view.scrollY, bottom: view.questionTop + view.questionHeight + 90 - view.scrollY, height: 74 };
     if (node.id === 'quiz-timer') return { top: view.timerTop, bottom: view.timerTop + view.timerHeight, height: view.timerHeight };
     return { top: 0, bottom: 0, height: 0 };
   };
@@ -103,10 +103,9 @@ function visibleQuestion(h, index) {
     current(h, 0); visibleQuestion(h, 0);
     await h.document.getElementById('nav-question-5').click();
     current(h, 5); h.flush(); current(h, 5); visibleQuestion(h, 5);
-    assert.ok(h.ids['question-carousel'].scrolled, 'Practice jumps align the navigation above the question');
-    assert.ok(!h.document.getElementById('question-card-5').scrolled, 'The card must not hide navigation behind the sticky timer');
+    assert.ok(h.document.getElementById('question-card-5').scrolled, 'Practice jumps align the question above the bottom navigation');
     assert.ok(h.document.getElementById('question-card-5').focused);
-    assert.ok(h.ids['question-carousel'].getBoundingClientRect().top > h.ids['quiz-timer'].getBoundingClientRect().bottom);
+    assert.ok(h.document.getElementById('question-card-5').getBoundingClientRect().top > h.ids['quiz-timer'].getBoundingClientRect().bottom);
     assert.equal(harness.postRequests(h).length, 0);
     assert.equal(h.storage.size, 0, 'Navigation never creates a browser draft');
     assert.equal(h.ids['question-nav'].querySelectorAll('#nav-current-legend').length, 1);
