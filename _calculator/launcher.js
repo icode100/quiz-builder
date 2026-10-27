@@ -6,7 +6,9 @@
   toggle.id = "shared-calculator-toggle";
   toggle.className = "shared-calculator-toggle";
   toggle.type = "button";
-  toggle.textContent = "Calculator";
+  toggle.setAttribute("aria-label", "Calculator");
+  toggle.setAttribute("title", "Open calculator");
+  toggle.innerHTML = `<svg class="shared-calculator-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14v4M8 18h.01M12 18h.01"/></svg>`;
   toggle.setAttribute("aria-expanded", "false");
   toggle.setAttribute("aria-controls", "shared-calculator-panel");
 
@@ -35,11 +37,13 @@
   function close() {
     panel.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("title", "Open calculator");
     toggle.focus({ preventScroll: true });
   }
   function open() {
     panel.hidden = false;
     toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("title", "Close calculator");
     if (panel.style.left) {
       const rect = panel.getBoundingClientRect();
       move(rect.left, rect.top);

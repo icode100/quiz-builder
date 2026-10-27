@@ -26,11 +26,12 @@ function slide(h, index) {
     }
     assert.match(html, /<a\b[^>]*id="quiz-home"[^>]*href="\/"/, `${folder} links to the server home`);
     for (const id of ['previous-question', 'next-question']) assert.match(html, new RegExp(`<button\\b[^>]*id="${id}"[^>]*type="button"`));
+    assert.match(html, /<button\b[^>]*id="previous-question"[^>]*>← Previous<\/button>/);
     const h = await load(folder);
     assert.equal(h.ids['question-carousel'].hidden, folder === '_template');
     if (folder === '_template') continue;
     slide(h, 0);
-    assert.equal(h.ids['next-question'].textContent, '→');
+    assert.equal(h.ids['next-question'].textContent, 'Skip →');
     assert.equal(h.ids['next-question'].getAttribute('aria-label'), 'Skip question');
     await h.ids['previous-question'].click(); slide(h, 0);
     await h.ids['next-question'].click(); slide(h, 1);
@@ -41,12 +42,15 @@ function slide(h, index) {
     const last = h.data.questions.length - 1;
     await map(h, last).click(); slide(h, last);
     assert.equal(h.ids['next-question'].getAttribute('aria-label'), 'Last question');
+    assert.equal(h.ids['next-question'].textContent, 'Last question');
     await h.ids['next-question'].click(); slide(h, last);
     let prevented = false;
     await h.ids.questions.fire('keydown', { key: 'Enter', target: card(h, last).querySelector('input'), preventDefault() { prevented = true; } });
     slide(h, last); assert.equal(prevented, true, 'Enter at the last question cannot implicitly submit');
     assert.equal(h.ids.report.hidden, true, 'Last never wraps or auto-submits');
-    assert.equal(h.storage.size, 0, 'Pure navigation never changes the browser draft');
+    const navigationDraft = JSON.parse(h.storage.get(draftKey(h)));
+    assert.equal(navigationDraft.currentQuestionId, h.data.questions[last].id, 'Pure navigation caches the last viewed question');
+    assert.deepEqual(navigationDraft.answers, {}, 'Navigation does not invent answers');
     assert.equal(h.requests.length, 1, 'Pure navigation never adds a server request');
     const numbers = h.ids['nav-groups'].querySelectorAll('.nav-number').map(node => node.textContent);
     assert.deepEqual(numbers, Array.from(h.data.questions, question => String(question.number ?? label(question))));
@@ -56,20 +60,25 @@ function slide(h, index) {
   const signature = JSON.stringify({ questions: h.data.questions, scoring: h.data.scoring ?? null });
   const first = h.data.questions[0];
   await editResponse(h, first.id, first.options[0].id); slide(h, 1);
+  assert.equal(JSON.parse(h.storage.get(draftKey(h))).currentQuestionId, h.data.questions[1].id, 'MCQ auto-advance also caches the newly viewed question');
   assert.equal(card(h, 1).scrolled, true, 'MCQ auto-advance anchors the next question');
   assert.equal(h.t.answers[first.id], first.options[0].id, 'MCQ change saves before advancing');
   await h.ids['previous-question'].click(); slide(h, 0);
   assert.equal(h.ids['next-question'].getAttribute('aria-label'), 'Next question');
+  assert.equal(h.ids['next-question'].textContent, 'Next →');
   assert.equal(card(h, 0).querySelector('input').checked, true);
   await h.document.getElementById('mark-review-0').click(); slide(h, 0);
   const draft = h.storage.get(draftKey(h));
   await h.ids['next-question'].click(); slide(h, 1);
   await h.ids['previous-question'].click(); slide(h, 0);
-  assert.equal(h.storage.get(draftKey(h)), draft, 'Moving preserves answers, flags and timer exactly');
+  const afterMoving = JSON.parse(h.storage.get(draftKey(h))), beforeMoving = JSON.parse(draft);
+  delete afterMoving.updatedAt; delete beforeMoving.updatedAt;
+  assert.deepEqual(afterMoving, beforeMoving, 'Returning to the same slide preserves answers, flags and timer');
   await card(h, 0).querySelector('.clear-response').click(); slide(h, 0);
   assert.equal(h.t.answers[first.id], undefined);
   assert.deepEqual([...h.t.reviewFlags], [first.id], 'Clear response retains the flag on the current slide');
   assert.equal(h.ids['next-question'].getAttribute('aria-label'), 'Skip question');
+  assert.equal(h.ids['next-question'].textContent, 'Skip →');
 
   const msqIndex = h.data.questions.findIndex(question => question.type === 'msq');
   const msq = h.data.questions[msqIndex];
@@ -91,13 +100,17 @@ function slide(h, index) {
   const invalidDraft = h.storage.get(draftKey(h));
   await h.ids['quiz-form'].fire('submit'); slide(h, natIndex);
   assert.equal(card(h, natIndex).querySelector('input').focused, true, 'Submit reveals and focuses a hidden invalid NAT');
-  assert.equal(h.storage.get(draftKey(h)), invalidDraft, 'Invalid Submit preserves the unfinished draft');
+  const invalidAfterSubmit = JSON.parse(h.storage.get(draftKey(h))), invalidBeforeSubmit = JSON.parse(invalidDraft);
+  assert.equal(invalidAfterSubmit.currentQuestionId, nat.id, 'Revealing an invalid NAT caches its location');
+  delete invalidAfterSubmit.currentQuestionId; delete invalidBeforeSubmit.currentQuestionId;
+  delete invalidAfterSubmit.updatedAt; delete invalidBeforeSubmit.updatedAt;
+  assert.deepEqual(invalidAfterSubmit, invalidBeforeSubmit, 'Invalid Submit preserves the unfinished responses, flags and timer');
   assert.equal(posts(h).length, 0);
   assert.equal(h.ids.report.hidden, true);
 
   const restored = await load('gate-cse-2021-set-1', { storage: h.storage });
-  slide(restored, 0);
-  assert.equal(restored.t.answers[nat.id], '-', 'Reload restores input without persisting carousel position');
+  slide(restored, natIndex);
+  assert.equal(restored.t.answers[nat.id], '-', 'Reload restores unfinished input at the last viewed slide');
   assert.deepEqual([...restored.t.reviewFlags], [first.id]);
   await h.ids['clear-answers'].click(); slide(h, 0);
   assert.equal(Object.keys(h.t.answers).length, 0);

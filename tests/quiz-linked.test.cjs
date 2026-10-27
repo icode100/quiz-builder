@@ -112,8 +112,8 @@ async function run() {
         attempt.summary.score = 999; attempt.results.forEach(item => { item.marksEarned = 999; item.outcome = 'correct'; });
         await fsp.writeFile(path.join(folder, 'attempt.json'), JSON.stringify(attempt));
         const html = await home();
-        const formatted = Number(expected.toFixed(4));
-        if (Object.keys(h.answers).length) assert(html.includes(`Last score: ${formatted} / 8`), html);
+        const formatted = Number((expected / 8 * 100).toFixed(4));
+        if (Object.keys(h.answers).length) assert(html.includes(`Last score: ${formatted}%`), html);
         else assert.match(html, /Not attempted/);
         checks++;
       }

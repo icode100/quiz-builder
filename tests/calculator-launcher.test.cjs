@@ -86,6 +86,15 @@ function run() {
   const header = panel.querySelector('.shared-calculator-header');
   const newTab = panel.querySelector('.shared-calculator-new-tab');
   assert.equal(toggle.type, 'button', 'Launcher never submits the quiz form');
+  assert.equal(toggle.getAttribute('aria-label'), 'Calculator', 'The icon launcher retains an accessible name');
+  assert.equal(toggle.getAttribute('title'), 'Open calculator', 'The compact launcher explains its action on hover');
+  assert.equal(toggle.textContent, '', 'The floating launcher uses an icon instead of a visible text label');
+  const icon = toggle.querySelector('svg');
+  assert.ok(icon, 'Launcher contains a local vector calculator icon');
+  assert.equal(icon.getAttribute('aria-hidden'), 'true', 'The decorative icon does not duplicate the button name');
+  assert.equal(icon.getAttribute('focusable'), 'false');
+  assert.equal(icon.getAttribute('viewBox'), '0 0 24 24');
+  assert.equal(icon.getAttribute('stroke'), 'currentColor', 'The icon follows the accessible button foreground');
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
   assert.equal(toggle.getAttribute('aria-controls'), panel.id);
   assert.equal(panel.getAttribute('aria-labelledby'), heading.id);
@@ -104,6 +113,8 @@ function run() {
   toggle.fire('click');
   assert.equal(panel.hidden, false);
   assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(toggle.getAttribute('title'), 'Close calculator');
+  assert.equal(toggle.getAttribute('aria-label'), 'Calculator');
   assert.equal(h.document.activeElement, heading, 'Keyboard focus reaches the calculator while the frame loads');
   const frame = panel.querySelector('iframe');
   assert.ok(frame);
@@ -120,6 +131,8 @@ function run() {
   close.fire('click');
   assert.equal(panel.hidden, true);
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(toggle.getAttribute('title'), 'Open calculator');
+  assert.equal(toggle.getAttribute('aria-label'), 'Calculator');
   assert.equal(h.document.activeElement, toggle);
   frame.contentWindow.fixtureMemory = 42;
   toggle.fire('click');
@@ -184,6 +197,7 @@ function run() {
   assert.match(css, /@media\s+print\s*\{[\s\S]*?\.shared-calculator-toggle[\s\S]*?\.shared-calculator-panel\s*\{\s*display:\s*none\s*!important/);
   assert.match(css, /\.shared-calculator-panel\[hidden\]\s*\{\s*display:\s*none\s*!important/);
   assert.match(css, /:focus-visible/);
+  assert.match(css, /\.shared-calculator-toggle\s*\{[^}]*display:\s*grid;[^}]*place-items:\s*center;[^}]*width:\s*52px;[^}]*height:\s*52px;[^}]*min-width:\s*52px;[^}]*min-height:\s*52px;/, 'The icon remains centered in a touch-sized square');
   assert.match(css, /#4169e1/i);
   assert.match(css, /#3559c7/i);
   assert.match(css, /#5b7ded/i);

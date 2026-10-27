@@ -25,11 +25,11 @@
         </button>
       </div>
       <h1 id="quiz-title">GATE CSE 2021 - Set 2</h1>
+      <div id="quiz-meta" class="quiz-meta" role="status" aria-live="polite" aria-atomic="true" hidden></div>
       <details id="paper-details" class="paper-details" hidden>
         <summary>Paper details and marking instructions</summary>
         <p id="quiz-source" class="subtitle" hidden></p>
         <p id="quiz-instructions" class="subtitle" hidden></p>
-        <div id="quiz-meta" class="quiz-meta" hidden></div>
       </details>
     </header>
 
@@ -56,7 +56,17 @@
       </div>
     </section>
 
-    <p id="status-message" class="status-message" role="status" aria-live="polite" hidden></p>
+    <section id="progress-panel" class="progress-panel" aria-label="Test progress and status" hidden>
+      <div id="test-progress" class="test-progress" hidden>
+        <progress id="test-progress-bar" class="test-progress-bar" max="100" value="0" aria-label="Test progress"></progress>
+        <span class="test-progress-track" aria-hidden="true"><span id="test-progress-fill" class="test-progress-fill"></span></span>
+        <div class="test-progress-content">
+          <span>Test progress <strong id="test-progress-value">0%</strong></span>
+          <span id="test-progress-detail"></span>
+        </div>
+      </div>
+      <p id="status-message" class="status-message" role="status" aria-live="polite" hidden></p>
+    </section>
 
     <section id="empty-state" class="empty-state" hidden>
       <h2>Ready for your question paper</h2>
@@ -73,7 +83,7 @@
       </div>
       <div id="questions"></div>
       <nav id="question-carousel" class="question-carousel" aria-label="Question navigation" hidden>
-        <button id="previous-question" class="button button-secondary" type="button" aria-label="Previous question" title="Previous question">←</button>
+        <button id="previous-question" class="button button-secondary" type="button" aria-label="Previous question" title="Previous question">← Previous</button>
         <span id="carousel-position" role="status" aria-live="polite"></span>
         <button id="next-question" class="button button-secondary" type="button" aria-label="Skip question" title="Skip question">→</button>
       </nav>
@@ -108,6 +118,7 @@
       <span id="nav-unanswered-legend" hidden><span class="nav-dot unanswered" aria-hidden="true"></span> Unanswered</span>
       <span id="nav-awarded-legend" hidden><span class="nav-dot result-awarded" aria-hidden="true"></span> Marks to all</span>
       <span id="nav-blocked-legend" hidden><span class="nav-dot result-blocked" aria-hidden="true"></span> Not evaluated</span>
+      <span id="nav-excluded-legend" hidden><span class="nav-dot result-excluded" aria-hidden="true">∅</span> Out of syllabus</span>
       <span id="nav-review-legend"><span class="nav-dot marked-review" aria-hidden="true"></span> Marked for review</span>
       <span id="nav-check-legend" hidden><span class="nav-dot needs-check" aria-hidden="true"></span> Check number</span>
     </div>

@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
@@ -66,18 +67,18 @@ async function testHomeIntegration(data) {
       submittedAt: '2026-10-20T00:00:00.000Z', updatedAt: '2026-10-20T00:00:00.000Z',
       answers, summary: { score: -999 }, results: [], reviewFlags: ['CS-53'] };
     assert.equal((await request('/gate-cse-2010/attempt.json', attempt)).status, 200);
-    let item = await readCard(); assert.match(item, /Last score: 100 \/ 100/);
+    let item = await readCard(); assert.match(item, /Last score: 100%/);
     assert.match(item, /<progress class="paper-score-bar" value="100" max="100"/);
     answers['CS-52'] = wrong('CS-52'); answers['CS-54'] = null;
     assert.equal((await request('/gate-cse-2010/attempt.json', attempt)).status, 200);
-    assert.match(await readCard(), /Last score: 91\.3333 \/ 100/, 'Server gates both answered dependents');
+    assert.match(await readCard(), /Last score: 91\.3333%/, 'Server gates both answered dependents');
     answers['CS-52'] = right('CS-52'); answers['CS-54'] = right('CS-54');
     answers['CS-53'] = wrong('CS-53'); answers['CS-55'] = wrong('CS-55');
     assert.equal((await request('/gate-cse-2010/attempt.json', attempt)).status, 200);
-    assert.match(await readCard(), /Last score: 96 \/ 100/, 'Wrong linked second answers have zero penalty');
+    assert.match(await readCard(), /Last score: 96%/, 'Wrong linked second answers have zero penalty');
     attempt.answers = Object.fromEntries(FIXTURE.questions.map(row => [row.id, wrong(row.id)]));
     assert.equal((await request('/gate-cse-2010/attempt.json', attempt)).status, 200);
-    item = await readCard(); assert.match(item, /Last score: -32 \/ 100/);
+    item = await readCard(); assert.match(item, /Last score: -32%/);
     assert.match(item, /<progress class="paper-score-bar" value="0" max="100"/, 'Only the visual bar clamps the negative score');
     attempt.answers['CS-53'] = 'not an option';
     assert.equal((await request('/gate-cse-2010/attempt.json', attempt)).status, 200);
@@ -112,7 +113,7 @@ async function testHomeIntegration(data) {
     assert(!fs.existsSync(path.join(FOLDER, name)), 'Supplied sources remain external; only crops are in the quiz');
   }
   assert(!fs.readdirSync(FOLDER).some(name => /\.pdf$/i.test(name)), 'No source PDF copies in the quiz');
-  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(sha256(path.join(FOLDER, name)), sha256(path.join(TEMPLATE, name)), `${name} matches the shared template`);
+  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(normalizedText(path.join(FOLDER, name)), normalizedText(path.join(TEMPLATE, name)), `${name} matches the shared template`);
 
   const imagePaths = new Set(), originalQuestions = new Set(); let imageCount = 0;
   for (const q of data.questions) {

@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
@@ -64,20 +65,20 @@ async function checkHome(data) {
     const attempt = { version: 1, quizId: data.id, quizSignature: signature(data), submittedAt: '2026-10-20T00:00:00.000Z', updatedAt: '2026-10-20T00:00:00.000Z',
       answers: Object.fromEntries(key.map(row => [row.id, correct(row)])), reviewFlags: ['CS-42', 'CS-53'], summary: { score: 999 }, results: [] };
     const save = async () => assert.equal((await request('/gate-cse-2013/attempt.json', attempt)).status, 200);
-    await save(); assert.match(await readCard(), /Last score: 100 \/ 100/, 'Server ignores forged totals and grades the verified key');
+    await save(); assert.match(await readCard(), /Last score: 100%/, 'Server ignores forged totals and grades the verified key');
     for (const pair of fixture.linkedPairs) attempt.answers[pair.prerequisite] = wrong(key[index(pair.prerequisite)]);
-    await save(); assert.match(await readCard(), /Last score: 90\.6667 \/ 100/, 'Wrong prerequisites block both correct linked seconds');
+    await save(); assert.match(await readCard(), /Last score: 90\.6667%/, 'Wrong prerequisites block both correct linked seconds');
     attempt.answers = Object.fromEntries(key.map(row => [row.id, correct(row)]));
     for (const pair of fixture.linkedPairs) attempt.answers[pair.dependent] = wrong(key[index(pair.dependent)]);
-    await save(); assert.match(await readCard(), /Last score: 96 \/ 100/, 'Linked second wrong answers carry no penalty');
+    await save(); assert.match(await readCard(), /Last score: 96%/, 'Linked second wrong answers carry no penalty');
     attempt.answers = Object.fromEntries(key.map(row => [row.id, wrong(row)]));
-    await save(); const negative = await readCard(); assert.match(negative, /Last score: -26\.6667 \/ 100/);
+    await save(); const negative = await readCard(); assert.match(negative, /Last score: -26\.6667%/);
     assert.match(negative, /<progress class="paper-score-bar" value="0" max="100"/, 'Only visual bar clamps the negative score');
     attempt.answers = { 'CS-49': correct(key[index('CS-49')]), 'CS-51': correct(key[index('CS-51')]) };
-    await save(); assert.match(await readCard(), /Last score: 8 \/ 100/, 'Common-data second questions have independent grading');
+    await save(); assert.match(await readCard(), /Last score: 8%/, 'Common-data second questions have independent grading');
     attempt.answers = Object.fromEntries(key.map(row => [row.id, null])); await save();
     assert.match(await readCard(), /data-attempted="false"/, 'MTA-only blank submission is unattempted despite four awarded marks');
-    attempt.answers = { 'CS-42': 'D' }; await save(); assert.match(await readCard(), /Last score: 4 \/ 100/, 'Any MTA response still receives only the same awards');
+    attempt.answers = { 'CS-42': 'D' }; await save(); assert.match(await readCard(), /Last score: 4%/, 'Any MTA response still receives only the same awards');
     attempt.quizSignature = 'stale'; await save(); const stale = await readCard();
     assert.match(stale, /data-attempted="true"/); assert.match(stale, /Last score unavailable/); assert.match(stale, /class="paper-score-bar" hidden/);
     // Even a blocked dependent's selected option must be validated.
@@ -144,7 +145,7 @@ async function checkTimer() {
   same(data.questions.map(q => q.id), [...Array.from({ length: 55 }, (_, i) => `CS-${i + 1}`), ...Array.from({ length: 10 }, (_, i) => `GA-${i + 56}`)]);
   assert.equal(data.questions.reduce((sum, q) => sum + q.marks, 0), 100); assert.equal(data.cropDpi, 240);
   assert.match(data.cropRenderer, /PDFium/i, 'Original Symbol-font glyphs use the verified PDFium renderer');
-  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(sha(path.join(folder, name)), sha(path.join(root, '_template', name)), `${name} matches shared runtime`);
+  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(normalizedText(path.join(folder, name)), normalizedText(path.join(root, '_template', name)), `${name} matches shared runtime`);
   for (const name of [data.questionPaper, data.answerKey]) {
     assert(Object.hasOwn(fixture.sourceSha256, name)); assert.equal(path.basename(name), name); assert.match(fixture.sourceSha256[name], /^[a-f0-9]{64}$/);
     assert(!fs.existsSync(path.join(folder, name)), 'Sources are recorded as provenance rather than copied');

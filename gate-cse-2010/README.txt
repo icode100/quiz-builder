@@ -26,3 +26,8 @@ Source filenames, hashes and crop provenance are recorded in quiz-data.js.
 Originals remain unchanged outside this folder; no source PDFs or key copies
 are stored here. All supplied and reference pages and all crops were inspected.
 Run node tests/quiz-2010.test.cjs for the independent key/runtime/server checks.
+Current practice scoring: Out of syllabus beside Clear response and Mark for review manually excludes a question from earned and maximum marks, including marks-to-all awards. Responses and review flags remain. If a linked prerequisite is excluded, its included dependent is graded independently with the original penalty. Percentage takes priority in reports, Save/Print, and home cards/bars; earned/eligible marks remain visible. Original weights and negative penalties apply. If all questions are excluded, percentage is unavailable with 0/0 marks. Paper totals and score examples above assume no exclusions.
+
+Exclusions restore with the browser draft and are saved with Submit. Clear response keeps them; Clear answers and fresh Attempt again clear them. A successful save clears practice exclusions/draft while keeping the report snapshot; invalid input or a failed save preserves them. Saved Review uses its saved exclusions; Back to quiz restores practice. Older submissions without exclusions include every question.
+
+Practice navigation also caches the last viewed question, including MCQ auto-advance and map jumps. Refresh/reopen resumes there, even without answers; older drafts start at the first question. Report navigation never changes it. Clear answers and fresh Attempt again return to the first question.

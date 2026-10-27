@@ -5,23 +5,29 @@
   font: 0.9rem/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .shared-calculator-toggle {
+  display: grid;
+  place-items: center;
   right: 1rem;
   bottom: 1rem;
-  min-height: 44px;
-  padding: 0.65rem 1rem;
-  border: 1px solid #1d4ed8;
-  border-radius: 0.6rem;
-  background: #1d4ed8;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 0;
+  border: 1px solid #4169e1;
+  border-radius: 0.9rem;
+  background: #4169e1;
   color: #fff;
   box-shadow: 0 4px 18px rgb(21 58 104 / 20%);
   cursor: pointer;
 }
-.shared-calculator-toggle:hover { background: #1e40af; }
+.shared-calculator-toggle:hover { border-color: #3559c7; background: #3559c7; }
+.shared-calculator-icon { display: block; width: 24px; height: 24px; pointer-events: none; }
 .shared-calculator-panel {
   display: flex;
   flex-direction: column;
   right: 1rem;
-  bottom: 4.5rem;
+  bottom: calc(1rem + 52px + 0.75rem);
   width: min(460px, calc(100vw - 1rem));
   height: min(650px, calc(100vh - 6rem));
   height: min(650px, calc(100dvh - 6rem));
@@ -83,7 +89,7 @@
 :root[data-theme="dark"] .shared-calculator-panel :focus-visible { outline-color: #5b7ded; }
 @media (max-width: 500px) {
   .shared-calculator-toggle { right: 0.5rem; bottom: 0.5rem; }
-  .shared-calculator-panel { right: 0.5rem; bottom: 4rem; }
+  .shared-calculator-panel { right: 0.5rem; bottom: calc(0.5rem + 52px + 0.75rem); }
 }
 @media print {
   .shared-calculator-toggle,

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const vm = require('vm');
 const assert = require('assert');
 const { load, editResponse, draftKey, attemptUrl, rejectFileDialogs, assertEditable } = require('./helpers/quiz-harness.cjs');
@@ -80,14 +81,14 @@ async function testHomeIntegration(data) {
       submittedAt: '2026-10-14T00:00:00.000Z', updatedAt: '2026-10-14T00:00:00.000Z',
       answers, summary: { score: -999 }, results: [] };
     assert.equal((await request('/gate-cse-2016-set-1/attempt.json', attempt)).status, 200);
-    let card = await readCard(); assert.match(card, /data-attempted="true"/); assert.match(card, /Last score: 100 \/ 100/);
+    let card = await readCard(); assert.match(card, /data-attempted="true"/); assert.match(card, /Last score: 100%/);
     assert.match(card, /<progress class="paper-score-bar" value="100" max="100"/); assert(!card.includes('-999'));
     answers['CS-29'] = '0.3401'; assert.equal((await request('/gate-cse-2016-set-1/attempt.json', attempt)).status, 200);
-    assert.match(await readCard(), /Last score: 98 \/ 100/, 'Server enforces CS-29 upper boundary');
+    assert.match(await readCard(), /Last score: 98%/, 'Server enforces CS-29 upper boundary');
     const wrong = { ...attempt, answers: Object.fromEntries(VERIFIED_KEY.map(row => [row.id, wrongResponse(row)])) };
     assert.equal((await request('/gate-cse-2016-set-1/attempt.json', wrong)).status, 200);
     card = await readCard(); const wrongScore = Number(VERIFIED_KEY.reduce((sum, row) => sum + row.incorrectMarks, 0).toFixed(4));
-    assert(card.includes(`Last score: ${wrongScore} / 100`), 'Home preserves negative 2016-set-1 score');
+    assert(card.includes(`Last score: ${wrongScore}%`), 'Home preserves negative 2016-set-1 score');
     assert.match(card, /<progress class="paper-score-bar" value="0" max="100"/, 'Only visual bar clamps at zero');
     assert.equal((await request('/gate-cse-2016-set-1/attempt.json', { ...attempt, quizSignature: 'stale key' })).status, 200);
     card = await readCard(); assert.match(card, /data-attempted="true"/); assert.match(card, /Last score unavailable/);
@@ -116,7 +117,7 @@ async function testHomeIntegration(data) {
   assert.equal(new Set(data.questions.map(q => q.id)).size, 65);
   assert.equal(data.questions.reduce((sum, q) => sum + q.marks, 0), FIXTURE.totalMarks);
   for (const name of ['quiz.js', 'theme.js', 'styles.css']) {
-    assert.equal(sha256(path.join(FOLDER, name)), sha256(path.join(TEMPLATE, name)), `${name} matches shared runtime`);
+    assert.equal(normalizedText(path.join(FOLDER, name)), normalizedText(path.join(TEMPLATE, name)), `${name} matches shared runtime`);
   }
   same(data.sourceSha256, FIXTURE.sourceSha256, 'Provenance preserves verified original PDF hashes');
   for (const name of [data.questionPaper, data.answerKey]) {
@@ -179,6 +180,7 @@ async function testHomeIntegration(data) {
   })) same(data.questions.find(q => q.id === id).correctRanges, ranges, `${id} preserves the supplied inclusive range`);
   const html = fs.readFileSync(path.join(FOLDER, 'index.html'), 'utf8');
   for (const match of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
+    if (match[1] === '/') continue;
     assert(!/^[a-z]+:/i.test(match[1]) && !path.isAbsolute(match[1]), 'HTML resources are local');
     assert(fs.existsSync(path.join(FOLDER, match[1])), `Missing ${match[1]}`);
   }
@@ -274,7 +276,7 @@ async function testHomeIntegration(data) {
   assert.equal(restored.requests[1].url, attemptUrl(restored));
   for (const id of [mcq.id, nat.id, 'GA-2']) assertReviewMark(restored, id, false);
   const submission = restored.server.get(attemptUrl(restored));
-  same(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'reviewFlags', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Version 1 envelope includes report review markers');
+  same(Object.keys(submission).sort(), ['answers', 'outOfSyllabus', 'quizId', 'quizSignature', 'quizTitle', 'results', 'reviewFlags', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Version 1 envelope includes report review markers');
   assert.equal(submission.quizId, data.id); assert.equal(submission.version, 1);
   assert.equal(submission.quizSignature, JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null }));
   assert.equal(Object.keys(submission.answers).length, 65); assert.equal(submission.results.length, 65);

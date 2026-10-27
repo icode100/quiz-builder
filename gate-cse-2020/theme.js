@@ -14,6 +14,9 @@
     const button = document.getElementById("theme-toggle");
     if (button) {
       button.setAttribute("aria-checked", String(theme === "dark"));
+      const label = button.querySelector(".switch-label");
+      if (label) label.textContent = theme === "dark" ? "Dark" : "Light";
+      button.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
     }
   }
 

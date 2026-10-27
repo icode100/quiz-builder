@@ -6,6 +6,8 @@
   const answers = Object.create(null);
   const reviewFlags = new Set();
   const reportReviewFlags = new Set();
+  const outOfSyllabus = new Set();
+  const reportOutOfSyllabus = new Set();
   let results = [], submittedAt = "", updatedAt = "", signature = "", storageKey = "";
   let storageAvailable = false;
   let serverBusy = false, reviewState = null, hasSavedAttempt = false, reviewCheck = 0;
@@ -22,12 +24,13 @@
     byId("previous-question").disabled = serverBusy || currentQuestionIndex === 0;
     byId("next-question").disabled = serverBusy || last;
     const nextLabel = last ? "Last question" : Object.hasOwn(answers, question.id) ? "Next question" : "Skip question";
-    byId("next-question").textContent = "→";
+    byId("next-question").textContent = last ? "Last question" : Object.hasOwn(answers, question.id) ? "Next →" : "Skip →";
     byId("next-question").setAttribute("aria-label", nextLabel);
     byId("next-question").title = nextLabel;
   }
-  function setCurrentQuestion(index) {
+  function setCurrentQuestion(index, persist = false) {
     if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
+    const changed = currentQuestionIndex !== index;
     currentQuestionIndex = index;
     data.questions.forEach((question, number) => {
       byId(`nav-question-${number}`)?.setAttribute("aria-current", number === index ? "location" : "false");
@@ -35,6 +38,7 @@
       if (card && !submittedAt) card.hidden = number !== index;
     });
     renderCarouselControls();
+    if (persist && changed && !submittedAt && !reviewState) save();
   }
   function questionTarget(index) {
     return byId(`${submittedAt ? "result" : "question"}-card-${index}`);
@@ -45,7 +49,7 @@
   }
   function jumpToQuestion(index) {
     if (!Number.isInteger(index) || index < 0 || index >= data.questions.length) return;
-    setCurrentQuestion(index);
+    setCurrentQuestion(index, true);
     const target = questionTarget(index);
     target?.scrollIntoView({ block: "start" });
     target?.focus({ preventScroll: true });
@@ -179,11 +183,14 @@
     byId("status-message").textContent = message;
     byId("status-message").classList.toggle("error", error);
     byId("status-message").hidden = !message;
+    byId("progress-panel").hidden = !message && byId("test-progress").hidden;
   }
   const questionType = (question) => question.type || "mcq";
   const questionLabel = (question) => question.displayLabel || question.id;
   const number = (value) => Number(value.toFixed(4)).toLocaleString(undefined, { maximumFractionDigits: 4 });
   const marks = (question) => ({ correct: question.marks ?? data.scoring?.correct ?? 1, incorrect: question.incorrectMarks ?? data.scoring?.incorrect ?? 0 });
+  const activeExclusions = () => submittedAt ? reportOutOfSyllabus : outOfSyllabus;
+  const percentageText = (percentage) => percentage === null ? "Percentage unavailable" : `${number(percentage)}%`;
   const imagesOf = (item) => [...(item.image ? [{ src: item.image, alt: item.imageAlt, page: item.sourcePage }] : []), ...(item.images || [])];
 
   function numericValue(raw) {
@@ -245,22 +252,32 @@
     if (!Array.isArray(flags) || new Set(flags).size !== flags.length || flags.some(id => typeof id !== "string" || !data.questions.some(question => question.id === id))) throw new Error("Invalid review flags.");
     return flags;
   }
+  function validateExclusions(flags = []) {
+    if (!Array.isArray(flags) || new Set(flags).size !== flags.length || flags.some(id => typeof id !== "string" || !data.questions.some(question => question.id === id))) throw new Error("Invalid out-of-syllabus flags.");
+    return flags;
+  }
   function restoreDraft(saved) {
     if (!saved || saved.signature !== signature || saved.submittedAt) throw new Error("This cached draft is invalid or already submitted.");
     const restored = validateAnswers(saved.answers);
     const flags = validateReviewFlags(saved.reviewFlags);
+    const excluded = validateExclusions(saved.outOfSyllabus);
+    const index = saved.currentQuestionId === undefined ? 0 : data.questions.findIndex(question => question.id === saved.currentQuestionId);
+    if (index < 0) throw new Error("Invalid last viewed question.");
     if (saved.updatedAt && (typeof saved.updatedAt !== "string" || !Number.isFinite(Date.parse(saved.updatedAt)))) throw new Error("Invalid draft timestamp.");
     Object.keys(answers).forEach((id) => delete answers[id]);
     Object.assign(answers, restored);
     reviewFlags.clear();
     flags.forEach(id => reviewFlags.add(id));
+    outOfSyllabus.clear();
+    excluded.forEach(id => outOfSyllabus.add(id));
+    currentQuestionIndex = index;
     updatedAt = saved.updatedAt || "";
     restoreTimer(saved.timer);
   }
   function save() {
     updatedAt = new Date(Math.max(Date.now(), (Date.parse(updatedAt) || 0) + 1)).toISOString();
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], timer: timerSnapshot(), updatedAt }));
+      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], outOfSyllabus: [...outOfSyllabus], currentQuestionId: data.questions[currentQuestionIndex]?.id, timer: timerSnapshot(), updatedAt }));
       if (!storageAvailable) status("Progress is cached in this browser until Submit.");
       storageAvailable = true;
       return true;
@@ -299,23 +316,28 @@
   }
   function grade() {
     const outcomes = new Map();
+    const excluded = activeExclusions();
     return data.questions.map((question) => {
       const selected = answers[question.id], type = questionType(question);
       let outcome = "unanswered", reason = "";
-      if (question.marksToAll) outcome = "awarded";
+      if (excluded.has(question.id)) {
+        outcome = "excluded";
+        reason = "Marked out of syllabus. Excluded from earned and total marks.";
+      }
+      else if (question.marksToAll) outcome = "awarded";
       else if (selected !== undefined) {
         const correct = type === "nat" ? numericValue(selected) !== null && question.correctRanges.some(({ min, max }) => numericValue(selected) >= min && numericValue(selected) <= max)
           : type === "msq" ? selected.length === question.correctAnswers.length && selected.every((id) => question.correctAnswers.includes(id))
           : (question.acceptedAnswers || [question.correctAnswer]).includes(selected);
         outcome = correct ? "correct" : "incorrect";
-        if (question.requiresCorrect && outcomes.get(question.requiresCorrect) !== "correct") {
+        if (question.requiresCorrect && !excluded.has(question.requiresCorrect) && outcomes.get(question.requiresCorrect) !== "correct") {
           outcome = "blocked";
           const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
           reason = `Not evaluated because question ${questionLabel(prerequisite)} was incorrect or unanswered.`;
         }
       }
       outcomes.set(question.id, outcome);
-      return { question, selected, outcome, earned: outcome === "unanswered" || outcome === "blocked" ? 0 : outcome === "awarded" ? marks(question).correct : marks(question)[outcome], ...(reason ? { reason } : {}) };
+      return { question, selected, outcome, earned: ["unanswered", "blocked", "excluded"].includes(outcome) ? 0 : outcome === "awarded" ? marks(question).correct : marks(question)[outcome], ...(reason ? { reason } : {}) };
     });
   }
   function summarize(currentResults) {
@@ -324,10 +346,10 @@
     currentResults.forEach((result) => {
       counts[result.outcome] = (counts[result.outcome] || 0) + 1;
       score += result.earned;
-      maximum += marks(result.question).correct;
+      if (result.outcome !== "excluded") maximum += marks(result.question).correct;
       if (result.outcome === "awarded") awardedMarks += result.earned;
     });
-    return { counts, score, maximum, awardedMarks };
+    return { counts, score, maximum, percentage: maximum > 0 ? score / maximum * 100 : null, awardedMarks };
   }
   function setControls() {
     byId("quiz-session").disabled = serverBusy;
@@ -362,16 +384,17 @@
     if (check === reviewCheck) setSavedAttempt(saved);
   }
   function attemptSnapshot() {
-    const scored = grade(), { counts, score, maximum, awardedMarks } = summarize(scored);
+    const scored = grade(), { counts, score, maximum, percentage, awardedMarks } = summarize(scored);
     return {
       version: 1, quizId: data.id, quizTitle: data.title, quizSignature: signature,
       updatedAt, submittedAt,
       answers: Object.fromEntries(data.questions.map((q) => [q.id, answers[q.id] ?? null])),
       reviewFlags: [...reportReviewFlags],
-      summary: { score, maximum, ...counts, awardedMarks },
+      outOfSyllabus: [...reportOutOfSyllabus],
+      summary: { percentage, score, maximum, ...counts, awardedMarks },
       results: scored.map((result) => ({ questionId: result.question.id, answer: result.selected ?? null,
         correctAnswer: correctAnswerText(result.question), outcome: result.outcome,
-        marksEarned: result.earned, maxMarks: marks(result.question).correct, ...(result.reason ? { reason: result.reason } : {}) }))
+        marksEarned: result.earned, maxMarks: result.outcome === "excluded" ? 0 : marks(result.question).correct, ...(result.reason ? { reason: result.reason } : {}) }))
     };
   }
   function validateSubmission(saved) {
@@ -379,10 +402,11 @@
     if (saved.version !== 1 || saved.quizId !== data.id || saved.quizSignature !== signature) throw new Error("The saved attempt belongs to a different paper or answer key.");
     const restored = validateAnswers(saved.answers, true);
     const flags = validateReviewFlags(saved.reviewFlags);
+    const excluded = validateExclusions(saved.outOfSyllabus);
     for (const key of ["submittedAt", "updatedAt"]) {
       if (typeof saved[key] !== "string" || !Number.isFinite(Date.parse(saved[key]))) throw new Error("Invalid saved timestamp.");
     }
-    return { answers: restored, reviewFlags: flags, submittedAt: saved.submittedAt, updatedAt: saved.updatedAt };
+    return { answers: restored, reviewFlags: flags, outOfSyllabus: excluded, submittedAt: saved.submittedAt, updatedAt: saved.updatedAt };
   }
   function restoreState(state) {
     Object.keys(answers).forEach((id) => delete answers[id]);
@@ -391,6 +415,10 @@
     (state.reviewFlags || []).forEach(id => reviewFlags.add(id));
     reportReviewFlags.clear();
     (state.reportReviewFlags || state.reviewFlags || []).forEach(id => reportReviewFlags.add(id));
+    outOfSyllabus.clear();
+    (state.outOfSyllabus || []).forEach(id => outOfSyllabus.add(id));
+    reportOutOfSyllabus.clear();
+    (state.reportOutOfSyllabus || state.outOfSyllabus || []).forEach(id => reportOutOfSyllabus.add(id));
     submittedAt = state.submittedAt;
     updatedAt = state.updatedAt;
   }
@@ -410,7 +438,7 @@
       setSavedAttempt(record);
       if (!hasSavedAttempt) throw new Error("This paper has not been attempted before.");
       const saved = validateSubmission(record);
-      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], reportReviewFlags: [...reportReviewFlags], submittedAt, updatedAt, currentQuestionIndex };
+      if (!reviewState) reviewState = { answers: JSON.parse(JSON.stringify(answers)), reviewFlags: [...reviewFlags], reportReviewFlags: [...reportReviewFlags], outOfSyllabus: [...outOfSyllabus], reportOutOfSyllabus: [...reportOutOfSyllabus], submittedAt, updatedAt, currentQuestionIndex };
       restoreState(saved);
       renderReport();
       status("Reviewing your last submitted attempt. Your current draft is unchanged.");
@@ -435,6 +463,8 @@
     save();
     reportReviewFlags.clear();
     reviewFlags.forEach(id => reportReviewFlags.add(id));
+    reportOutOfSyllabus.clear();
+    outOfSyllabus.forEach(id => reportOutOfSyllabus.add(id));
     renderReport();
     serverBusy = true;
     setControls();
@@ -444,6 +474,7 @@
       if (!response.ok) throw new Error("The server could not save the result.");
       setSavedAttempt(attempt);
       reviewFlags.clear();
+      outOfSyllabus.clear();
       updateProgress();
       clearDraft();
     } catch (error) {
@@ -467,10 +498,24 @@
     });
   }
   function updateProgress() {
-    byId("progress").textContent = `${Object.keys(answers).length} of ${data.questions.length} answered`;
     const reporting = Boolean(submittedAt);
-    const outcomeLabels = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated" };
-    const outcomeIcons = { correct: "✓", incorrect: "×", unanswered: "·", awarded: "+", blocked: "–" };
+    const excluded = activeExclusions();
+    const validQuestions = data.questions.filter(question => !excluded.has(question.id));
+    const answeredValid = validQuestions.filter(question => Object.hasOwn(answers, question.id)).length;
+    byId("progress").textContent = `${answeredValid} of ${validQuestions.length} answered`;
+    const completion = validQuestions.length ? answeredValid / validQuestions.length * 100 : 0;
+    const completionText = validQuestions.length ? `${number(Math.round(completion * 10) / 10)}%` : "—";
+    const completionDetail = `${answeredValid} of ${validQuestions.length} in-syllabus questions answered`;
+    byId("test-progress-bar").max = 100;
+    byId("test-progress-bar").value = completion;
+    byId("test-progress-fill").setAttribute("style", `width: ${completion}%;`);
+    byId("test-progress-bar").setAttribute("aria-valuetext", validQuestions.length ? `${completionText}, ${completionDetail}` : "Progress unavailable: no in-syllabus questions remain.");
+    byId("test-progress-value").textContent = completionText;
+    byId("test-progress-detail").textContent = validQuestions.length ? completionDetail : "No in-syllabus questions";
+    byId("test-progress").hidden = reporting || !data.questions.length;
+    byId("progress-panel").hidden = byId("test-progress").hidden && byId("status-message").hidden;
+    const outcomeLabels = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated", excluded: "Out of syllabus" };
+    const outcomeIcons = { correct: "✓", incorrect: "×", unanswered: "·", awarded: "+", blocked: "–", excluded: "∅" };
     let attempted = 0, invalidCount = 0;
     data.questions.forEach((question, index) => {
       const button = byId(`nav-question-${index}`);
@@ -486,6 +531,14 @@
       selection.classList.toggle("long-answer", selection.textContent.length > 5);
       selection.hidden = !selectedAnswer;
       const flagged = reviewFlags.has(question.id), marked = (reporting ? reportReviewFlags : reviewFlags).has(question.id), markButton = byId(`mark-review-${index}`);
+      const isExcluded = excluded.has(question.id), exclusionButton = byId(`out-of-syllabus-${index}`);
+      if (exclusionButton) {
+        exclusionButton.textContent = outOfSyllabus.has(question.id) ? "Out of syllabus ✓" : "Out of syllabus";
+        exclusionButton.classList.toggle("syllabus-excluded", outOfSyllabus.has(question.id));
+        exclusionButton.setAttribute("aria-pressed", String(outOfSyllabus.has(question.id)));
+        exclusionButton.setAttribute("aria-label", `${outOfSyllabus.has(question.id) ? "Include in syllabus" : "Mark out of syllabus"} for ${questionLabel(question)}`);
+        exclusionButton.title = "Excluded questions contribute neither earned nor total marks. Toggle again to include.";
+      }
       const outcome = reporting ? results[index]?.outcome : null;
       if (markButton) {
         markButton.textContent = flagged ? "Unmark review" : "Mark for review";
@@ -499,13 +552,17 @@
       button.classList.toggle("unanswered", !answered);
       button.classList.toggle("needs-check", !reporting && invalid);
       button.classList.toggle("marked-review", marked);
+      button.classList.toggle("syllabus-excluded", isExcluded);
       button.classList.toggle("report-question", reporting);
       Object.keys(outcomeLabels).forEach(value => button.classList.toggle(`result-${value}`, outcome === value));
-      button.querySelector(".nav-state-icon").textContent = reporting ? (marked ? "★" : outcomeIcons[outcome] || "·") : invalid ? "!" : marked ? "★" : answered ? "✓" : "·";
-      button.title = `${questionLabel(question)}: ${reporting ? outcomeLabels[outcome] || "Unanswered" : answered ? "Attempted" : "Not attempted"}${!reporting && invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}${selectedAnswer ? `, Selected: ${selectedOptions.length ? selectedOptions.join(", ") : selectedAnswer}` : ""}`;
+      button.querySelector(".nav-state-icon").textContent = reporting ? (marked ? "★" : outcomeIcons[outcome] || "·") : invalid ? "!" : marked ? "★" : isExcluded ? "∅" : answered ? "✓" : "·";
+      button.title = `${questionLabel(question)}: ${reporting ? outcomeLabels[outcome] || "Unanswered" : answered ? "Attempted" : "Not attempted"}${!reporting && isExcluded ? ", Out of syllabus" : ""}${!reporting && invalid ? " — check number" : ""}${marked ? ", Marked for review" : ""}${selectedAnswer ? `, Selected: ${selectedOptions.length ? selectedOptions.join(", ") : selectedAnswer}` : ""}`;
       button.setAttribute("aria-label", button.title);
     });
-    byId("nav-progress").textContent = `${attempted} attempted · ${data.questions.length - attempted} not attempted`;
+    byId("nav-progress").textContent = `${attempted} attempted · ${data.questions.length - attempted} not attempted${excluded.size ? ` · ${excluded.size} out of syllabus` : ""}`;
+    const maximum = data.questions.reduce((sum, question) => sum + (excluded.has(question.id) ? 0 : marks(question).correct), 0);
+    const metaText = `Maximum marks: ${number(maximum)} · Valid questions: ${data.questions.length - excluded.size} of ${data.questions.length}`;
+    if (byId("quiz-meta").querySelector(".meta-item")?.textContent !== metaText) byId("quiz-meta").replaceChildren(element("span", "meta-item", metaText));
     byId("nav-check-legend").hidden = reporting || invalidCount === 0;
     byId("nav-review-legend").hidden = false;
     const reviewDot = byId("nav-review-legend").querySelector(".nav-dot");
@@ -515,7 +572,7 @@
     }
     for (const id of ["nav-attempted-legend", "nav-unattempted-legend"]) byId(id).hidden = reporting;
     Object.keys(outcomeLabels).forEach(outcome => {
-      byId(`nav-${outcome}-legend`).hidden = !reporting || (["awarded", "blocked"].includes(outcome) && !results.some(result => result.outcome === outcome));
+      byId(`nav-${outcome}-legend`).hidden = outcome === "excluded" ? !excluded.size : !reporting || (["awarded", "blocked"].includes(outcome) && !results.some(result => result.outcome === outcome));
     });
     renderCarouselControls();
   }
@@ -566,7 +623,7 @@
       content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"}`));
       if (question.requiresCorrect) {
         const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
-        stem.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct. No negative marking for this question.`));
+        stem.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct, unless that question is marked out of syllabus. No negative marking for this question.`));
       }
       if (question.text.trim()) stem.append(element("p", "question-text", question.text));
       if (imagesOf(question).length) {
@@ -646,7 +703,17 @@
         updateProgress();
         save();
       });
-      actions.append(clear, mark);
+      const exclude = element("button", "button button-secondary out-of-syllabus-toggle", "Out of syllabus");
+      exclude.type = "button";
+      exclude.id = `out-of-syllabus-${index}`;
+      exclude.addEventListener("click", () => {
+        if (serverBusy || submittedAt || reviewState) return;
+        if (outOfSyllabus.has(question.id)) outOfSyllabus.delete(question.id);
+        else outOfSyllabus.add(question.id);
+        updateProgress();
+        save();
+      });
+      actions.append(clear, mark, exclude);
       response.append(actions);
       content.append(response);
       card.append(content);
@@ -675,23 +742,24 @@
     currentQuestionInteraction = null;
     if (moveFocus) setCurrentQuestion(0);
     results = grade();
-    const { counts, score, maximum, awardedMarks } = summarize(results);
+    const { counts, score, maximum, percentage, awardedMarks } = summarize(results);
     byId("report-title").textContent = `${data.title} — result`;
     byId("report-source").textContent = data.source || "";
     byId("report-source").hidden = !data.source;
-    byId("score-value").textContent = `${number(score)} / ${number(maximum)}`;
-    byId("score-detail").textContent = `${counts.correct} of ${results.length - counts.awarded} scorable questions correct${counts.awarded ? ` · ${number(awardedMarks)} marks awarded to all` : ""} · Submitted ${new Date(submittedAt).toLocaleString()}`;
+    byId("score-value").textContent = percentageText(percentage);
+    byId("score-detail").textContent = `Marks: ${number(score)} / ${number(maximum)} · ${counts.correct} of ${results.length - counts.awarded - (counts.excluded || 0)} scorable questions correct${counts.awarded ? ` · ${number(awardedMarks)} marks awarded to all` : ""}${counts.excluded ? ` · ${counts.excluded} out of syllabus` : ""} · Submitted ${new Date(submittedAt).toLocaleString()}`;
     const summary = [["Correct", counts.correct], ["Incorrect", counts.incorrect], ["Unanswered", counts.unanswered]];
     if (counts.awarded) summary.push(["Marks to all", counts.awarded]);
     if (counts.blocked) summary.push(["Not evaluated", counts.blocked]);
+    if (counts.excluded) summary.push(["Out of syllabus", counts.excluded]);
     byId("report-summary").replaceChildren(...summary.map(([label, count]) => element("div", "summary-item", `${label}: ${count}`)));
     const fragment = document.createDocumentFragment();
     results.forEach(({ question, selected, outcome, earned, reason }, index) => {
       const card = element("article", `result-card ${outcome === "blocked" ? "unanswered" : outcome}`), heading = element("div", "result-heading");
       card.id = `result-card-${index}`;
       card.tabIndex = -1;
-      const label = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated" }[outcome];
-      heading.append(element("h3", "", `Question ${questionLabel(question)}`), element("span", "result-status", `${label} · ${number(earned)} / ${number(marks(question).correct)} marks`));
+      const label = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated", excluded: "Out of syllabus" }[outcome];
+      heading.append(element("h3", "", `Question ${questionLabel(question)}`), element("span", "result-status", outcome === "excluded" ? `${label} · Excluded from scoring` : `${label} · ${number(earned)} / ${number(marks(question).correct)} marks`));
       card.append(heading);
       if (question.text.trim()) card.append(element("p", "question-text", question.text));
       addImages(card, question, `Question ${questionLabel(question)} and its original options`);
@@ -723,6 +791,8 @@
     Object.keys(answers).forEach((id) => delete answers[id]);
     reviewFlags.clear();
     reportReviewFlags.clear();
+    outOfSyllabus.clear();
+    reportOutOfSyllabus.clear();
     submittedAt = "";
     currentQuestionIndex = 0;
     currentQuestionInteraction = null;
@@ -758,10 +828,10 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   function downloadReport() {
-    const { counts, score, maximum, awardedMarks } = summarize(results);
-    const lines = [data.title, data.source || "", `Submitted: ${new Date(submittedAt).toLocaleString()}`, `Score: ${number(score)} / ${number(maximum)}`, `Correct: ${counts.correct} | Incorrect: ${counts.incorrect} | Unanswered: ${counts.unanswered} | Marks to all: ${counts.awarded} (${number(awardedMarks)} marks)${counts.blocked ? ` | Not evaluated: ${counts.blocked}` : ""}`, ""];
+    const { counts, score, maximum, percentage, awardedMarks } = summarize(results);
+    const lines = [data.title, data.source || "", `Submitted: ${new Date(submittedAt).toLocaleString()}`, `Percentage: ${percentageText(percentage)}`, `Score: ${number(score)} / ${number(maximum)} marks`, `Correct: ${counts.correct} | Incorrect: ${counts.incorrect} | Unanswered: ${counts.unanswered} | Marks to all: ${counts.awarded} (${number(awardedMarks)} marks)${counts.blocked ? ` | Not evaluated: ${counts.blocked}` : ""}${counts.excluded ? ` | Out of syllabus: ${counts.excluded}` : ""}`, ""];
     results.forEach(({ question, outcome, selected, earned, reason }) => {
-      lines.push(`Question ${questionLabel(question)}: ${outcome.toUpperCase()} (${number(earned)} / ${number(marks(question).correct)} marks)`, question.text);
+      lines.push(`Question ${questionLabel(question)}: ${outcome === "excluded" ? "OUT OF SYLLABUS (excluded from scoring)" : `${outcome.toUpperCase()} (${number(earned)} / ${number(marks(question).correct)} marks)`}`, question.text);
       imagesOf(question).forEach((part) => lines.push(`Original question image: ${part.src}${part.page ? ` (PDF page ${part.page})` : ""}`));
       lines.push(`Your answer: ${plainAnswer(question, selected)}`, `Correct answer: ${plainAnswer(question, question.correctAnswer, true)}`);
       if (reason) lines.push(reason);
@@ -778,8 +848,6 @@
     byId("quiz-title").textContent = data.title;
     for (const [id, value] of [["quiz-source", data.source], ["quiz-instructions", data.instructions]]) { byId(id).textContent = value || ""; byId(id).hidden = !value; }
     if (!data.questions.length) { byId("empty-state").hidden = false; byId("review-attempt").hidden = true; byId("review-attempt-wrap").hidden = true; return; }
-    const maximum = data.questions.reduce((sum, question) => sum + marks(question).correct, 0);
-    byId("quiz-meta").append(element("span", "meta-item", `${data.questions.length} questions · ${number(maximum)} marks`));
     byId("quiz-meta").hidden = false;
     byId("paper-details").hidden = false;
     setupStorage();

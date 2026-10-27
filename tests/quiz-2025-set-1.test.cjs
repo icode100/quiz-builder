@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
@@ -76,20 +77,20 @@ async function serverChecks(data) {
       submittedAt: '2026-10-22T00:00:00.000Z', updatedAt: '2026-10-22T00:00:00.000Z',
       answers, reviewFlags: ['CS-28', 'CS-65'], summary: { score: -999 }, results: [] };
     assert.equal((await request(route, attempt)).status, 200);
-    assert.match(await homeCard(), /Last score: 100 \/ 100/);
+    assert.match(await homeCard(), /Last score: 100%/);
     assert.match(await homeCard(), /<progress class="paper-score-bar" value="100" max="100"/);
     const saved = JSON.parse((await request(route)).body);
     same(saved.reviewFlags, attempt.reviewFlags, 'HTTP save round-trips review flags');
     assert.ok(!Object.hasOwn(saved, 'timer'), 'Practice timer never enters saved attempt');
     answers['CS-28'] = ['A', 'D'];
     assert.equal((await request(route, attempt)).status, 200);
-    assert.match(await homeCard(), /Last score: 99 \/ 100/, 'Single-correct MSQ still requires exact set');
+    assert.match(await homeCard(), /Last score: 99%/, 'Single-correct MSQ still requires exact set');
     answers['CS-28'] = ['D']; answers['CS-31'] = String(adjacent(-1.9, true));
     assert.equal((await request(route, attempt)).status, 200);
-    assert.match(await homeCard(), /Last score: 99 \/ 100/, 'Server rejects value immediately outside NAT boundary');
+    assert.match(await homeCard(), /Last score: 99%/, 'Server rejects value immediately outside NAT boundary');
     const allWrong = { ...attempt, answers: Object.fromEntries(KEYS.map(key => [key.id, wrong(key)])) };
     assert.equal((await request(route, allWrong)).status, 200);
-    assert.match(await homeCard(), /Last score: -15 \/ 100/);
+    assert.match(await homeCard(), /Last score: -15%/);
     assert.match(await homeCard(), /<progress class="paper-score-bar" value="0" max="100"/);
     const stale = { ...attempt, quizSignature: 'stale signature' };
     assert.equal((await request(route, stale)).status, 200);
@@ -113,7 +114,7 @@ async function serverChecks(data) {
   same(data.questions.map(q => q.id), KEYS.map(key => key.id), 'Independent original numbering/order');
   same(data.questions.reduce((counts, q) => ({ ...counts, [q.type]: (counts[q.type] || 0) + 1 }), {}), { mcq: 30, msq: 13, nat: 22 });
   assert.equal(data.questions.reduce((sum, q) => sum + q.marks, 0), 100);
-  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(sha256(path.join(FOLDER, name)), sha256(path.join(TEMPLATE, name)), `${name} matches shared runtime`);
+  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(normalizedText(path.join(FOLDER, name)), normalizedText(path.join(TEMPLATE, name)), `${name} matches shared runtime`);
   same(data.sourceSha256, FIXTURE.sourceSha256, 'Independent original source hashes');
   same(data.sourceDocuments.map(document => [document.filename, document.sha256, document.pages]), [
     ['2025-Set1.pdf', FIXTURE.sourceSha256['2025-Set1.pdf'], 64],

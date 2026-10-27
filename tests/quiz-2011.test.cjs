@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { load, editResponse, draftKey, attemptUrl, rejectFileDialogs, assertEditable } = require('./helpers/quiz-harness.cjs');
@@ -80,7 +81,7 @@ async function checkServer(data) {
       assert.equal((await request(url, attempt)).status, 200);
       const home = await request('/'); assert.equal(home.status, 200);
       const score = independentGrade(answers).reduce((sum, row) => sum + row.earned, 0);
-      assert(home.body.includes(`Last score: ${Number(score.toFixed(4))} / 100`), 'Home recomputes verified marks rather than stored summary/results');
+      assert(home.body.includes(`Last score: ${Number(score.toFixed(4))}%`), 'Home recomputes verified marks rather than stored summary/results');
       assert(!home.body.includes('Last score: 999'));
       return home.body;
     };
@@ -95,7 +96,7 @@ async function checkServer(data) {
       }
     }
     const home = await checkScore(Object.fromEntries(KEY.map(row => [row.id, wrong(row)])));
-    assert.match(home, /Last score: -32 \/ 100/);
+    assert.match(home, /Last score: -32%/);
     assert.match(home, /<progress class="paper-score-bar" value="0" max="100"/, 'Clamp only the negative-score bar');
     attempt.quizSignature = 'stale';
     assert.equal((await request(url, attempt)).status, 200);
@@ -125,7 +126,7 @@ async function checkServer(data) {
   for (const digest of Object.values(data.sourceSha256)) assert.match(digest, /^[a-f0-9]{64}$/);
   same(data.sourcePageCounts, { questionPaper: 17, answerKey: 2 });
   assert.equal(FIXTURE.paperPageCount, 17); assert.equal(FIXTURE.keyPageCount, 2);
-  for (const filename of ['quiz.js', 'theme.js', 'styles.css']) assert.equal(sha(path.join(FOLDER, filename)), sha(path.join(TEMPLATE, filename)), `${filename} inherits current shared behavior`);
+  for (const filename of ['quiz.js', 'theme.js', 'styles.css']) assert.equal(normalizedText(path.join(FOLDER, filename)), normalizedText(path.join(TEMPLATE, filename)), `${filename} inherits current shared behavior`);
   assert(!fs.readdirSync(FOLDER).some(filename => /\.pdf$/i.test(filename)), 'Do not duplicate the external originals');
   const html = fs.readFileSync(path.join(FOLDER, 'index.html'), 'utf8');
   assert.match(html, /id="quiz-home"[^>]*href="\/"/);

@@ -110,7 +110,7 @@ function createHarness(folder, options = {}) {
   source = source.replace(marker, `  window.test = {
     validate, grade, summarize,
     renderQuestions, renderReport, clearAttempt, restartAttempt,
-    save, numericValue, plainAnswer, answers, reviewFlags, checkLastAttempt,
+    save, numericValue, plainAnswer, answers, reviewFlags, outOfSyllabus, reportOutOfSyllabus, checkLastAttempt,
     setSubmitted: value => { submittedAt = value; }
   };
 ${marker}`);

@@ -14,7 +14,7 @@ const withCalculator = html => /<\/head\s*>/i.test(html) ? html.replace(/<\/head
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.txt': 'text/plain; charset=utf-8' };
 const inside = (parent, child) => { const relative = path.relative(parent, child); return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-const validReviewFlags = (attempt, ids) => !Object.hasOwn(attempt, 'reviewFlags') || (Array.isArray(attempt.reviewFlags) && new Set(attempt.reviewFlags).size === attempt.reviewFlags.length && attempt.reviewFlags.every(id => typeof id === 'string' && ids.has(id)));
+const validQuestionIds = (attempt, field, ids) => !Object.hasOwn(attempt, field) || (Array.isArray(attempt[field]) && new Set(attempt[field]).size === attempt[field].length && attempt[field].every(id => typeof id === 'string' && ids.has(id)));
 const escapeHtml = value => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const formatMarks = value => Number(value.toFixed(4)).toLocaleString('en-US', { maximumFractionDigits: 4 });
 
@@ -23,7 +23,8 @@ function scoreAttempt(attempt, data) {
   if (!object(data) || typeof data.id !== 'string' || !Array.isArray(data.questions) || !data.questions.length || attempt.version !== 1 || attempt.quizId !== data.id || attempt.quizSignature !== JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null })) invalid();
   for (const key of ['submittedAt', 'updatedAt']) if (typeof attempt[key] !== 'string' || !Number.isFinite(Date.parse(attempt[key]))) invalid();
   const ids = new Set(data.questions.map(question => question?.id));
-  if (ids.size !== data.questions.length || [...ids].some(id => typeof id !== 'string' || !id.trim()) || Object.keys(attempt.answers).some(id => !ids.has(id)) || !validReviewFlags(attempt, ids)) invalid();
+  if (ids.size !== data.questions.length || [...ids].some(id => typeof id !== 'string' || !id.trim()) || Object.keys(attempt.answers).some(id => !ids.has(id)) || !validQuestionIds(attempt, 'reviewFlags', ids) || !validQuestionIds(attempt, 'outOfSyllabus', ids)) invalid();
+  const outOfSyllabus = new Set(attempt.outOfSyllabus || []);
   let score = 0, maximum = 0;
   const verified = new Map();
   for (const question of data.questions) {
@@ -47,14 +48,16 @@ function scoreAttempt(attempt, data) {
     if (question.requiresCorrect !== undefined) {
       const prerequisite = verified.get(question.requiresCorrect);
       if (typeof question.requiresCorrect !== 'string' || !prerequisite || type !== 'mcq' || question.marksToAll || incorrectMarks !== 0 || (prerequisite.question.type || 'mcq') !== 'mcq' || prerequisite.question.marksToAll || prerequisite.question.requiresCorrect !== undefined) invalid();
-      eligible = prerequisite.correct;
+      eligible = outOfSyllabus.has(question.requiresCorrect) || prerequisite.correct;
     }
     verified.set(question.id, { question, correct: correct && eligible });
-    maximum += correctMarks;
-    score += !eligible ? 0 : question.marksToAll || correct ? correctMarks : answered ? incorrectMarks : 0;
+    if (!outOfSyllabus.has(question.id)) {
+      maximum += correctMarks;
+      score += !eligible ? 0 : question.marksToAll || correct ? correctMarks : answered ? incorrectMarks : 0;
+    }
   }
   if (!Number.isFinite(score) || !Number.isFinite(maximum)) invalid();
-  return { score, maximum };
+  return { score, maximum, percentage: maximum ? score / maximum * 100 : null };
 }
 
 function createServer({ root = __dirname, port = PORT } = {}) {
@@ -112,8 +115,8 @@ function createServer({ root = __dirname, port = PORT } = {}) {
         const html = await fsp.readFile(path.join(folder, 'index.html'), 'utf8');
         const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || name;
         const { attempted, result } = await lastAttempt(folder);
-        const scoreLabel = result ? `Last score: ${formatMarks(result.score)} / ${formatMarks(result.maximum)}` : 'Last score unavailable';
-        const score = `<span class="paper-score"${attempted ? '' : ' hidden'}><span class="paper-score-value">${scoreLabel}</span><progress class="paper-score-bar"${result ? ` value="${Math.max(0, Math.min(result.maximum, result.score))}" max="${result.maximum}" aria-label="Last score: ${formatMarks(result.score)} out of ${formatMarks(result.maximum)} marks"` : ' hidden'}></progress></span>`;
+        const scoreLabel = result ? result.percentage === null ? 'Percentage unavailable' : `Last score: ${formatMarks(result.percentage)}%` : 'Last score unavailable';
+        const score = `<span class="paper-score"${attempted ? '' : ' hidden'}><span class="paper-score-value">${scoreLabel}</span><progress class="paper-score-bar"${result && result.percentage !== null ? ` value="${Math.max(0, Math.min(100, result.percentage))}" max="100" aria-label="Last score: ${formatMarks(result.percentage)}%; ${formatMarks(result.score)} out of ${formatMarks(result.maximum)} marks"` : ' hidden'}></progress>${result ? `<span class="paper-score-marks">${formatMarks(result.score)} / ${formatMarks(result.maximum)} marks</span>` : ''}</span>`;
         const year = Number((title.match(/(?:^|\D)((?:19|20)\d{2})(?!\d)/) || name.match(/(?:^|\D)((?:19|20)\d{2})(?!\d)/))?.[1] || 0);
         links.push({ name, title, year, html: `<li data-attempted="${attempted}"><a class="question-card paper-card" href="/${encodeURIComponent(name)}/"><div class="paper-details"><span class="eyebrow">Question paper</span><h2>${escapeHtml(title)}</h2><span class="paper-status ${attempted ? 'attempted' : 'unattempted'}">${attempted ? 'Attempted before' : 'Not attempted'}</span></div>${score}<span class="paper-open">Open quiz <span aria-hidden="true">&rarr;</span></span></a></li>` });
       } catch { /* Ignore folders that are not quizzes. */ }
@@ -208,9 +211,10 @@ function createServer({ root = __dirname, port = PORT } = {}) {
         if ((req.headers.origin && req.headers.origin !== origin) || (req.headers['sec-fetch-site'] && req.headers['sec-fetch-site'] !== 'same-origin' && req.headers['sec-fetch-site'] !== 'none')) return reply(res, 403, 'Use the local quiz page to submit.');
         const attempt = await jsonBody(req);
         if (!object(attempt) || attempt.version !== 1 || typeof attempt.quizId !== 'string' || !attempt.quizId.trim() || attempt.quizId.length > 200 || !object(attempt.answers) || !object(attempt.summary) || !Array.isArray(attempt.results) || typeof attempt.submittedAt !== 'string' || !Number.isFinite(Date.parse(attempt.submittedAt)) || typeof attempt.updatedAt !== 'string' || !Number.isFinite(Date.parse(attempt.updatedAt))) return reply(res, 400, 'A completed quiz attempt is required.');
-        if (Object.hasOwn(attempt, 'reviewFlags')) {
+        if (Object.hasOwn(attempt, 'reviewFlags') || Object.hasOwn(attempt, 'outOfSyllabus')) {
           const data = await quizData(folder);
-          if (!Array.isArray(data?.questions) || !validReviewFlags(attempt, new Set(data.questions.map(question => question?.id)))) return reply(res, 400, 'Review flags must be unique question IDs from this quiz.');
+          const ids = new Set(Array.isArray(data?.questions) ? data.questions.map(question => question?.id) : []);
+          if (!Array.isArray(data?.questions) || !validQuestionIds(attempt, 'reviewFlags', ids) || !validQuestionIds(attempt, 'outOfSyllabus', ids)) return reply(res, 400, 'Review flags and out-of-syllabus questions must be unique question IDs from this quiz.');
         }
         if (resetting) return reply(res, 409, 'A reset is in progress. Try submitting again.');
         saving++;

@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
@@ -45,16 +46,16 @@ async function checkHome(data) {
     const attempt={version:1,quizId:data.id,quizSignature:JSON.stringify({questions:data.questions,scoring:data.scoring}),
       submittedAt:'2026-10-15T00:00:00.000Z',updatedAt:'2026-10-15T00:00:00.000Z',answers,summary:{score:999},results:[]};
     assert.equal((await request('/gate-cse-2009/attempt.json',attempt)).status,200);
-    assert.match(await readCard(),/Last score: 100 \/ 100/);
+    assert.match(await readCard(),/Last score: 100%/);
     answers['CS-57']='A'; answers['CS-59']=null;
     assert.equal((await request('/gate-cse-2009/attempt.json',attempt)).status,200);
-    assert.match(await readCard(),/Last score: 91\.3333 \/ 100/,'Actual paper gates both second answers');
+    assert.match(await readCard(),/Last score: 91\.3333%/,'Actual paper gates both second answers');
     answers['CS-57']='D';answers['CS-59']='C';answers['CS-58']='A';answers['CS-60']='A';
     assert.equal((await request('/gate-cse-2009/attempt.json',attempt)).status,200);
-    assert.match(await readCard(),/Last score: 96 \/ 100/,'Second wrong answers have no penalty');
+    assert.match(await readCard(),/Last score: 96%/,'Second wrong answers have no penalty');
     attempt.answers=Object.fromEntries(fixture.questions.map(row=>[`CS-${row.number}`,[...'ABCD'].find(x=>!row.answers.includes(x))]));
     assert.equal((await request('/gate-cse-2009/attempt.json',attempt)).status,200);
-    const negative=await readCard(); assert.match(negative,/Last score: -32 \/ 100/);assert.match(negative,/<progress class="paper-score-bar" value="0" max="100"/);
+    const negative=await readCard(); assert.match(negative,/Last score: -32%/);assert.match(negative,/<progress class="paper-score-bar" value="0" max="100"/);
   } finally {
     await new Promise(resolve=>server.close(resolve));
     assert.equal(path.dirname(path.resolve(temp)),path.resolve(os.tmpdir()));
@@ -90,7 +91,7 @@ async function checkHome(data) {
     }
   }
   for(const [filename,hash] of Object.entries(fixture.sourceSha256)) assert.equal(sha(path.join(folder,filename)),hash,filename);
-  for(const name of ['quiz.js','styles.css','theme.js']) assert.equal(sha(path.join(folder,name)),sha(path.resolve(__dirname,'../_template',name)));
+  for(const name of ['quiz.js','styles.css','theme.js']) assert.equal(normalizedText(path.join(folder,name)),normalizedText(path.resolve(__dirname,'../_template',name)));
   assert(!fs.existsSync(path.join(folder,'attempt.json')), 'Development must not create a real attempt');
   close(t.summarize(t.grade()).maximum,100); close(t.summarize(t.grade()).score,0);
   for(const row of fixture.questions) t.answers[`CS-${row.number}`]=row.answers[0];

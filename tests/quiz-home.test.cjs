@@ -28,7 +28,7 @@ function harness(states = ['true', 'false', 'false'], options = {}) {
     const card = new Element(); card.dataset.attempted = state;
     card.badge = new Element(); card.badge.textContent = state === 'true' ? 'Attempted before' : 'Not attempted';
     card.badge.className = state === 'true' ? 'paper-status attempted' : 'paper-status unattempted';
-    card.score = new Element(); card.score.hidden = state !== 'true'; card.score.textContent = '42 / 100';
+    card.score = new Element(); card.score.hidden = state !== 'true'; card.score.textContent = 'Last score: 42% 42 / 100 marks';
     return card;
   });
   ids['home-papers'].children = cards;

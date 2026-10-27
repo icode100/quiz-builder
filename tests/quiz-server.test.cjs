@@ -76,6 +76,7 @@ async function run() {
       assert.match(card, new RegExp(`class="paper-status ${attempted ? 'attempted' : 'unattempted'}"`));
       assert.match(card, /class="paper-details"/);
       assert.match(card, attempted ? /class="paper-score">/ : /class="paper-score" hidden>/);
+      if (card.includes('class="paper-score-marks"')) assert.match(card, /<span class="paper-score-value">[^<]+<\/span><progress class="paper-score-bar"[^>]*><\/progress><span class="paper-score-marks">/, 'Home cards place the percentage first, its progress bar immediately below, then secondary marks');
       return card;
     }
     assert.deepEqual(JSON.parse((await request('/health')).body), { server: MARKER });
@@ -94,7 +95,7 @@ async function run() {
     const unavailable = checkStatus(landing.body, 'gate-zero', true);
     assert.match(unavailable, /Last score unavailable/);
     assert.match(unavailable, /class="paper-score-bar" hidden/);
-    assert.match(checkStatus(landing.body, 'gate-string-zero', true), /Last score: 50 \/ 100/);
+    assert.match(checkStatus(landing.body, 'gate-string-zero', true), /Last score: 50%/);
     checkStatus(landing.body, 'gate-malformed', false);
     assert.equal(await fs.readFile(path.join(malformedQuiz, 'attempt.json'), 'utf8'), '{broken JSON');
     assert.doesNotMatch(landing.body, /<script[^>]+src="[^"]*quiz(?:-data)?\.js"/);
@@ -161,19 +162,42 @@ async function run() {
     assert.equal((await post(attempt)).status, 200);
     assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), attempt);
     let card = checkStatus((await request('/')).body, 'gate-test', true);
-    assert.match(card, /Last score: 50 \/ 100/);
-    assert.match(card, /<progress class="paper-score-bar" value="50" max="100" aria-label="Last score: 50 out of 100 marks">/);
+    assert.match(card, /Last score: 50%/);
+    assert.match(card, /class="paper-score-marks">50 \/ 100 marks/);
+    assert.match(card, /<progress class="paper-score-bar" value="50" max="100" aria-label="Last score: 50%; 50 out of 100 marks">/);
     assert.doesNotMatch(card, /999/);
     for (const reviewFlags of [['GA-1', 'CS-2'], []]) {
       const flaggedAttempt = { ...attempt, reviewFlags };
       assert.equal((await post(flaggedAttempt)).status, 200);
       assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), flaggedAttempt, 'Submitted flags round-trip without changing the version-1 envelope or signature');
-      assert.match(checkStatus((await request('/')).body, 'gate-test', true), /Last score: 50 \/ 100/, 'Flags on answered or unanswered questions never affect scoring');
+      assert.match(checkStatus((await request('/')).body, 'gate-test', true), /Last score: 50%/, 'Flags on answered or unanswered questions never affect scoring');
     }
     const invalidReviewFlags = [null, 'GA-1', {}, [null], [1], [''], ['unknown'], ['GA-1', 'GA-1'], ['GA-1', 'unknown']];
     const beforeFlagRejections = await attemptSnapshot();
     for (const reviewFlags of invalidReviewFlags) assert.equal((await post({ ...attempt, reviewFlags })).status, 400, `Reject invalid review flags: ${JSON.stringify(reviewFlags)}`);
     assert.deepEqual(await attemptSnapshot(), beforeFlagRejections, 'Rejected flags leave every saved attempt untouched');
+    for (const outOfSyllabus of invalidReviewFlags) assert.equal((await post({ ...attempt, outOfSyllabus })).status, 400, `Reject invalid out-of-syllabus IDs: ${JSON.stringify(outOfSyllabus)}`);
+    assert.deepEqual(await attemptSnapshot(), beforeFlagRejections, 'Rejected exclusions leave every saved attempt untouched');
+    for (const [outOfSyllabus, percentage, marks] of [
+      [[], 50, '50 / 100'],
+      [['GA-1'], 33.3333, '25 / 75'],
+      [['CS-3'], 33.3333, '25 / 75'],
+      [['GA-1', 'CS-3'], 0, '0 / 50']
+    ]) {
+      const excludedAttempt = { ...attempt, outOfSyllabus, reviewFlags: ['GA-1', 'CS-3'], summary: { score: 999, maximum: 1, percentage: 999 } };
+      assert.equal((await post(excludedAttempt)).status, 200);
+      assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), excludedAttempt, 'Exclusions round-trip without changing answers, review flags, identity or signature');
+      const excludedCard = checkStatus((await request('/')).body, 'gate-test', true);
+      assert(excludedCard.includes(`Last score: ${percentage}%`), excludedCard);
+      assert(excludedCard.includes(`class="paper-score-marks">${marks} marks`), excludedCard);
+      assert.match(excludedCard, /class="paper-score-bar" value="[^"]+" max="100"/);
+      assert.doesNotMatch(excludedCard, /999/);
+    }
+    assert.equal((await post({ ...attempt, outOfSyllabus: key.questions.map(question => question.id) })).status, 200);
+    const allExcluded = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(allExcluded, /Percentage unavailable/);
+    assert.match(allExcluded, /class="paper-score-marks">0 \/ 0 marks/);
+    assert.match(allExcluded, /class="paper-score-bar" hidden/);
     assert.equal((await post(attempt)).status, 200, 'Legacy submissions without flags remain compatible');
     assert.deepEqual(JSON.parse((await request('/gate-test/attempt.json')).body), attempt);
     const scoreCases = [
@@ -184,13 +208,14 @@ async function run() {
     ];
     for (const [answers, expected] of scoreCases) {
       assert.equal((await post({ ...attempt, answers })).status, 200);
-      assert.match(checkStatus((await request('/')).body, 'gate-test', true), new RegExp(`Last score: ${String(expected).replace('.', '\\.')} \\/ 100`));
+      assert.match(checkStatus((await request('/')).body, 'gate-test', true), new RegExp(`Last score: ${String(expected).replace('.', '\\.')}%`));
     }
     for (const invalid of [
       { quizId: 'another-paper' }, { quizSignature: 'stale key' }, { version: 2 }, { submittedAt: 'invalid' }, { updatedAt: null },
       { answers: { unknown: null, 'GA-1': 'B' } }, { answers: { 'GA-1': 'unknown' } },
       { answers: { 'CS-2': [] } }, { answers: { 'CS-2': ['A', 'A'] } }, { answers: { 'CS-2': ['A', 'unknown'] } },
       ...invalidReviewFlags.map(reviewFlags => ({ reviewFlags })),
+      ...invalidReviewFlags.map(outOfSyllabus => ({ outOfSyllabus })),
       ...['-', ' ', '1e1', 'NaN', 'Infinity', '0x0', '1/2', '1,2'].map(answer => ({ answers: { 'CS-1': answer } }))
     ]) {
       await fs.writeFile(path.join(quiz, 'attempt.json'), JSON.stringify({ ...attempt, ...invalid }));
@@ -205,8 +230,36 @@ async function run() {
     const negativeAttempt = { ...attempt, quizSignature: JSON.stringify({ questions: withoutAward.questions, scoring: null }), answers: { 'GA-1': 'A' } };
     assert.equal((await post(negativeAttempt)).status, 200);
     card = checkStatus((await request('/')).body, 'gate-test', true);
-    assert.match(card, /Last score: -8\.3333 \/ 100/);
-    assert.match(card, /class="paper-score-bar" value="0" max="100" aria-label="Last score: -8\.3333 out of 100 marks"/);
+    assert.match(card, /Last score: -8\.3333%/);
+    assert.match(card, /class="paper-score-marks">-8\.3333 \/ 100 marks/);
+    assert.match(card, /class="paper-score-bar" value="0" max="100" aria-label="Last score: -8\.3333%; -8\.3333 out of 100 marks"/);
+    assert.equal((await post({ ...negativeAttempt, outOfSyllabus: ['CS-1'] })).status, 200);
+    card = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(card, /Last score: -11\.1111%/);
+    assert.match(card, /class="paper-score-marks">-8\.3333 \/ 75 marks/);
+    assert.match(card, /class="paper-score-bar" value="0" max="100"/);
+    const weightedKey = structuredClone(key);
+    weightedKey.questions[0].marks = 50;
+    weightedKey.questions[1].marks = 50;
+    await fs.writeFile(path.join(quiz, 'quiz-data.js'), `window.QUIZ_DATA = ${JSON.stringify(weightedKey)};`);
+    assert.equal((await post({ ...attempt, quizSignature: JSON.stringify({ questions: weightedKey.questions, scoring: null }) })).status, 200);
+    card = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(card, /Last score: 50%/);
+    assert.match(card, /class="paper-score-marks">75 \/ 150 marks/);
+    assert.match(card, /class="paper-score-bar" value="50" max="100"/);
+    const linkedKey = structuredClone(withoutAward);
+    linkedKey.questions[3].requiresCorrect = 'GA-1';
+    await fs.writeFile(path.join(quiz, 'quiz-data.js'), `window.QUIZ_DATA = ${JSON.stringify(linkedKey)};`);
+    const linkedAttempt = { ...attempt, quizSignature: JSON.stringify({ questions: linkedKey.questions, scoring: null }), answers: { 'GA-1': 'A', 'CS-3': 'B' }, outOfSyllabus: ['GA-1'] };
+    assert.equal((await post(linkedAttempt)).status, 200);
+    card = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(card, /Last score: 33\.3333%/, 'An excluded prerequisite no longer gates the included dependent');
+    assert.match(card, /class="paper-score-marks">25 \/ 75 marks/);
+    assert.equal((await post({ ...linkedAttempt, outOfSyllabus: ['CS-3'] })).status, 200);
+    card = checkStatus((await request('/')).body, 'gate-test', true);
+    assert.match(card, /Last score: -11\.1111%/, 'An excluded dependent contributes neither earned nor possible marks');
+    await fs.writeFile(path.join(quiz, 'attempt.json'), JSON.stringify({ ...linkedAttempt, answers: { 'GA-1': 'unknown', 'CS-3': 'B' } }));
+    assert.match(checkStatus((await request('/')).body, 'gate-test', true), /Last score unavailable/, 'Excluded responses must still have valid formats');
     await fs.writeFile(path.join(quiz, 'quiz-data.js'), keySource);
     const replacement = { ...attempt, answers: { 'GA-1': 'D' } };
     assert.equal((await post(replacement)).status, 200);
@@ -271,7 +324,7 @@ async function run() {
     } catch (error) { if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error; }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(quiz, 'attempt.json'), 'utf8')), replacement);
     assert.equal((await fs.readdir(quiz)).filter(name => name.startsWith('.attempt-')).length, 0);
-    console.log('Quiz server tests passed: newest-year-first discovery and natural ties, verified card scores/bars, attempt badges/toggles/reset controls, reset isolation and guards, themed assets, submitted attempts and review flags, validation, and paths.');
+    console.log('Quiz server tests passed: ordering/discovery, verified percentage/marks/bars, exclusions including linked/MTA/negative/all-excluded cases, legacy attempts, strict flag validation, badges/reset isolation, themed assets, atomic submissions, and paths.');
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));

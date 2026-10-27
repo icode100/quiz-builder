@@ -58,16 +58,16 @@ async function homeScore(data) {
       answers, summary: { score: -999 }, results: [] };
     assert.equal((await request(url, attempt)).status, 200);
     let home = await request('/'); assert.equal(home.status, 200);
-    assert.match(home.body, /Last score: 100 \/ 100/, 'Server recomputes the independent perfect key');
+    assert.match(home.body, /Last score: 100%/, 'Server recomputes the independent perfect key');
     assert(!home.body.includes('-999'), 'Stored summary is untrusted');
     answers['CS-39'] = '0.4601';
     assert.equal((await request(url, attempt)).status, 200);
-    assert.match((await request('/')).body, /Last score: 98 \/ 100/, 'Server enforces the inclusive NAT boundary');
+    assert.match((await request('/')).body, /Last score: 98%/, 'Server enforces the inclusive NAT boundary');
     attempt.answers = Object.fromEntries(KEY.map(row => [row.id, wrong(row)]));
     assert.equal((await request(url, attempt)).status, 200);
     home = await request('/');
     const score = Number(KEY.reduce((sum, row) => sum + row.incorrectMarks, 0).toFixed(4));
-    assert(home.body.includes(`Last score: ${score} / 100`));
+    assert(home.body.includes(`Last score: ${score}%`));
     assert.match(home.body, /<progress class="paper-score-bar" value="0" max="100"/, 'Negative labels retain their score while the bar clamps to zero');
   } finally {
     if (listening) await new Promise(resolve => server.close(resolve));

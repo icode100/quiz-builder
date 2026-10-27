@@ -1,4 +1,5 @@
 const fs = require('fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const vm = require('vm');
 const assert = require('assert');
 
@@ -292,7 +293,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert.equal(new Set(data.questions.map(q => q.id)).size, 65);
   assert.equal(data.questions.reduce((sum, q) => sum + q.marks, 0), 100);
   for (const name of ['quiz.js', 'theme.js', 'styles.css']) {
-    assert.equal(sha256(path.join(FOLDER, name)), sha256(path.join(TEMPLATE, name)), `${name} matches shared runtime`);
+    assert.equal(normalizedText(path.join(FOLDER, name)), normalizedText(path.join(TEMPLATE, name)), `${name} matches shared runtime`);
   }
   for (const [name, hash] of [
     [data.questionPaper, '413F505A27B48DBA60863120740AAA231AC39909B267938F75D24FEE9F8AF3EA'],
@@ -330,6 +331,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   }
   const html = fs.readFileSync(path.join(FOLDER, 'index.html'), 'utf8');
   for (const match of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
+    if (match[1] === '/') continue;
     assert(!/^[a-z]+:/i.test(match[1]) && !path.isAbsolute(match[1]), 'HTML resources are local');
     assert(fs.existsSync(path.join(FOLDER, match[1])), `Missing ${match[1]}`);
   }
@@ -451,7 +453,7 @@ function allText(node) { return [node.textContent, ...node.children.map(allText)
   assert(!restored.ids['review-attempt'].disabled, 'Saving non-null responses enables Review');
   const submission = restored.server.get(attemptUrl(restored));
   same([...submission.reviewFlags].sort(), [mcq.id, nat.id, 'GA-2'].sort(), 'Submission retains its report review markers');
-  assert.deepStrictEqual(Object.keys(submission).sort(), ['answers', 'quizId', 'quizSignature', 'quizTitle', 'results', 'reviewFlags', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Version 1 envelope includes report review markers');
+  assert.deepStrictEqual(Object.keys(submission).sort(), ['answers', 'outOfSyllabus', 'quizId', 'quizSignature', 'quizTitle', 'results', 'reviewFlags', 'submittedAt', 'summary', 'updatedAt', 'version'].sort(), 'Version 1 envelope includes report review markers');
   assert(!Object.hasOwn(submission.answers, 'reviewFlags'));
   assert(submission.results.every(row => !Object.hasOwn(row, 'reviewFlags')), 'Per-question stored results omit draft review flags');
   assert.equal(submission.quizId, data.id); assert.equal(submission.version, 1);

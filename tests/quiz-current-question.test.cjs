@@ -107,7 +107,7 @@ function visibleQuestion(h, index) {
     assert.ok(h.document.getElementById('question-card-5').focused);
     assert.ok(h.document.getElementById('question-card-5').getBoundingClientRect().top > h.ids['quiz-timer'].getBoundingClientRect().bottom);
     assert.equal(harness.postRequests(h).length, 0);
-    assert.equal(h.storage.size, 0, 'Navigation never creates a browser draft');
+    assert.equal(JSON.parse(h.storage.get(harness.draftKey(h))).currentQuestionId, h.data.questions[5].id, 'Navigation caches its location');
     assert.equal(h.ids['question-nav'].querySelectorAll('#nav-current-legend').length, 1);
     assert.equal(fs.readFileSync(path.join(folder, 'quiz.js'), 'utf8'), fs.readFileSync('_template/quiz.js', 'utf8'));
     const css = fs.readFileSync(path.join(folder, 'styles.css'), 'utf8');
@@ -176,9 +176,11 @@ function visibleQuestion(h, index) {
   assert.equal(h.storage.get(harness.draftKey(h)), draft, 'Review/current tracking leaves the draft unchanged');
   assert.equal(JSON.stringify({ questions: h.data.questions, scoring: h.data.scoring ?? null }), originalSignature);
   assert.equal(harness.postRequests(h).length, 1, 'Only the explicit Submit writes an attempt');
-  assert.ok(!draft.includes('currentQuestion'), 'Current location is not persisted in the draft');
+  assert.equal(JSON.parse(draft).currentQuestionId, h.data.questions[4].id, 'Current practice location is persisted in the draft');
 
-  const legacy = JSON.parse(draft); delete legacy.reviewFlags; delete legacy.timer;
+  const resumed = await load('gate-cse-2018', { storage: h.storage });
+  current(resumed, 4); visibleQuestion(resumed, 4);
+  const legacy = JSON.parse(draft); delete legacy.reviewFlags; delete legacy.timer; delete legacy.currentQuestionId;
   const restored = await load('gate-cse-2018', { storage: [[harness.draftKey(h), JSON.stringify(legacy)]] });
   current(restored, 0); visibleQuestion(restored, 0);
   assert.deepEqual(Object.keys(restored.t.answers), [h.data.questions[1].id]);

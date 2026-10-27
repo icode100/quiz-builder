@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
@@ -55,16 +56,16 @@ async function checkHome(data) {
     assert.equal((await request('/gate-cse-2007/attempt.json')).status, 404);
     const attempt = { version: 1, quizId: data.id, quizSignature: signature(data), submittedAt: '2026-10-17T00:00:00.000Z', updatedAt: '2026-10-17T00:00:00.000Z', answers: Object.fromEntries(key.map(row => [row.id, correct(row)])), summary: { score: 999 }, results: [] };
     const save = async () => assert.equal((await request('/gate-cse-2007/attempt.json', attempt)).status, 200);
-    await save(); assert.match(await readCard(), /Last score: 150 \/ 150/);
+    await save(); assert.match(await readCard(), /Last score: 100%/);
     for (const number of linkedSeconds) attempt.answers[`CS-${number - 1}`] = wrong(key[number - 2]);
-    await save(); assert.match(await readCard(), /Last score: 127\.5 \/ 150/, 'Server gates all five dependent answers and ignores forged totals');
+    await save(); assert.match(await readCard(), /Last score: 85%/, 'Server gates all five dependent answers and ignores forged totals');
     attempt.answers = Object.fromEntries(key.map(row => [row.id, correct(row)]));
     for (const number of linkedSeconds) attempt.answers[`CS-${number}`] = wrong(key[number - 1]);
-    await save(); assert.match(await readCard(), /Last score: 140 \/ 150/, 'Wrong linked second answers have zero penalty');
+    await save(); assert.match(await readCard(), /Last score: 93\.3333%/, 'Wrong linked second answers have zero penalty');
     attempt.answers = Object.fromEntries(key.map(row => [row.id, wrong(row)]));
     await save(); const negative = await readCard();
-    assert.match(negative, /Last score: -35 \/ 150/);
-    assert.match(negative, /<progress class="paper-score-bar" value="0" max="150"/, 'Clamp only the visual negative score');
+    assert.match(negative, /Last score: -23\.3333%/);
+    assert.match(negative, /<progress class="paper-score-bar" value="0" max="100"/, 'Clamp only the visual negative score');
     attempt.quizSignature = 'stale'; await fsp.writeFile(path.join(quiz, 'attempt.json'), JSON.stringify(attempt));
     assert.match(await readCard(), /Last score unavailable/);
     attempt.quizSignature = signature(data); attempt.answers = Object.fromEntries(key.map(row => [row.id, null]));
@@ -86,7 +87,7 @@ async function checkHome(data) {
   for (const [name, hash] of Object.entries(fixture.sourceSha256)) {
     assert.equal(path.basename(name), name); assert.match(hash, /^[a-f0-9]{64}$/);
   }
-  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(sha(path.join(folder, name)), sha(path.join(root, '_template', name)));
+  for (const name of ['quiz.js', 'styles.css', 'theme.js']) assert.equal(normalizedText(path.join(folder, name)), normalizedText(path.join(root, '_template', name)));
   const imageNames = new Set(); let imageCount = 0;
   for (const [i, q] of data.questions.entries()) {
     const expected = key[i];
@@ -120,6 +121,7 @@ async function checkHome(data) {
   assert.equal(fs.readdirSync(path.join(folder, 'assets')).filter(name => /\.png$/i.test(name)).length, imageNames.size, 'Every crop is used');
   const html = fs.readFileSync(path.join(folder, 'index.html'), 'utf8');
   for (const match of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
+    if (match[1] === '/') continue;
     assert(!/^[a-z]+:/i.test(match[1]) && !path.isAbsolute(match[1])); assert(fs.existsSync(path.join(folder, match[1])));
   }
   close(t.summarize(t.grade()).maximum, 150); close(t.summarize(t.grade()).score, 0);

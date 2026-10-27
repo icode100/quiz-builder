@@ -100,6 +100,7 @@ function createHarness(folder, options = {}) {
     }, fetch, console, Blob, URL, setTimeout() {}
   };
   vm.createContext(ctx); vm.runInContext(fs.readFileSync(folder + '/quiz-data.js', 'utf8'), ctx);
+  if (options.data) ctx.window.QUIZ_DATA = JSON.parse(JSON.stringify(options.data));
   let source = fs.readFileSync(folder + '/quiz.js', 'utf8').replace(/\r\n/g, '\n');
   for (const api of ['showSaveFilePicker', 'showOpenFilePicker', 'requestPermission', 'QUIZ_FILE_STORE']) {
     assert(!source.includes(api), `Browser-cache attempts must never use ${api}`);
@@ -110,7 +111,8 @@ function createHarness(folder, options = {}) {
   source = source.replace(marker, `  window.test = {
     validate, grade, summarize,
     renderQuestions, renderReport, clearAttempt, restartAttempt,
-    save, numericValue, plainAnswer, answers, reviewFlags,
+    save, numericValue, plainAnswer, answers, reviewFlags, outOfSyllabus, reportOutOfSyllabus,
+    attemptSnapshot,
     setSubmitted: value => { submittedAt = value; }
   };
 ${marker}`);

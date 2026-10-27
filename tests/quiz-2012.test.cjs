@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const normalizedText = filename => fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n');
 const path = require('node:path');
 const vm = require('node:vm');
 const crypto = require('node:crypto');
@@ -101,15 +102,15 @@ async function homeIntegration(data) {
     const route = '/gate-cse-2012/attempt.json';
     const perfect = Object.fromEntries(KEY.map(row => [row.id, correct(row)]));
     assert.equal((await request(route, record(perfect))).status, 200);
-    let item = await readCard(); assert.match(item, /Last score: 100 \/ 100/); assert.match(item, /<progress class="paper-score-bar" value="100" max="100"/); assert(!item.includes('9999'));
+    let item = await readCard(); assert.match(item, /Last score: 100%/); assert.match(item, /<progress class="paper-score-bar" value="100" max="100"/); assert(!item.includes('9999'));
     const blank = record({}); assert.equal((await request(route, blank)).status, 200);
     item = await readCard(); assert.match(item, /data-attempted="false"/); assert(!item.includes('Last score: 10'), 'A blank award-only submission remains unsolved');
     const mixed = { 'CS-52': wrong(KEY.find(row => row.id === 'CS-52')), 'CS-53': correct(KEY.find(row => row.id === 'CS-53')), 'CS-54': correct(KEY.find(row => row.id === 'CS-54')), 'CS-55': correct(KEY.find(row => row.id === 'CS-55')) };
     assert.equal((await request(route, record(mixed))).status, 200);
-    const label = Number(expected(mixed).score.toFixed(4)); assert((await readCard()).includes(`Last score: ${label} / 100`), 'Server applies actual MTA and linked dependencies');
+    const label = Number(expected(mixed).score.toFixed(4)); assert((await readCard()).includes(`Last score: ${label}%`), 'Server applies actual MTA and linked dependencies');
     const allWrong = Object.fromEntries(KEY.map(row => [row.id, wrong(row)]));
     assert.equal((await request(route, record(allWrong))).status, 200);
-    item = await readCard(); assert(item.includes(`Last score: ${Number((-56 / 3).toFixed(4))} / 100`));
+    item = await readCard(); assert(item.includes(`Last score: ${Number((-56 / 3).toFixed(4))}%`));
     assert.match(item, /<progress class="paper-score-bar" value="0" max="100"/, 'Only the progress bar clamps negative scores');
     const malformed = record({ 'CS-53': 'unknown' }); assert.equal((await request(route, malformed)).status, 200);
     assert.match(await readCard(), /Last score unavailable/, 'Even blocked responses require validation');
@@ -131,7 +132,7 @@ async function homeIntegration(data) {
   same(data.questions.map(q => q.id), [...Array.from({ length: 55 }, (_, i) => `CS-${i + 1}`), ...Array.from({ length: 10 }, (_, i) => `GA-${i + 56}`)], 'Original CS then GA paper order');
   assert.equal(new Set(data.questions.map(q => q.id)).size, 65); assert.equal(data.questions.reduce((sum, q) => sum + q.marks, 0), 100);
   t.validate(); assertEditable(h);
-  for (const name of ['quiz.js', 'theme.js', 'styles.css']) assert.equal(sha256(path.join(FOLDER, name)), sha256(path.join(TEMPLATE, name)), `${name} inherits current shared runtime`);
+  for (const name of ['quiz.js', 'theme.js', 'styles.css']) assert.equal(normalizedText(path.join(FOLDER, name)), normalizedText(path.join(TEMPLATE, name)), `${name} inherits current shared runtime`);
   same(data.sourceSha256, FIXTURE.sourceSha256, 'Original source hashes agree with independently read key fixture');
   same(data.sourcePageCounts, { questionPaper: FIXTURE.paperPageCount, answerKey: FIXTURE.keyPageCount });
   assert.equal(data.questionPaper, 'GATE2012.pdf'); assert.equal(data.answerKey, 'Key_CS_2012.pdf'); assert.equal(data.cropDpi, 240);
