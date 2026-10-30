@@ -12,6 +12,12 @@ Click the calculator icon at the bottom right of the quiz or home page to open t
 
 The calculator is available whenever the quiz server runs, also at [http://127.0.0.1:8765/_calculator/](http://127.0.0.1:8765/_calculator/). Its files live once in `_calculator/`; the server adds the launcher to quiz pages, including future quizzes, without copying or changing their files. The calculator itself loads on first opening, uses no extra process or package, follows the page theme, and stays out of printed reports. It never changes quiz responses, timer state, browser drafts, or saved submissions.
 
+Click the **Rough work** pen icon in any quiz to open a drawing notebook beside the test. Choose **Pen**, **Highlighter**, or **Eraser**, a color and stroke width, then draw with a mouse, trackpad, touch, or stylus. Choose **Blank**, **Dotted**, **Ruled**, or **Grid** paper; each question remembers its paper choice. **Undo**, **Redo**, and **Clear page** apply to the current question's ink; Clear page can be undone and keeps the paper style. Ctrl/Cmd+Z undoes, and Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z redoes while the notebook is focused.
+
+Each question has its own rough-work page. Completed strokes save automatically in this browser and restore after reopening. Pages remain through Submit, Clear answers, Attempt again, and saved Review; use Clear page to remove the current page's ink. Notes are separate from quiz responses and scoring, and browser-data removal can erase them. If saving fails, keep the tab open; the notebook shows its own warning without replacing quiz warnings.
+
+**Question map** in the notebook header, the pen button, or **Escape** while the panel is focused returns to the map. Previous/Next stay available; on small screens the workspace sits below the test. Notebook controls follow the current theme, with white drawing paper in both modes. It is also available in reports and saved Review, closes on refresh, and stays out of printed quiz reports. External screen annotation tools remain usable, but their own marks are not captured.
+
 The home page lists papers by year, newest first, and automatically places new quizzes in order. Sets within a year stay in natural order (Set 1, Set 2, Set 10). Cards show green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified percentage first, its percentage bar immediately below, then earned/eligible marks beneath the bar. Scores are recomputed from saved responses, syllabus exclusions, and the answer key; stale or invalid submissions show **Last score unavailable**. Negative percentages and marks remain visible, with an empty bar. If every question is excluded, the percentage is unavailable and marks are 0/0.
 
 Turn on the **Unsolved only** switch to hide attempted papers. **Reset saved attempts** asks for confirmation and removes all saved submissions, marking papers unsolved and hiding their scores; unfinished browser drafts remain intact.
@@ -127,5 +133,7 @@ Timer and shared-interface checks: `node tests/quiz-timer.test.cjs` and `node te
 Syllabus exclusions, percentage scoring, and last-question restoration: `node tests/quiz-syllabus.test.cjs` and `node tests/quiz-server.test.cjs`.
 
 Report-map and saved-review-flag checks: `node tests/quiz-report-map.test.cjs`. Current-question map checks: `node tests/quiz-current-question.test.cjs`.
+
+Rough-work checks: `node tests/rough-work-engine.test.cjs`, `node tests/rough-work-notebook.test.cjs`, and `node tests/quiz-rough-work.test.cjs`; tests use simulated drawing/storage and disposable quiz state.
 
 Calculator checks: `node tests/calculator-engine.test.cjs`, `node tests/calculator-ui.test.cjs`, `node tests/calculator-launcher.test.cjs`, and `node tests/quiz-calculator.test.cjs`; the HTTP tests use disposable quiz folders.

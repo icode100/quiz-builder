@@ -7,6 +7,8 @@
   <script src="theme.js"></script>
   <link rel="stylesheet" href="styles.css">
   <script src="quiz-data.js" defer></script>
+  <script src="rough-work-engine.js" defer></script>
+  <script src="rough-work.js" defer></script>
   <script src="quiz.js" defer></script>
 </head>
 <body>
@@ -107,6 +109,31 @@
     </section>
     <noscript><p>Enable JavaScript in your browser to attempt and score this quiz.</p></noscript>
   </main>
+  <aside id="rough-work-panel" class="rough-work-panel" aria-labelledby="rough-work-title" hidden>
+    <div class="rough-work-header">
+      <h2 id="rough-work-title">Rough work</h2>
+      <button id="rough-work-close" class="button button-secondary rough-work-close" type="button" aria-label="Close rough work and show question map" title="Close rough work and show question map">Question map <span aria-hidden="true">×</span></button>
+    </div>
+    <p id="rough-page-label" class="rough-page-label"></p>
+    <div class="rough-work-tools" role="group" aria-label="Drawing tools">
+      <div class="rough-tool-group" role="group" aria-label="Ink tool">
+        <button id="rough-tool-pen" type="button" aria-pressed="true" title="Draw with a pen">Pen</button>
+        <button id="rough-tool-highlighter" type="button" aria-pressed="false" title="Draw with a translucent highlighter">Highlight</button>
+        <button id="rough-tool-eraser" type="button" aria-pressed="false" title="Erase ink">Eraser</button>
+      </div>
+      <label>Color <select id="rough-work-color" aria-label="Ink color"><option value="#17233b">Black</option><option value="#4169e1">Blue</option><option value="#dc2626">Red</option><option value="#15803d">Green</option><option value="#f59e0b">Amber</option></select></label>
+      <label>Width <select id="rough-work-width" aria-label="Stroke width"><option value="2">Fine</option><option value="4" selected>Medium</option><option value="8">Bold</option><option value="16">Wide</option></select></label>
+      <label>Paper <select id="rough-work-paper" aria-label="Paper style"><option value="blank">Blank</option><option value="dotted">Dotted</option><option value="ruled">Ruled</option><option value="grid">Grid</option></select></label>
+      <div class="rough-tool-group" role="group" aria-label="Page history">
+        <button id="rough-undo" type="button" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button>
+        <button id="rough-redo" type="button" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>Redo</button>
+        <button id="rough-clear" type="button" title="Clear this question's page (can be undone)" disabled>Clear page</button>
+      </div>
+    </div>
+    <p id="rough-work-help" class="rough-work-help">Draw with a mouse, touch or stylus. Each question has its own page.</p>
+    <div id="rough-work-surface" class="rough-work-surface" role="region" aria-label="Rough-work notebook" aria-describedby="rough-work-help" tabindex="0"><canvas id="rough-work-canvas" class="rough-work-canvas" width="1000" height="1250" tabindex="0" aria-label="Rough-work drawing page" aria-describedby="rough-work-help">Drawing surface for this question’s rough work.</canvas></div>
+    <p id="rough-work-status" class="rough-work-status" role="status" aria-live="polite"></p>
+  </aside>
   <aside id="question-nav" class="question-nav" aria-labelledby="nav-title" hidden>
     <h2 id="nav-title">Question map</h2>
     <p id="nav-progress" class="nav-progress" role="status" aria-live="polite"></p>
@@ -125,5 +152,8 @@
     <nav id="nav-groups" class="nav-groups" aria-label="Jump to a question"></nav>
   </aside>
   </div>
+  <button id="rough-work-toggle" class="rough-work-toggle" type="button" aria-label="Rough work" title="Open rough work" aria-expanded="false" aria-controls="rough-work-panel" hidden>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 3 5 5M4 20l4.5-1L21 6.5 17.5 3 5 15.5 4 20Z"/><path d="M4 20h16"/></svg>
+  </button>
 </body>
 </html>

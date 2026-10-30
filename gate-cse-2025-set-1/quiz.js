@@ -14,6 +14,31 @@
   const timerPresets = [180, 150, 120, 90, 60, 30];
   let timerMinutes = 180, timerRemainingMs = 180 * 60000, timerEndsAt = null, timerInterval = null;
   let currentQuestionIndex = 0, currentQuestionFrame = false, currentQuestionInteraction = null;
+  let roughNotebook = null;
+
+  function setupRoughWork() {
+    const toggle = byId("rough-work-toggle"), panel = byId("rough-work-panel");
+    const shell = document.querySelector(".quiz-shell");
+    roughNotebook = window.RoughWorkNotebook?.create({ quizId: data.id, questions: data.questions }) || null;
+    function setOpen(open) {
+      panel.hidden = !open;
+      shell.classList.toggle("rough-work-open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.title = open ? "Close rough work" : "Open rough work";
+      if (open) {
+        const question = data.questions[currentQuestionIndex];
+        roughNotebook?.show(question.id, questionLabel(question));
+        if (window.matchMedia("(max-width: 900px)").matches) panel.scrollIntoView({ block: "start" });
+        byId("rough-work-surface").focus({ preventScroll: true });
+      } else { roughNotebook?.hide(); toggle.focus({ preventScroll: true }); }
+    }
+    toggle.hidden = false;
+    toggle.addEventListener("click", () => setOpen(panel.hidden));
+    byId("rough-work-close").addEventListener("click", () => setOpen(false));
+    panel.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !panel.hidden) { event.preventDefault(); setOpen(false); }
+    });
+  }
 
   function renderCarouselControls() {
     byId("question-carousel").hidden = Boolean(submittedAt) || !data.questions.length;
@@ -38,6 +63,7 @@
       if (card && !submittedAt) card.hidden = number !== index;
     });
     renderCarouselControls();
+    if (!byId("rough-work-panel").hidden) roughNotebook?.show(data.questions[index].id, questionLabel(data.questions[index]));
     if (persist && changed && !submittedAt && !reviewState) save();
   }
   function questionTarget(index) {
@@ -853,6 +879,7 @@
     setupStorage();
     setupTimer();
     setupCurrentQuestion();
+    setupRoughWork();
     byId("quiz-form").addEventListener("submit", submitAttempt);
     byId("questions").addEventListener("keydown", (event) => {
       if (event.key !== "Enter" || !event.target.matches?.("input")) return;
@@ -880,6 +907,9 @@
     byId("report").hidden = true;
     byId("question-nav").hidden = true;
     byId("quiz-timer").hidden = true;
+    byId("rough-work-toggle").hidden = true;
+    byId("rough-work-panel").hidden = true;
+    document.querySelector(".quiz-shell").classList.remove("rough-work-open");
     document.querySelector(".quiz-shell").classList.remove("has-navigator");
     status(`Unable to open this quiz. ${error.message}`, true);
   }
