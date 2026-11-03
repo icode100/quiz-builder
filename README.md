@@ -2,21 +2,27 @@
 
 Local GATE CSE practice quizzes with black and light themes, blue accents, and original PDF question images.
 
+[GATE CSE 2017 Set 2, session 2](http://127.0.0.1:8765/gate-cse-2017-set-2/) contains 65 questions (45 MCQ, 20 NAT), 100 marks, and 65 original 240 DPI crops. The supplied paper and key stay unchanged in Downloads. Run `node tests/quiz-2017-set-2.test.cjs` for its independent key, scoring, asset and persistence checks.
+
+[GATE CSE 2024 Set 2, session 6](http://127.0.0.1:8765/gate-cse-2024-set-2/) contains 65 questions (32 MCQ, 18 MSQ, 15 NAT), 100 marks, and original 240 DPI question crops. Supplied originals remain outside the quiz folder. Run `node tests/quiz-2024-set-2.test.cjs` for its key, crop, grading and persistence checks.
+
 Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local server and open the quiz list in your default browser. Node.js must be available; no npm packages or internet connection are needed.
 
 The home page and quizzes share remembered light/dark mode, rounded white or dark blue-black cards, and soft shadows. Royal-blue primary actions, teal cache/progress feedback, and an amber dashed **Out of syllabus** state make actions and status easier to distinguish. **Clear response** uses soft pastel rose styling with readable text and a gentle hover; **Clear answers** stays quiet. **Mark for review** uses a blue outline and a solid selected state. A distinct timer readout, separated map counts/legends, visible **Previous**/**Next**/**Skip question** labels, and clearer home/filter cards improve scanning. The pitch-black dark page, pale light background, keyboard-accessible sun/moon theme pill showing **Light** or **Dark**, and percentage/bar/marks order remain.
 
 Question images follow the theme, including reports: original white paper with dark text in light mode, and CSS-inverted black paper with white text in dark mode. Original PNGs, diagrams, and equations stay intact. Click an image to open its original colors at full resolution; printed reports use those original white-paper colors. New quizzes inherit the same styling from `_template`.
 
+On screens up to 760px wide, question images keep a readable minimum width of 720px. Scroll sideways within the image to see the remaining content; the surrounding page and controls stay within the screen. Desktop and printed layouts retain their normal sizing.
+
 Click the calculator icon at the bottom right of the quiz or home page to open the shared scientific calculator; its accessible name remains **Calculator** and its tooltip **Open calculator**. It supports editable expressions, parentheses, powers, roots, logarithms, trigonometry with **DEG/RAD**, factorials, combinations/permutations, **Ans**, and memory controls. Move it by dragging its heading (or focus the heading and use arrow keys), close it with **×** or **Escape**, or use **↗** to open it in a separate tab. Closing and reopening the panel preserves its current calculation; reloading starts fresh. Calculations use JavaScript floating-point arithmetic.
 
 The calculator is available whenever the quiz server runs, also at [http://127.0.0.1:8765/_calculator/](http://127.0.0.1:8765/_calculator/). Its files live once in `_calculator/`; the server adds the launcher to quiz pages, including future quizzes, without copying or changing their files. The calculator itself loads on first opening, uses no extra process or package, follows the page theme, and stays out of printed reports. It never changes quiz responses, timer state, browser drafts, or saved submissions.
 
-Click the **Rough work** pen icon in any quiz to open a drawing notebook beside the test. Choose **Pen**, **Highlighter**, or **Eraser**, a color and stroke width, then draw with a mouse, trackpad, touch, or stylus. Choose **Blank**, **Dotted**, **Ruled**, or **Grid** paper; each question remembers its paper choice. **Undo**, **Redo**, and **Clear page** apply to the current question's ink; Clear page can be undone and keeps the paper style. Ctrl/Cmd+Z undoes, and Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z redoes while the notebook is focused.
+Click the **Rough work** pen icon in any quiz to open a drawing notebook beside the test. Choose **Pen**, **Highlighter**, or **Eraser**, a color and stroke width, then draw with a mouse, trackpad, touch, or stylus. The dot pointer shows the selected stroke width at the current page size. Fine uses the same pointer size as Medium while drawing its original fine line. The paper fills the rough-work area and expands when more space becomes available; existing handwriting keeps its proportions. Longer pages scroll when the area gets shorter. Choose **Blank**, **Dotted**, **Ruled**, or **Grid** paper; new pages start Dotted, and each question remembers its paper choice. **Undo**, **Redo**, and **Clear page** apply to the current question's ink; Clear page can be undone and keeps the paper style. Ctrl/Cmd+Z undoes, and Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z redoes while the notebook is focused.
 
 Each question has its own rough-work page. Completed strokes save automatically in this browser and restore after reopening. Pages remain through Submit, Clear answers, Attempt again, and saved Review; use Clear page to remove the current page's ink. Notes are separate from quiz responses and scoring, and browser-data removal can erase them. If saving fails, keep the tab open; the notebook shows its own warning without replacing quiz warnings.
 
-**Question map** in the notebook header, the pen button, or **Escape** while the panel is focused returns to the map. Previous/Next stay available; on small screens the workspace sits below the test. Notebook controls follow the current theme, with white drawing paper in both modes. It is also available in reports and saved Review, closes on refresh, and stays out of printed quiz reports. External screen annotation tools remain usable, but their own marks are not captured.
+**Question map** in the notebook header, the pen button, or **Escape** while the panel is focused returns to the map. Previous/Next stay available; on small screens the workspace sits below the test. The notebook and paper follow the current theme: light paper with dark ink in light mode, dark paper with white neutral ink in dark mode. Other ink colors adjust for readability, including existing drawings. It is also available in reports and saved Review, closes on refresh, and stays out of printed quiz reports. External screen annotation tools remain usable, but their own marks are not captured.
 
 The home page lists papers by year, newest first, and automatically places new quizzes in order. Sets within a year stay in natural order (Set 1, Set 2, Set 10). Cards show green **Attempted before** when the latest `attempt.json` has at least one non-null answer, otherwise red **Not attempted**. Attempted cards show the last verified percentage first, its percentage bar immediately below, then earned/eligible marks beneath the bar. Scores are recomputed from saved responses, syllabus exclusions, and the answer key; stale or invalid submissions show **Last score unavailable**. Negative percentages and marks remain visible, with an empty bar. If every question is excluded, the percentage is unavailable and marks are 0/0.
 
@@ -50,7 +56,7 @@ function quiz-stop  { powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C
 
 Unfinished answers, review flags, syllabus exclusions, timer state, and the last viewed practice question cache automatically in your browser and restore after reopening. Always use the same browser/profile and `http://127.0.0.1:8765`; opening HTML files directly uses a different, unreliable storage origin. Clearing browser data or ending a private session can erase drafts.
 
-Practice shows one question at a time, using the paper's original numbers. Choosing an MCQ option saves it and advances; use **Next** or Enter from an answer input for multiple-select and numerical answers. Enter keeps invalid numerical input on its question and never submits. **Previous**, **Next**, and **Skip question** keep your existing responses, review marks, and syllabus exclusions. The first and last questions do not wrap, and reaching the end never submits automatically. You can also select any question from the existing map. **Clear response**, **Mark for review**, and **Out of syllabus** remain beside each question; Submit remains available.
+Practice shows one question at a time, using the paper's original numbers. Choosing an MCQ option saves it and advances; use **Next** or Enter from an answer input for multiple-select and numerical answers. Enter keeps invalid numerical input on its question and never submits. **Previous**, **Next**, and **Skip question** keep your existing responses, review marks, and syllabus exclusions. Use **←/→** to move between practice questions and **A–D** to select an MCQ option or toggle an MSQ option. **M** toggles Mark for review and **O** toggles Out of syllabus on any question type. Text fields, selectors, notebook and calculator keep their own keys; numerical questions keep normal input validation, with M/O available to toggle flags while typing a numerical response. Keyboard navigation stops at the first/last question and never submits. The first and last questions do not wrap, and reaching the end never submits automatically. You can also select any question from the existing map. **Clear response**, **Mark for review**, and **Out of syllabus** remain beside each question; Submit remains available.
 
 Use **Home** at the top to return to the paper list with your browser draft preserved. Refreshing or reopening starts at your last viewed practice question, even if you had not answered it. Older drafts without a saved question start at the first question. Report navigation leaves the cached practice question unchanged. **Back to quiz** after saved Review restores your prior question; **Clear answers** and a fresh **Attempt again** start at the first question. Reports remain a scrolling question-by-question list.
 
@@ -60,7 +66,7 @@ The compact green test-progress panel shows the percentage of included questions
 
 The **N of M answered** counter also counts only in-syllabus questions: excluded responses do not count toward N, and excluded questions do not count toward M. Including a question again restores its saved response to the count.
 
-Laptop practice uses a compact layout with images fitted to the available height, evenly aligned horizontal options, and numerical input near Clear/Review/Out of syllabus. Option labels stay on one line; action controls can move to the next row when needed. Open **Paper details and marking instructions** for the source and exam directions. Click an image for full-resolution detail on dense questions. Smaller windows and expanded details allow normal scrolling; reports and print retain their normal sizing.
+Laptop practice uses a compact layout with readable question-width images, evenly aligned horizontal options, and numerical input near Clear/Review/Out of syllabus. Long questions and ordered image parts scroll naturally instead of shrinking to fit the screen. Option labels stay on one line; action controls can move to the next row when needed. Open **Paper details and marking instructions** for the source and exam directions. Full-resolution image links remain available for optional detail. Smaller windows and expanded details allow normal scrolling; reports and print retain their normal sizing.
 
 Each quiz has a countdown with six presets: **180, 150, 120, 90, 60, or 30 minutes** (default 180). Choose a duration, then use **Start**, **Pause**, or **Reset**. Choosing another preset or Reset leaves the timer paused at that duration. It restores with your browser draft, counting elapsed time while closed if it was running. At zero it stops and displays a message; you can keep answering.
 
@@ -82,7 +88,10 @@ Submit displays your percentage, earned/eligible marks, and question-by-question
 
 Available quizzes, after starting the server:
 
+The [2025 Set 2 quiz](http://127.0.0.1:8765/gate-cse-2025-set-2/) matches CS2/session 2: 65 questions, 100 marks, 32 MCQs, 18 MSQs and 15 numerical questions. Its 65 original 240 DPI crops preserve diagrams, equations, code and watermarks. The supplied PDFs remain unchanged in Downloads. Single-correct-option MSQs and inclusive numerical ranges follow the key exactly. Independent checks: `node tests/quiz-2025-set-2.test.cjs`.
+
 - [GATE CSE 2025, Set 1, session 1](http://127.0.0.1:8765/gate-cse-2025-set-1/)
+- [GATE CSE 2025, Set 2, session 2](http://127.0.0.1:8765/gate-cse-2025-set-2/)
 - [GATE CSE 2021, Set 1, session 5](http://127.0.0.1:8765/gate-cse-2021-set-1/index.html)
 - [GATE CSE 2021, Set 2, session 6](http://127.0.0.1:8765/gate-cse-2021-set-2/index.html)
 - [GATE CSE 2020, session 6](http://127.0.0.1:8765/gate-cse-2020/index.html)
@@ -90,7 +99,13 @@ Available quizzes, after starting the server:
 - [GATE CSE 2018](http://127.0.0.1:8765/gate-cse-2018/)
 - [GATE CSE 2017, Set 1, session 1](http://127.0.0.1:8765/gate-cse-2017-set-1/)
 - [GATE CSE 2016, Set 1](http://127.0.0.1:8765/gate-cse-2016-set-1/)
+- [GATE CSE 2016, Set 2](http://127.0.0.1:8765/gate-cse-2016-set-2/)
 - [GATE CSE 2015, Set 1, 7 February forenoon](http://127.0.0.1:8765/gate-cse-2015-set-1/)
+- [GATE CSE 2015, Set 2, 7 February afternoon](http://127.0.0.1:8765/gate-cse-2015-set-2/)
+- [GATE CSE 2015, Set 3, 8 February forenoon](http://127.0.0.1:8765/gate-cse-2015-set-3/)
+- [GATE CSE 2014, Set 1, session 7](http://127.0.0.1:8765/gate-cse-2014-set-1/)
+- [GATE CSE 2014, Set 2, session 8](http://127.0.0.1:8765/gate-cse-2014-set-2/)
+- [GATE CSE 2014, Set 3, session 9](http://127.0.0.1:8765/gate-cse-2014-set-3/)
 - [GATE CSE 2013, Booklet A](http://127.0.0.1:8765/gate-cse-2013/)
 - [GATE CSE 2012, Booklet Code A](http://127.0.0.1:8765/gate-cse-2012/)
 - [GATE CSE 2010](http://127.0.0.1:8765/gate-cse-2010/)
@@ -116,15 +131,25 @@ The 2018 quiz has 41 MCQ and 24 NAT questions, with 65 original 240 DPI question
 
 The 2017 Set 1 quiz has 45 MCQ and 20 NAT questions, totaling 100 marks, from 11 February 2017, session 1. It preserves the source order and numbering: CS 1–55, then GA 56–65. Its 65 original 240 DPI crops retain the supplied images and notation; the two source PDFs remain unchanged in Downloads. CS-45 accepts 86.5–89.5 and CS-50 accepts 1.49–1.52, inclusive; CS-49 is exactly −16. MCQ penalties use the official full-precision one-third rule. Independent key, crop, grading, persistence, and disposable-server checks run with `node tests/quiz-2017-set-1.test.cjs`.
 
+The 2016 Set 2 quiz contains 38 MCQ and 27 NAT questions, 100 marks, and 65 complete original 240 DPI crops. It preserves GA 1–10 then CS 1–55 (printed GA Set-6 / CS Set B). Supplied PDFs remain in Downloads. Run `node tests/quiz-2016-set-2.test.cjs` for independent key, image, scoring, draft/report/review and disposable-server checks.
+
 The 2016 Set 1 quiz has 39 MCQ and 26 NAT questions, totaling 100 marks, with 65 original 240 DPI crops. It retains GA 1–10 followed by CS 1–55 and records the printed GA Set-5 / CS Set A labels without inferring a session. CS-8 accepts 3–4, CS-27 accepts 197.9–198.1, CS-29 accepts 0.33–0.34, and CS-32 accepts 33–34, all inclusive. Other NAT keys are exact. Its source PDFs remain unchanged in Downloads. Independent checks run with `node tests/quiz-2016-set-1.test.cjs`.
 
 The 2015 Set 1 quiz uses the supplied combined question/key, preserving GA 1–10 and CS 11–65. The separately supplied paper arranges the same questions differently; its order is not used for answer mapping. There are 45 MCQ, 20 NAT and 65 original crops, without answer annotations or coloured key lists. CS-39 accepts 0.40–0.46 inclusive; other numerical keys are exact. Originals stay unchanged outside the quiz folder. Independent checks run with `node tests/quiz-2015-set-1.test.cjs`.
+
+The [2015 Set 2 quiz](http://127.0.0.1:8765/gate-cse-2015-set-2/) contains 65 questions (43 MCQ, 22 NAT), 100 marks and 65 original crops. It follows the combined key's GA 1–10 / CS 11–65 numbering; all questions were matched by content to the differently ordered clean paper. CS-42 accepts 6.1–6.2 inclusive. Originals remain unchanged outside the quiz folder. Independent checks: `node tests/quiz-2015-set-2.test.cjs`.
+
+The [2015 Set 3 quiz](http://127.0.0.1:8765/gate-cse-2015-set-3/) contains 65 questions (45 MCQ, 20 NAT), 100 marks and 65 original crops. It follows the combined key's GA 1–10 / CS 11–65 numbering, matched by content to the clean paper. CS-17 accepts 612–613 and CS-36 accepts 308–310 inclusive. Originals remain unchanged outside the quiz folder. Independent checks: `node tests/quiz-2015-set-3.test.cjs`.
 
 The 2014 Set 1 quiz is available at [http://127.0.0.1:8765/gate-cse-2014-set-1/](http://127.0.0.1:8765/gate-cse-2014-set-1/). It contains 65 questions, 100 marks, 40 MCQs and 25 NATs in printed GA 1–10 / CS 1–55 order. The key identifies Session 7; printed headers say GA Set-7 and CS Set-1. The separate GATE 2014 watermark objects were removed before making the 65 sharp question crops; question content and supplied originals are unchanged. Marking follows page 4 of the supplied paper. Independent checks run with `node tests/quiz-2014-set-1.test.cjs`.
 
 The [2010 quiz](http://127.0.0.1:8765/gate-cse-2010/) has 65 MCQs, 100 marks and two linked pairs, 52/53 and 54/55. Its supplied screenshot key needed seven corrections, two completed blanks and a resolved duplicate Q60; `gate-cse-2010/KEY-NOTES.txt` records the full reconciled practice key and derivations. Six original-exam crops restore defective reproduced questions, including Q65's missing third digit 3. All source files remain unchanged outside the quiz folder. Independent checks: `node tests/quiz-2010.test.cjs`.
 
 The 2013 Booklet A quiz has 65 MCQs and 100 marks, retaining CS 1–55 then GA 56–65 and using only ORS key column A. CS-42/47 receive marks to all; linked pairs 52/53 and 54/55 follow the cover's dependent grading and zero dependent penalty. Its 69 original PNG crops repeat shared context on every relevant slide. Blank scores 4/100; perfect scores 100/100. Supplied PDFs remain unchanged outside the folder, with hashes and crop provenance in data. Independent checks run with `node tests/quiz-2013.test.cjs`.
+
+The [2014 Set 2 quiz](http://127.0.0.1:8765/gate-cse-2014-set-2/) matches the supplied Session 8 key: 65 questions, 100 marks, 42 MCQs and 23 numerical questions in GA 1–10 / CS 1–55 order. Its 65 original 240 DPI crops retain all question content and watermarks. The source PDFs remain unchanged in Downloads. Inclusive ranges and exact one-third MCQ penalties follow the supplied key and paper instructions. Independent checks: `node tests/quiz-2014-set-2.test.cjs`.
+
+The [2014 Set 3 quiz](http://127.0.0.1:8765/gate-cse-2014-set-3/) matches the supplied Session 9 key: 65 questions, 100 marks, 47 MCQs and 18 numerical questions in GA 1–10 / CS 1–55 order. Its 65 original 240 DPI crops preserve all content and watermarks; the supplied PDFs remain unchanged in Downloads. CS-43 accepts 1.50–1.60 inclusive; other numerical answers are exact. Original one-third MCQ penalties apply. Independent checks: `node tests/quiz-2014-set-3.test.cjs`.
 
 Git excludes personal `attempt.json` files and temporary renders in `tmp/`; they remain available locally.
 
@@ -137,3 +162,9 @@ Report-map and saved-review-flag checks: `node tests/quiz-report-map.test.cjs`. 
 Rough-work checks: `node tests/rough-work-engine.test.cjs`, `node tests/rough-work-notebook.test.cjs`, and `node tests/quiz-rough-work.test.cjs`; tests use simulated drawing/storage and disposable quiz state.
 
 Calculator checks: `node tests/calculator-engine.test.cjs`, `node tests/calculator-ui.test.cjs`, `node tests/calculator-launcher.test.cjs`, and `node tests/quiz-calculator.test.cjs`; the HTTP tests use disposable quiz folders.
+
+GATE CSE 2024 Set 1 (CS1, session 5) is available at http://127.0.0.1:8765/gate-cse-2024-set-1/. It contains 65 questions (29 MCQ, 20 MSQ, 16 NAT), 100 marks, and 65 original 240-DPI PNG crops. Supplied PDFs remain unchanged in Downloads; hashes and crop provenance are recorded in quiz-data.js. Run `node tests/quiz-2024-set-1.test.cjs` for key, assets, choice/subset/range grading and score checks. No personal attempt is created by these tests.
+
+GATE CSE 2023 (session 1): [Open quiz](http://127.0.0.1:8765/gate-cse-2023/) — 65 questions, 100 marks; original crops and supplied-key exceptions preserved.
+
+GATE CSE 2022 (Session 1) is available at [Open quiz](http://127.0.0.1:8765/gate-cse-2022/): 65 questions, 100 marks, verified supplied key and original question crops.

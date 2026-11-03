@@ -267,6 +267,13 @@ a { color: var(--accent); }
 .source-figure { margin: 1rem 0; }
 .image-link { display: block; cursor: zoom-in; }
 .source-caption { margin-top: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+/* Wide original scans stay readable on phones; pan inside the image only. */
+@media screen and (max-width: 760px) {
+  .source-figure { min-width: 0; }
+  .image-link { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+  .question-image { min-width: 720px; }
+  .source-caption::before { content: "Scroll image sideways to read · "; }
+}
 .question-meta { width: fit-content; padding: 0.25rem 0.55rem; border-radius: 0.4rem; font-size: 0.9rem; color: var(--muted); background: var(--surface-raised); margin-bottom: 0.75rem; }
 .numeric-label { display: block; font-weight: 600; margin: 1rem 0 0.4rem; }
 .numeric-answer { display: block; width: min(100%, 320px); min-height: 46px; padding: 0.55rem 0.75rem; border: 1px solid var(--control-border); border-radius: 0.6rem; background: var(--surface); color: inherit; }
@@ -516,16 +523,15 @@ a { color: var(--accent); }
   .nav-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 
-/* Fit the practice workspace to a laptop; reports and small screens keep normal flow. */
+/* Compact laptop controls; question images keep their readable width and scroll naturally. */
 @media screen and (min-width: 1101px) and (min-height: 600px) {
   .quiz-shell:has(.quiz-form:not([hidden])) > .container {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    height: 100dvh;
+    min-height: 100dvh;
     padding: 0.75rem 0;
   }
-  .quiz-shell:has(.quiz-form:not([hidden])):has(.paper-details[open]) > .container { height: auto; min-height: 100dvh; }
   .quiz-shell:has(.quiz-form:not([hidden])) .page-header { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 0.25rem 0.75rem; flex: none; margin-bottom: 0; }
   .quiz-shell:has(.quiz-form:not([hidden])) .header-top { display: contents; }
   .quiz-shell:has(.quiz-form:not([hidden])) .header-top .eyebrow { display: none; }
@@ -547,23 +553,19 @@ a { color: var(--accent); }
   .quiz-shell:has(.quiz-form:not([hidden])) .status-message { flex: none; margin: 0; padding: 0.25rem 0.65rem; font-size: 0.8rem; }
   .quiz-shell:has(.quiz-form:not([hidden])) .progress-panel { flex: none; margin: 0; }
   .test-progress-content { padding-block: 0.15rem; }
-  .quiz-form { flex: 1; min-height: 0; }
-  .session-controls { display: flex; flex-direction: column; gap: 0.5rem; height: 100%; min-height: 0; }
+  .quiz-form { flex: 1; }
+  .session-controls { display: flex; flex-direction: column; gap: 0.5rem; }
   .question-carousel { flex: none; margin: 0; }
-  #questions { flex: 1; min-height: 0; }
-  .question-card { display: flex; flex-direction: column; height: 100%; min-height: 0; margin: 0; padding: 0.35rem 0.75rem 0.6rem; }
+  #questions { flex: 1; }
+  .question-card { display: flex; flex-direction: column; margin: 0; padding: 0.35rem 0.75rem 0.6rem; }
   .question-heading { margin: 0; font-size: 0.95rem; }
-  .question-content, .question-stem, .question-images { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-  .question-content { height: 100%; }
+  .question-content, .question-stem, .question-images { display: flex; flex-direction: column; }
   .question-meta { flex: none; margin: 0 0 0.25rem; font-size: 0.8rem; }
   .question-stem > .response-help, .question-text { flex: none; margin: 0 0 0.35rem; }
   .question-images { gap: 0.35rem; }
-  .question-images .source-figure { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0; }
-  .question-images .image-link { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 0; }
-  .question-images .question-image { width: auto; height: auto; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .question-images .source-figure { margin: 0; }
+  .question-images .question-image { width: 100%; height: auto; }
   .question-images .source-caption { flex: none; margin-top: 0.15rem; font-size: 0.7rem; text-align: center; }
-  .question-images:has(.source-figure:nth-child(3):last-child) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
-  .question-images:has(.source-figure:nth-child(3):last-child) > .source-figure:first-child { grid-row: 1 / -1; }
   .response-controls { flex: none; }
   .response-controls:has(.options) { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
   .options { flex: 1 1 38rem; min-width: min(100%, 38rem); grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
@@ -671,8 +673,11 @@ a { color: var(--accent); }
 .rough-work-tools button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 .rough-work-tools button[aria-pressed="true"] { color: #fff; background: #4169e1; border-color: #4169e1; }
 .rough-work-tools label { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.75rem; }
-.rough-work-surface { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 0.6rem; background: var(--surface-raised); }
-.rough-work-canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; background: #fff; touch-action: none; cursor: crosshair; }
+.rough-work-surface { --rough-paper: #fff; flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; border: 1px solid var(--border); border-radius: 0.6rem; color-scheme: light; background: var(--rough-paper); }
+.rough-work-canvas { display: block; width: 100%; height: auto; min-height: 100%; background: var(--rough-paper); touch-action: none; cursor: default; }
+@media screen {
+  :root[data-theme="dark"] .rough-work-surface { --rough-paper: #111827; color-scheme: dark; }
+}
 .rough-work-canvas:focus-visible { outline-offset: -3px; }
 /* Keep the floating pen/calculator controls below the drawing paper. */
 .rough-work-status { flex: none; margin: 0.5rem 0 0; min-height: 52px; padding-right: 120px; color: var(--success); font-size: 0.75rem; line-height: 1.35; }

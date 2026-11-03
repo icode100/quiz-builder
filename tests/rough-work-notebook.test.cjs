@@ -14,7 +14,7 @@ const stroke = (tool = 'pen') => ({ tool, color: '#17233b', width: 4, points: [[
 const record = (id, strokes = [stroke()]) => ({ version: 1, quizId, questionId: id, updatedAt: '2026-10-30T00:00:00.000Z', strokes });
 
 function harness(options = {}) {
-  const ids = {}, operations = [], frames = new Map(), windowEvents = {}, documentEvents = {}, drawing = [];
+  const ids = {}, operations = [], frames = new Map(), windowEvents = {}, documentEvents = {}, drawing = [], resizeObservers = [], mutationObservers = [], allocations = [];
   const storage = options.storage instanceof Map ? options.storage : new Map(options.storage || []);
   let nextFrame = 1, canvasCount = 0;
   const document = { activeElement: null, hidden: false, visibilityState: 'visible' };
@@ -23,12 +23,13 @@ function harness(options = {}) {
       this.tagName = tag.toUpperCase(); this.children = []; this.parentElement = null;
       this.attrs = {}; this.events = {}; this.style = {}; this.dataset = {};
       this.hidden = false; this.disabled = false; this.className = ''; this.textContent = ''; this.value = '';
-      this.width = 1000; this.height = 1250; this.pointers = new Set();
       this.canvasName = this.tagName === 'CANVAS' ? `canvas-${++canvasCount}` : null;
+      this._width = this.canvasName ? 300 : 1000; this._height = this.canvasName ? 150 : 1250; this.pointers = new Set();
       this.rect = { left: 20, top: 40, width: 400, height: 500 };
       this.classList = { toggle: (name, enabled) => { const parts = this.className.split(/\s+/).filter(Boolean).filter(part => part !== name); if (enabled) parts.push(name); this.className = parts.join(' '); }, remove: name => this.classList.toggle(name, false), add: name => this.classList.toggle(name, true), contains: name => this.className.split(/\s+/).includes(name) };
     }
     setAttribute(name, value) {
+      const previous = this.attrs[name];
       this.attrs[name] = String(value);
       if (name === 'id') { this.id = String(value); ids[this.id] = this; }
       if (name === 'class') this.className = String(value);
@@ -37,6 +38,10 @@ function harness(options = {}) {
       if (name === 'value') this.value = String(value);
       if (name === 'width' || name === 'height') this[name] = Number(value);
       if (name.startsWith('data-')) this.dataset[name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = String(value);
+      if (previous !== String(value)) for (const observer of mutationObservers) {
+        const settings = observer.targets.get(this);
+        if (settings?.attributes && (!settings.attributeFilter || settings.attributeFilter.includes(name))) observer.records.push({ type: 'attributes', target: this, attributeName: name, oldValue: previous ?? null });
+      }
     }
     getAttribute(name) { return this.attrs[name] ?? null; }
     append(...nodes) { for (const node of nodes) { node.parentElement = this; this.children.push(node); } }
@@ -54,7 +59,23 @@ function harness(options = {}) {
     contains(node) { return node === this || this.children.some(child => child.contains(node)); }
     querySelectorAll(selector) { return this.children.flatMap(child => [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)]); }
     querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
-    getBoundingClientRect() { return { ...this.rect, right: this.rect.left + this.rect.width, bottom: this.rect.top + this.rect.height }; }
+    get width() { return this._width; }
+    set width(value) { this._width = Number(value); this.trackAllocation(); }
+    get height() { return this._height; }
+    set height(value) { this._height = Number(value); this.trackAllocation(); }
+    trackAllocation() { if (this.canvasName) allocations.push({ target: this.id || this.canvasName, width: this.width, height: this.height, pixels: this.width * this.height }); }
+    get clientWidth() { return this._clientWidth ?? (this.id === 'rough-work-surface' ? ids['rough-work-canvas']?.rect.width : this.rect.width); }
+    set clientWidth(value) { this._clientWidth = value; }
+    get clientHeight() { return this._clientHeight ?? (this.id === 'rough-work-surface' ? ids['rough-work-canvas']?.rect.height : this.rect.height); }
+    set clientHeight(value) { this._clientHeight = value; }
+    getBoundingClientRect() {
+      const rect = { ...this.rect };
+      if (this.id === 'rough-work-canvas') {
+        rect.width = ids['rough-work-surface'].clientWidth;
+        rect.height = Number.parseFloat(this.style.height) || rect.height;
+      }
+      return { ...rect, right: rect.left + rect.width, bottom: rect.top + rect.height };
+    }
     focus() { document.activeElement = this; }
     setPointerCapture(id) { this.pointers.add(id); }
     hasPointerCapture(id) { return this.pointers.has(id); }
@@ -73,18 +94,21 @@ function harness(options = {}) {
   }
   function canvasContext(canvas) {
     const target = () => canvas.id || canvas.canvasName;
+    let points = [];
     return {
       save() {}, restore() {}, setTransform() {},
       clearRect() { drawing.push({ type: 'clear', target: target() }); },
       fillRect(x, y, width, height) { drawing.push({ type: 'paper', target: target(), color: this.fillStyle, x, y, width, height }); },
-      drawImage(source, ...args) { drawing.push({ type: 'image', target: target(), source: source.id || source.canvasName, sourceTag: source.tagName, args }); },
-      beginPath() {}, moveTo() {}, lineTo() {}, arc() {},
-      stroke() { drawing.push({ type: 'stroke', target: target(), mode: this.globalCompositeOperation, alpha: this.globalAlpha, width: this.lineWidth, color: this.strokeStyle }); },
+      drawImage(source, ...args) { drawing.push({ type: 'image', target: target(), source: source.id || source.canvasName, sourceTag: source.tagName, sourceWidth: source.width, sourceHeight: source.height, args }); },
+      beginPath() { points = []; }, moveTo(x, y) { points.push([x, y]); }, lineTo(x, y) { points.push([x, y]); }, arc() {},
+      stroke() { drawing.push({ type: 'stroke', target: target(), mode: this.globalCompositeOperation, alpha: this.globalAlpha, width: this.lineWidth, color: this.strokeStyle, points: copy(points) }); },
       fill() { drawing.push({ type: 'dot', target: target(), mode: this.globalCompositeOperation, alpha: this.globalAlpha, width: this.lineWidth, color: this.fillStyle }); }
     };
   }
   document.body = new Element('body'); document.documentElement = new Element('html');
   document.documentElement.append(document.body);
+  document.documentElement.setAttribute('data-theme', options.theme || 'light');
+  const themeToggle = new Element('button'); themeToggle.setAttribute('id', 'theme-toggle'); document.body.append(themeToggle);
   document.createElement = tag => new Element(tag);
   document.getElementById = id => ids[id] || null;
   document.querySelector = selector => document.body.querySelector(selector);
@@ -110,7 +134,8 @@ function harness(options = {}) {
   }
   let contextObject;
   function flush() {
-    const work = [...frames.values()]; frames.clear(); for (const fn of work) fn();
+    for (const observer of mutationObservers) { const records = observer.takeRecords(); if (records.length) observer.callback(records, observer); }
+    while (frames.size) { const work = [...frames.values()]; frames.clear(); for (const fn of work) fn(); }
   }
   contextObject = {
     document, console, Date, Math, JSON, Map, Set,
@@ -124,6 +149,18 @@ function harness(options = {}) {
     },
     fetch() { throw Error('Notebook must never access the server'); }
   };
+  if (!options.noResizeObserver) contextObject.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; this.targets = new Set(); resizeObservers.push(this); }
+    observe(target) { this.targets.add(target); }
+    unobserve(target) { this.targets.delete(target); }
+    disconnect() { this.targets.clear(); }
+  };
+  if (!options.noMutationObserver) contextObject.MutationObserver = class {
+    constructor(callback) { this.callback = callback; this.targets = new Map(); this.records = []; mutationObservers.push(this); }
+    observe(target, settings) { this.targets.set(target, settings); }
+    takeRecords() { return this.records.splice(0); }
+    disconnect() { this.targets.clear(); this.records = []; }
+  };
   contextObject.window = contextObject;
   vm.createContext(contextObject);
   vm.runInContext(fs.readFileSync(path.join(root, '_template/rough-work-engine.js'), 'utf8'), contextObject);
@@ -135,17 +172,296 @@ function harness(options = {}) {
   const saved = id => JSON.parse(storage.get(key(id)));
   const event = (name, values = {}) => canvas.fire(name, values);
   const draw = (values = {}) => { event('pointerdown', { clientX: 60, clientY: 90, ...values }); event('pointermove', { clientX: 100, clientY: 140, ...values }); event('pointerup', { clientX: 100, clientY: 140, ...values }); };
-  return { notebook, canvas, panel, ids, storage, operations, drawing, tool, saved, event, draw, flush, context: contextObject, windowEvent(name, event = {}) { for (const listener of windowEvents[name] || []) listener(event); flush(); }, documentEvent(name, event = {}) { for (const listener of documentEvents[name] || []) listener(event); flush(); } };
+  return { notebook, canvas, panel, ids, storage, operations, drawing, allocations, tool, saved, event, draw, flush, context: contextObject, setTheme(theme, click = false) { document.documentElement.setAttribute('data-theme', theme); if (click) themeToggle.click(); else flush(); }, resizeObserved(target = canvas) { const observers = resizeObservers.filter(observer => observer.targets.has(target)); for (const observer of observers) observer.callback([{ target, contentRect: target.getBoundingClientRect() }], observer); flush(); return observers.length; }, windowEvent(name, event = {}) { for (const listener of windowEvents[name] || []) listener(event); flush(); }, documentEvent(name, event = {}) { for (const listener of documentEvents[name] || []) listener(event); flush(); } };
 }
 
 (async () => {
+  const cursorCircle = (h, expectedWidth, expectedColor, expectedOutline = 'white') => {
+    const cursor = h.canvas.style.cursor;
+    const image = cursor?.match(/^url\("data:image\/svg\+xml,([^"]+)"\) 16 16, default$/);
+    assert.ok(image, 'The dot cursor has a centered native hotspot and default fallback');
+    const svg = decodeURIComponent(image[1]);
+    assert.match(svg, /<svg\b[^>]*\bwidth="32"[^>]*\bheight="32"[^>]*\bviewBox="0 0 32 32"/);
+    const circles = [...svg.matchAll(/<circle\b([^>]*)\/>/g)].map(([, attrs]) => Object.fromEntries([...attrs.matchAll(/([a-z]+)="([^"]*)"/g)].map(([, name, value]) => [name, value])));
+    assert.equal(circles.length, 2, 'The cursor core has a separate contrast outline');
+    for (const circle of circles) assert.deepEqual([Number(circle.cx), Number(circle.cy)], [16, 16]);
+    const [outline, core] = circles, diameter = Number(core.r) * 2;
+    const pointerWidth = expectedWidth === 2 ? 4 : expectedWidth;
+    const expectedDiameter = pointerWidth * h.canvas.getBoundingClientRect().width / 1000;
+    assert.ok(Math.abs(diameter - expectedDiameter) < 1e-12, 'Fine uses the Medium pointer size; other cursor diameters match their displayed ink width');
+    assert.equal(core.fill, expectedColor, 'The cursor core uses the selected tool color');
+    assert.equal(outline.fill, expectedOutline);
+    assert.ok(Math.abs(Number(outline.r) - Number(core.r) - 1) < 1e-12, 'A one-pixel contrast outline keeps the dot visible');
+    return diameter;
+  };
+  const cursor = harness();
+  assert.equal(cursor.canvas.style.cursor, undefined, 'A closed notebook does not measure or set its cursor');
+  cursor.notebook.show('GA-1', 'GA 1');
+  cursorCircle(cursor, 4, '#17233b');
+  for (const width of [2, 4, 8, 16]) {
+    const beforeWidth = copy(cursor.operations);
+    cursor.ids['rough-work-width'].value = String(width); cursor.ids['rough-work-width'].fire('change');
+    const diameter = cursorCircle(cursor, width, '#17233b');
+    assert.deepEqual(cursor.operations, beforeWidth, 'Changing the width cursor does not read or write notes');
+    cursor.draw();
+    const ink = cursor.drawing.filter(command => command.type === 'stroke' && command.target !== 'rough-work-canvas').at(-1);
+    assert.ok(ink, 'A rendered pen stroke is available for cursor comparison');
+    assert.equal(ink.width, width * cursor.canvas.width / 1000, 'Cursor visibility never changes the rendered stroke width');
+    assert.equal(cursor.saved('GA-1').strokes.at(-1).width, width, 'Cursor visibility never changes the saved stroke width');
+    const renderedDiameter = ink.width * cursor.canvas.getBoundingClientRect().width / cursor.canvas.width;
+    assert.ok(Math.abs(diameter - (width === 2 ? renderedDiameter * 2 : renderedDiameter)) < 1e-12, `The ${width}-unit cursor respects its ink size or the explicit Fine-to-Medium pointer mapping`);
+  }
+  const fine = harness(); fine.notebook.show('GA-1', 'GA 1');
+  fine.ids['rough-work-width'].value = '2'; fine.ids['rough-work-width'].fire('change');
+  for (const theme of ['light', 'dark']) {
+    const beforeFineCursor = copy(fine.operations), beforeFineBytes = [...fine.storage];
+    fine.setTheme(theme);
+    for (const width of [100, 400, 2000]) {
+      fine.canvas.rect.width = width; fine.canvas.rect.height = width * 1.25; fine.resizeObserved(); fine.event('pointerenter');
+      const color = theme === 'dark' ? '#e8eefb' : '#17233b', outline = theme === 'dark' ? '#111827' : 'white';
+      const fineDiameter = cursorCircle(fine, 2, color, outline), finePointer = fine.canvas.style.cursor;
+      fine.ids['rough-work-width'].value = '4'; fine.ids['rough-work-width'].fire('change');
+      assert.equal(cursorCircle(fine, 4, color, outline), fineDiameter, 'Fine and Medium have equal pointer diameters at every paper size in both themes');
+      assert.equal(fine.canvas.style.cursor, finePointer, 'Fine and Medium use exactly the same pointer for the same color and theme');
+      fine.ids['rough-work-width'].value = '2'; fine.ids['rough-work-width'].fire('change');
+    }
+    assert.deepEqual(fine.operations, beforeFineCursor, 'Fine cursor theme and size changes do not access note storage');
+    assert.deepEqual([...fine.storage], beforeFineBytes, 'Fine cursor visibility preserves all saved note bytes');
+    fine.draw();
+    assert.equal(fine.saved('GA-1').strokes.at(-1).width, 2, 'Fine writes its original two-unit width in both themes');
+    const renderedFine = fine.drawing.filter(command => command.type === 'stroke' && command.target !== 'rough-work-canvas').at(-1);
+    assert.equal(renderedFine.width, 2 * fine.canvas.width / 1000, 'The more visible Fine pointer does not thicken the actual ink');
+  }
+  const cursorOperations = copy(cursor.operations), cursorNotes = [...cursor.storage];
+  cursor.ids['rough-work-color'].value = '#dc2626'; cursor.ids['rough-work-color'].fire('change');
+  cursorCircle(cursor, 16, '#dc2626');
+  cursor.tool('highlighter'); cursorCircle(cursor, 16, '#f59e0b');
+  cursor.ids['rough-work-width'].value = '8'; cursor.ids['rough-work-width'].fire('change');
+  cursor.ids['rough-work-color'].value = '#15803d'; cursor.ids['rough-work-color'].fire('change');
+  cursorCircle(cursor, 8, '#15803d');
+  cursor.tool('eraser'); cursorCircle(cursor, 16, '#17233b');
+  cursor.tool('pen'); cursorCircle(cursor, 16, '#dc2626');
+  cursor.canvas.rect.width = 200; cursor.canvas.rect.height = 250;
+  assert.equal(cursor.resizeObserved(), 1, 'The displayed paper is observed for container-only resizing');
+  cursorCircle(cursor, 16, '#dc2626');
+  cursor.canvas.rect.width = 600; cursor.canvas.rect.height = 750;
+  cursor.windowEvent('resize'); cursorCircle(cursor, 16, '#dc2626');
+  cursor.canvas.rect.width = 300; cursor.canvas.rect.height = 375;
+  cursor.event('pointerenter'); cursorCircle(cursor, 16, '#dc2626');
+  const visibleCursor = cursor.canvas.style.cursor;
+  for (const width of [0, -1, NaN]) {
+    cursor.canvas.rect.width = width; cursor.resizeObserved(); cursor.event('pointerenter');
+    assert.equal(cursor.canvas.style.cursor, visibleCursor, 'A hidden or invalid paper size never creates an invalid cursor');
+  }
+  cursor.canvas.rect.width = 300;
+  cursor.notebook.hide();
+  cursor.canvas.rect.width = 500; cursor.canvas.rect.height = 625;
+  cursor.resizeObserved(); cursor.windowEvent('resize'); cursor.event('pointerenter');
+  assert.equal(cursor.canvas.style.cursor, visibleCursor, 'Resize and hover callbacks leave the closed notebook alone');
+  assert.deepEqual(cursor.operations, cursorOperations, 'Tool, color, hover and resize cursor updates never access notebook storage');
+  assert.deepEqual([...cursor.storage], cursorNotes, 'Cursor updates preserve all saved note bytes');
+  const cursorFallback = harness({ noResizeObserver: true });
+  cursorFallback.notebook.show('GA-1', 'GA 1'); cursorCircle(cursorFallback, 4, '#17233b');
+  const fallbackOperations = copy(cursorFallback.operations);
+  cursorFallback.canvas.rect.width = 250; cursorFallback.canvas.rect.height = 312.5;
+  assert.equal(cursorFallback.resizeObserved(), 0);
+  cursorFallback.windowEvent('resize'); cursorCircle(cursorFallback, 4, '#17233b');
+  cursorFallback.canvas.rect.width = 500; cursorFallback.canvas.rect.height = 625;
+  cursorFallback.event('pointerenter'); cursorCircle(cursorFallback, 4, '#17233b');
+  assert.deepEqual(cursorFallback.operations, fallbackOperations, 'Resize and pointer-enter fallbacks work without storage access or ResizeObserver');
+  assert.equal(cursorFallback.storage.size, 0, 'Using only the cursor does not create a note');
+
+  const resizePaper = (h, width, height) => {
+    const surface = h.ids['rough-work-surface']; surface.clientWidth = width; surface.clientHeight = height;
+    assert.equal(h.resizeObserved(surface), 1, 'The available drawing surface is observed independently of its canvas');
+  };
+  const assertPaperSize = (h, pageHeight, width) => {
+    const backingWidth = Math.min(1000, Math.floor(Math.sqrt(4000000 * 1000 / pageHeight)));
+    assert.equal(h.canvas.width, backingWidth);
+    assert.equal(h.canvas.height, Math.floor(backingWidth * pageHeight / 1000));
+    assert.ok(h.canvas.width * h.canvas.height <= 4000000, 'Tall pages keep their backing canvas within four million pixels');
+    const rect = h.canvas.getBoundingClientRect();
+    assert.equal(rect.width, width, 'Drawing paper fills the available surface width');
+    assert.equal(rect.height, pageHeight / 1000 * width, 'CSS paper height follows its logical page aspect without letterboxing');
+    const overlay = h.drawing.filter(command => command.type === 'image').at(-1);
+    assert.deepEqual([overlay.sourceWidth, overlay.sourceHeight], [h.canvas.width, h.canvas.height], 'The ink and visible canvases keep matching bounded dimensions');
+  };
+  const fillPaper = harness();
+  fillPaper.ids['rough-work-surface'].clientWidth = 250; fillPaper.ids['rough-work-surface'].clientHeight = 700;
+  fillPaper.notebook.show('GA-1', 'GA 1');
+  assertPaperSize(fillPaper, 2800, 250);
+  const fillOperations = copy(fillPaper.operations);
+  resizePaper(fillPaper, 100, 2000); assertPaperSize(fillPaper, 20000, 100);
+  cursorCircle(fillPaper, 4, '#17233b');
+  resizePaper(fillPaper, 100, 10000); assertPaperSize(fillPaper, 50000, 100);
+  resizePaper(fillPaper, 400, 500); assertPaperSize(fillPaper, 50000, 400);
+  fillPaper.notebook.hide();
+  assert.deepEqual(fillPaper.operations, fillOperations, 'Fitting, capping, shrinking the viewport and closing never write an otherwise untouched page');
+  assert.equal(fillPaper.storage.size, 0);
+  cursorFallback.ids['rough-work-surface'].clientWidth = 200; cursorFallback.ids['rough-work-surface'].clientHeight = 600;
+  cursorFallback.windowEvent('resize'); assertPaperSize(cursorFallback, 3000, 200);
+  cursorFallback.ids['rough-work-surface'].clientHeight = 800;
+  cursorFallback.event('pointerenter'); assertPaperSize(cursorFallback, 4000, 200);
+  cursorCircle(cursorFallback, 4, '#17233b');
+  assert.deepEqual(cursorFallback.operations, fallbackOperations, 'Window resize and pointer entry can fill taller surfaces without ResizeObserver or storage writes');
+  const maxHeightBytes = JSON.stringify({ ...record('GA-1'), pageHeight: 50000 });
+  const switchHeight = harness({ storage: [[key('GA-1'), maxHeightBytes]] });
+  switchHeight.notebook.show('GA-1', 'GA 1'); assertPaperSize(switchHeight, 50000, 400);
+  switchHeight.notebook.show('CS-2', 'CS 2'); assertPaperSize(switchHeight, 1250, 400);
+  switchHeight.notebook.show('GA-1', 'GA 1'); assertPaperSize(switchHeight, 50000, 400);
+  assert.ok(switchHeight.allocations.every(allocation => allocation.pixels > 0 && allocation.pixels <= 4000000), 'Every intermediate width/height assignment stays under the allocation cap when switching tall and short pages');
+  assert.equal(new Set(switchHeight.allocations.map(allocation => allocation.target)).size, 2, 'Allocation checks cover both the visible paper and offscreen ink canvas');
+  assert.equal(switchHeight.storage.get(key('GA-1')), maxHeightBytes, 'The maximum valid saved height restores without rewriting');
+
+  const growing = harness(); growing.notebook.show('GA-1', 'GA 1'); growing.draw();
+  growing.event('pointerdown', { clientX: 100, clientY: 165 });
+  growing.event('pointerup', { clientX: 180, clientY: 215 });
+  const originalStrokes = copy(growing.saved('GA-1').strokes);
+  const shapeAt = pageHeight => originalStrokes.map(item => ({ ...copy(item), points: item.points.map(([x, y]) => [x, y * 1250 / pageHeight]) }));
+  growing.ids['rough-clear'].click(); growing.ids['rough-undo'].click(); growing.ids['rough-undo'].click();
+  const oldBytes = growing.storage.get(key('GA-1')), beforeGrowth = copy(growing.operations);
+  const oldShape = growing.drawing.filter(command => command.type === 'stroke' && command.target !== 'rough-work-canvas').at(-1).points;
+  resizePaper(growing, 400, 1000); assertPaperSize(growing, 2500, 400);
+  assert.deepEqual(growing.operations, beforeGrowth, 'Growing a page never marks its rescaled coordinates for immediate persistence');
+  assert.equal(growing.storage.get(key('GA-1')), oldBytes);
+  const newShape = growing.drawing.filter(command => command.type === 'stroke' && command.target !== 'rough-work-canvas').at(-1).points;
+  assert.deepEqual(newShape, oldShape, 'Existing ink keeps the same shape and position when white paper grows below it');
+  growing.ids['rough-redo'].click();
+  assert.equal(growing.saved('GA-1').pageHeight, 2500, 'The next ordinary edit persists the expanded page height');
+  assert.deepEqual(growing.saved('GA-1').strokes, shapeAt(2500), 'Current strokes and shared redo/clear references are each rescaled exactly once');
+  growing.ids['rough-redo'].click(); assert.deepEqual(growing.saved('GA-1').strokes, []);
+  growing.ids['rough-undo'].click(); assert.deepEqual(growing.saved('GA-1').strokes, shapeAt(2500), 'Undoing Clear restores the rescaled snapshot');
+  const beforeSecondGrowth = copy(growing.operations);
+  resizePaper(growing, 400, 2000); assertPaperSize(growing, 5000, 400);
+  assert.deepEqual(growing.operations, beforeSecondGrowth);
+  growing.ids['rough-undo'].click();
+  assert.deepEqual(growing.saved('GA-1').strokes, shapeAt(5000).slice(0, 1), 'An add action remains aligned after repeated page growth');
+  growing.ids['rough-redo'].click(); assert.deepEqual(growing.saved('GA-1').strokes, shapeAt(5000));
+  growing.ids['rough-redo'].click(); assert.deepEqual(growing.saved('GA-1').strokes, []);
+  growing.ids['rough-undo'].click(); assert.deepEqual(growing.saved('GA-1').strokes, shapeAt(5000), 'Clear snapshots preserve every stroke after multiple resizes');
+  const tallBytes = growing.storage.get(key('GA-1'));
+  const tallReload = harness({ storage: growing.storage }); tallReload.notebook.show('GA-1', 'GA 1');
+  assertPaperSize(tallReload, 5000, 400);
+  assert.equal(tallReload.storage.get(key('GA-1')), tallBytes, 'Restoring a tall page neither shrinks it nor rewrites its saved record');
+  tallReload.notebook.show('CS-2', 'CS 2'); assertPaperSize(tallReload, 1250, 400);
+  tallReload.notebook.show('GA-1', 'GA 1'); assertPaperSize(tallReload, 5000, 400);
+
+  const activeGrowth = harness(); activeGrowth.notebook.show('GA-1', 'GA 1');
+  activeGrowth.event('pointerdown'); activeGrowth.event('pointermove', { clientX: 100, clientY: 140 });
+  const beforeActiveGrowth = copy(activeGrowth.operations);
+  resizePaper(activeGrowth, 400, 1000);
+  assert.deepEqual(activeGrowth.operations, beforeActiveGrowth, 'Growing beneath an active stroke does not prematurely commit it');
+  activeGrowth.event('pointerup', { clientX: 140, clientY: 190 });
+  assert.equal(activeGrowth.saved('GA-1').pageHeight, 2500);
+  assert.deepEqual(activeGrowth.saved('GA-1').strokes[0].points, [[0.1, 0.05], [0.2, 0.1], [0.3, 0.15]], 'Active and new pointer coordinates keep a continuous shape across paper growth');
+  const legacyHeightBytes = JSON.stringify(record('GA-1'));
+  const legacyHeight = harness({ storage: [[key('GA-1'), legacyHeightBytes]] }); legacyHeight.notebook.show('GA-1', 'GA 1');
+  assertPaperSize(legacyHeight, 1250, 400);
+  assert.equal(legacyHeight.storage.get(key('GA-1')), legacyHeightBytes, 'Legacy notes without pageHeight retain their original coordinates and bytes');
+  for (const pageHeight of [null, '1250', 0, 1249, 50001, 1250.5, [], {}, true]) {
+    const invalidHeight = JSON.stringify({ ...record('GA-1'), pageHeight });
+    const badHeight = harness({ storage: [[key('GA-1'), invalidHeight]] }); badHeight.notebook.show('GA-1', 'GA 1');
+    badHeight.draw(); badHeight.notebook.hide();
+    assert.equal(badHeight.storage.get(key('GA-1')), invalidHeight, 'Malformed page heights are rejected without overwriting the original notebook record');
+    assert.match(badHeight.ids['rough-work-status'].textContent, /could not|invalid|unavailable|not saved|keep.*open/i);
+  }
+
+  const themeStrokes = [stroke(), { ...stroke('highlighter'), color: '#4169e1', width: 16 }, stroke('eraser')];
+  const themeRecord = { ...record('GA-1', themeStrokes), paperStyle: 'grid', pageHeight: 2500 };
+  const themed = harness({ storage: [[key('GA-1'), JSON.stringify(themeRecord)]] });
+  themed.notebook.show('GA-1', 'GA 1');
+  const neutralOption = h => h.ids['rough-work-color'].querySelector('option[value="#17233b"]');
+  const assertThemePaint = (commands, theme) => {
+    const dark = theme === 'dark';
+    assert.equal(commands.filter(command => command.type === 'paper').at(-1)?.color, dark ? '#111827' : '#fff', 'The canvas paper bitmap follows the active page theme');
+    assert.equal(commands.filter(command => command.target === 'rough-work-canvas' && command.type === 'stroke').at(-1)?.color, dark ? '#44546c' : '#b0c0d4', 'Existing grid guides redraw with the matching theme palette');
+    assert.ok(commands.some(command => command.type === 'stroke' && command.target !== 'rough-work-canvas' && command.mode === 'source-over' && command.alpha === 1 && command.color === (dark ? '#e8eefb' : '#17233b')), 'Previously saved neutral ink remains readable');
+    assert.ok(commands.some(command => command.type === 'stroke' && command.target !== 'rough-work-canvas' && command.alpha === 0.25 && command.color === (dark ? '#8ba7ff' : '#4169e1')), 'Previously saved colored highlighter ink follows the display palette');
+    assert.ok(commands.some(command => command.type === 'stroke' && command.target !== 'rough-work-canvas' && command.mode === 'destination-out'), 'Eraser strokes still remove only ink when the theme changes');
+  };
+  const themeSize = [themed.canvas.width, themed.canvas.height, themed.canvas.style.height];
+  const themeBytes = themed.storage.get(key('GA-1')), themeOperations = copy(themed.operations);
+  themed.event('pointerdown'); themed.event('pointermove', { clientX: 100, clientY: 140 });
+  for (const theme of ['dark', 'light', 'dark', 'light']) {
+    const before = themed.drawing.length;
+    themed.setTheme(theme);
+    assertThemePaint(themed.drawing.slice(before), theme);
+    assert.equal(neutralOption(themed).textContent, theme === 'dark' ? 'White' : 'Black');
+    cursorCircle(themed, 4, theme === 'dark' ? '#e8eefb' : '#17233b', theme === 'dark' ? '#111827' : 'white');
+    assert.equal(themed.canvas.hasPointerCapture(1), true, 'Theme changes preserve the active pointer and unfinished stroke');
+    assert.deepEqual([themed.canvas.width, themed.canvas.height, themed.canvas.style.height], themeSize, 'Theme changes preserve page height and backing dimensions');
+    assert.equal(themed.ids['rough-work-paper'].value, 'grid');
+    assert.equal(themed.canvas.dataset.paperStyle, 'grid');
+    assert.equal(themed.ids['rough-undo'].disabled, false); assert.equal(themed.ids['rough-redo'].disabled, true);
+    assert.deepEqual(themed.operations, themeOperations, 'Theme redraws never read or write notebook storage');
+    assert.equal(themed.storage.get(key('GA-1')), themeBytes, 'Theme redraws preserve the saved token and coordinate bytes');
+  }
+  themed.event('pointerup', { clientX: 140, clientY: 190 });
+  assert.deepEqual(themed.saved('GA-1').strokes.slice(0, 3), themeStrokes, 'Theme changes never rewrite the original saved ink colors or eraser tokens');
+  assert.deepEqual(themed.saved('GA-1').strokes.at(-1).points, [[0.1, 0.05], [0.2, 0.1], [0.3, 0.15]], 'Drawing continues along the same coordinates after live theme changes');
+  const completedThemeStrokes = themed.saved('GA-1').strokes;
+  themed.ids['rough-undo'].click();
+  const redoThemeBytes = themed.storage.get(key('GA-1')), redoThemeOperations = copy(themed.operations);
+  themed.setTheme('dark'); themed.setTheme('light');
+  assert.equal(themed.ids['rough-redo'].disabled, false, 'Theme redraws retain the ink redo branch');
+  assert.deepEqual(themed.operations, redoThemeOperations); assert.equal(themed.storage.get(key('GA-1')), redoThemeBytes);
+  themed.ids['rough-redo'].click(); assert.deepEqual(themed.saved('GA-1').strokes, completedThemeStrokes);
+  themed.ids['rough-clear'].click();
+  const clearedThemeBytes = themed.storage.get(key('GA-1'));
+  themed.setTheme('dark'); assert.equal(themed.storage.get(key('GA-1')), clearedThemeBytes);
+  themed.ids['rough-undo'].click();
+  assert.deepEqual(themed.saved('GA-1').strokes, completedThemeStrokes, 'Clear snapshots survive a theme change and remain undoable');
+  assert.equal(themed.saved('GA-1').paperStyle, 'grid'); assert.equal(themed.saved('GA-1').pageHeight, 2500);
+
+  const darkNew = harness({ theme: 'dark' });
+  assert.equal(darkNew.ids['rough-work-paper'].value, 'dotted', 'The unopened notebook controls use the new dotted default');
+  darkNew.notebook.show('GA-1', 'GA 1');
+  assert.equal(darkNew.ids['rough-work-paper'].value, 'dotted');
+  assert.equal(neutralOption(darkNew).textContent, 'White');
+  cursorCircle(darkNew, 4, '#e8eefb', '#111827');
+  assert.ok(darkNew.drawing.some(command => command.target === 'rough-work-canvas' && command.type === 'dot' && command.color === '#64748b'), 'A new dark page renders its dotted template immediately');
+  assert.equal(darkNew.storage.size, 0, 'Opening a new dotted page does not create a saved record');
+  darkNew.draw();
+  assert.equal(darkNew.saved('GA-1').paperStyle, 'dotted', 'The first ordinary edit remembers the dotted page default');
+  assert.equal(darkNew.saved('GA-1').strokes[0].color, '#17233b', 'Dark rendering preserves the neutral schema token');
+  const darkNewBytes = darkNew.storage.get(key('GA-1'));
+  const darkToolOperations = copy(darkNew.operations);
+  darkNew.ids['rough-work-color'].value = '#4169e1'; darkNew.ids['rough-work-color'].fire('change');
+  cursorCircle(darkNew, 4, '#8ba7ff', '#111827');
+  darkNew.tool('highlighter'); cursorCircle(darkNew, 16, '#fbbf24', '#111827');
+  darkNew.tool('eraser'); cursorCircle(darkNew, 16, '#e8eefb', '#111827');
+  darkNew.tool('pen'); cursorCircle(darkNew, 4, '#8ba7ff', '#111827');
+  darkNew.setTheme('light'); cursorCircle(darkNew, 4, '#4169e1');
+  darkNew.setTheme('dark'); cursorCircle(darkNew, 4, '#8ba7ff', '#111827');
+  assert.deepEqual(darkNew.operations, darkToolOperations, 'Theme-aware tool and color cursors leave the saved note untouched');
+  assert.equal(darkNew.storage.get(key('GA-1')), darkNewBytes);
+  const darkNewReload = harness({ storage: darkNew.storage }); darkNewReload.notebook.show('GA-1', 'GA 1');
+  assert.equal(darkNewReload.ids['rough-work-paper'].value, 'dotted');
+  assert.equal(darkNewReload.storage.get(key('GA-1')), darkNewBytes, 'A saved default style restores without rewriting it');
+  const explicitBlankBytes = JSON.stringify({ ...record('GA-1'), paperStyle: 'blank' });
+  const explicitBlank = harness({ theme: 'dark', storage: [[key('GA-1'), explicitBlankBytes]] }); explicitBlank.notebook.show('GA-1', 'GA 1');
+  assert.equal(explicitBlank.ids['rough-work-paper'].value, 'blank', 'An explicit saved Blank choice overrides the new dotted default');
+  assert.equal(explicitBlank.storage.get(key('GA-1')), explicitBlankBytes);
+  const legacyDark = harness({ theme: 'dark', storage: [[key('GA-1'), legacyHeightBytes]] }); legacyDark.notebook.show('GA-1', 'GA 1');
+  assert.equal(legacyDark.ids['rough-work-paper'].value, 'blank', 'Legacy notes without paperStyle remain blank in either theme');
+  assert.equal(legacyDark.storage.get(key('GA-1')), legacyHeightBytes);
+  const themeFallback = harness({ noMutationObserver: true, storage: [[key('GA-1'), JSON.stringify(themeRecord)]] }); themeFallback.notebook.show('GA-1', 'GA 1');
+  const themeFallbackBytes = themeFallback.storage.get(key('GA-1')), themeFallbackOperations = copy(themeFallback.operations);
+  for (const theme of ['dark', 'light']) {
+    const before = themeFallback.drawing.length;
+    themeFallback.setTheme(theme, true); assertThemePaint(themeFallback.drawing.slice(before), theme);
+    assert.equal(neutralOption(themeFallback).textContent, theme === 'dark' ? 'White' : 'Black');
+  }
+  assert.deepEqual(themeFallback.operations, themeFallbackOperations, 'The theme-button RAF fallback never accesses notebook storage');
+  assert.equal(themeFallback.storage.get(key('GA-1')), themeFallbackBytes);
+
   const h = harness();
   assert.deepEqual(h.operations, [], 'Binding notebook controls performs no storage operations');
   h.notebook.show('GA-1', 'GA 1'); h.flush();
   assert.match(h.ids['rough-page-label'].textContent, /GA 1/);
   assert.equal(h.storage.size, 0, 'Opening an empty page does not create a note');
-  assert.equal(h.ids['rough-work-paper'].value, 'blank', 'New question pages default to blank paper');
-  assert.equal(h.canvas.dataset.paperStyle, 'blank');
+  assert.equal(h.ids['rough-work-paper'].value, 'dotted', 'New unstored question pages default to dotted paper');
+  assert.equal(h.canvas.dataset.paperStyle, 'dotted');
   h.draw();
   let saved = h.saved('GA-1');
   assert.equal(saved.version, 1); assert.equal(saved.quizId, quizId); assert.equal(saved.questionId, 'GA-1');
@@ -239,6 +555,7 @@ function harness(options = {}) {
   geometry.event('pointerup', { clientX: 10000, clientY: 10000 });
   assert.deepEqual(geometry.saved('GA-1').strokes[0].points, [[0, 0], [1, 1]], 'Captured movement outside the page is bounded to the paper');
   geometry.canvas.rect = { left: 20, top: 40, width: 200, height: 250 };
+  geometry.windowEvent('resize');
   geometry.event('pointerdown', { clientX: 40, clientY: 65 });
   geometry.event('pointerup', { clientX: 60, clientY: 90 });
   assert.deepEqual(geometry.saved('GA-1').strokes[1].points, [[0.1, 0.1], [0.2, 0.2]], 'Resizing the displayed paper preserves normalized coordinates');
@@ -303,7 +620,7 @@ function harness(options = {}) {
   patterned.panel.fire('keydown', { key: 'z', ctrlKey: true, target: patterned.ids['rough-work-paper'] });
   assert.deepEqual(patterned.saved('GA-1').strokes, originalInk, 'The native paper selector keeps its own keyboard behavior');
   patterned.notebook.show('CS-2', 'CS 2');
-  assert.equal(patterned.ids['rough-work-paper'].value, 'blank');
+  assert.equal(patterned.ids['rough-work-paper'].value, 'dotted');
   choosePaper(patterned, 'ruled');
   assert.deepEqual(patterned.saved('CS-2').strokes, [], 'Paper choice alone is a saved notebook edit without inventing ink');
   patterned.draw();
@@ -318,7 +635,7 @@ function harness(options = {}) {
   const gridLines = composite.findIndex(command => command.target === 'rough-work-canvas' && command.type === 'stroke');
   const inkOverlay = composite.findIndex(command => command.target === 'rough-work-canvas' && command.type === 'image');
   assert.ok(paperFill >= 0, 'The visible canvas receives an actual paper backing bitmap');
-  assert.match(composite[paperFill].color.toLowerCase(), /^(?:white|#fff(?:fff)?)$/, 'Paper backing stays white in either theme');
+  assert.match(composite[paperFill].color.toLowerCase(), /^(?:white|#fff(?:fff)?)$/, 'Paper backing is white in the light theme');
   assert.ok(gridLines > paperFill, 'Grid rules are rendered on top of the paper backing');
   assert.ok(inkOverlay > gridLines, 'The separate transparent ink layer is composited after the visible grid');
   assert.equal(composite[inkOverlay].sourceTag, 'CANVAS');
@@ -450,9 +767,10 @@ function harness(options = {}) {
 
   for (const folder of ['_template', ...fs.readdirSync(root).filter(name => /^gate-cse-/.test(name))]) {
     const html = fs.readFileSync(path.join(root, folder, 'index.html'), 'utf8');
+    assert.match(html, /<option value="dotted" selected(?:="")?>Dotted<\/option>/, 'Every notebook starts with Dotted selected in its HTML');
     assert.ok(html.indexOf('src="rough-work-engine.js"') < html.indexOf('src="rough-work.js"'));
     assert.ok(html.indexOf('src="rough-work.js"') < html.indexOf('src="quiz.js"'));
     for (const file of ['rough-work-engine.js', 'rough-work.js']) assert.equal(fs.readFileSync(path.join(root, folder, file), 'utf8'), fs.readFileSync(path.join(root, '_template', file), 'utf8'), 'Notebook scripts are synchronized');
   }
-  console.log('Notebook checks passed: pointer tools, normalized ink, per-question autosave/restore/isolation, blank/dotted/ruled/grid paper, undo/redo and undoable clear, keyboard shortcuts, pagehide/cancellation/capture, malformed and unavailable storage, and dedicated storage boundaries. No real notes or attempts touched.');
+  console.log('Notebook checks passed: live theme palettes without note mutations, dotted defaults and legacy Blank compatibility, growing paper with bounded canvases and shape-preserving history, stroke-sized dot cursors and resize fallbacks, pointer tools, normalized ink, per-question autosave/restore/isolation, blank/dotted/ruled/grid paper, undo/redo and undoable clear, keyboard shortcuts, pagehide/cancellation/capture, malformed and unavailable storage, and dedicated storage boundaries. No real notes or attempts touched.');
 })().catch(error => { console.error(error.stack); process.exitCode = 1; });

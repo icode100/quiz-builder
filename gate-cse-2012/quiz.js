@@ -84,6 +84,51 @@
   function moveQuestion(direction) {
     if (!serverBusy && !submittedAt && !reviewState) jumpToQuestion(currentQuestionIndex + direction);
   }
+  function setupKeyboardShortcuts() {
+    document.addEventListener("keydown", event => {
+      const direction = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+      const optionKey = /^[a-d]$/i.test(event.key || "") ? event.key.toUpperCase() : null;
+      const flagKey = /^[mo]$/i.test(event.key || "") ? event.key.toUpperCase() : null;
+      if ((!direction && !optionKey && !flagKey) || event.defaultPrevented || event.isComposing ||
+          event.ctrlKey || event.metaKey || event.altKey || (direction && event.shiftKey) ||
+          serverBusy || submittedAt || reviewState || byId("quiz-form").hidden) return;
+      const target = event.target, card = questionTarget(currentQuestionIndex);
+      if (!card || card.hidden || target?.isContentEditable ||
+          target?.closest?.('textarea, select, [contenteditable], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"], #rough-work-panel, #shared-calculator-panel') ||
+          window.getSelection?.()?.isCollapsed === false) return;
+      const control = target?.closest?.("input");
+      const numericFlag = flagKey && questionType(data.questions[currentQuestionIndex]) === "nat" && control?.matches?.(".numeric-answer");
+      if (control && (direction || control.closest?.(".question-card") !== card ||
+          (!["radio", "checkbox"].includes(control.type) && !numericFlag))) return;
+      if (event.repeat) {
+        if (numericFlag) event.preventDefault();
+        return;
+      }
+      if (direction) {
+        const image = target?.closest?.(".image-link");
+        if (image && image.scrollWidth > image.clientWidth) return;
+        const next = currentQuestionIndex + direction;
+        if (next < 0 || next >= data.questions.length) return;
+        event.preventDefault();
+        moveQuestion(direction);
+        return;
+      }
+      if (flagKey) {
+        const button = byId(`${flagKey === "M" ? "mark-review" : "out-of-syllabus"}-${currentQuestionIndex}`);
+        if (!button || button.disabled) return;
+        event.preventDefault();
+        button.click();
+        return;
+      }
+      const question = data.questions[currentQuestionIndex];
+      if (!["mcq", "msq"].includes(questionType(question))) return;
+      const option = question.options.find(item => item.id.toUpperCase() === optionKey);
+      const input = option && Array.from(card.querySelectorAll("input")).find(item => item.value === option.id);
+      if (!input || input.disabled) return;
+      event.preventDefault();
+      input.click();
+    });
+  }
   function updateCurrentQuestionFromViewport() {
     if (!submittedAt) return;
     const height = window.innerHeight;
@@ -226,7 +271,7 @@
   function correctAnswerText(question) {
     if (question.marksToAll) return "MTA — marks to all";
     if (questionType(question) === "nat") return question.correctRanges.map(({ min, max }) => min === max ? String(min) : `${min} to ${max} (inclusive)`).join(" OR ");
-    if (questionType(question) === "msq") return question.correctAnswers.join(" + ");
+    if (questionType(question) === "msq") return (question.acceptedAnswerSets || [question.correctAnswers]).map(set => set.join(" + ")).join(" OR ");
     return (question.acceptedAnswers || [question.correctAnswer]).join(" OR ");
   }
   function validate() {
@@ -249,6 +294,7 @@
           optionIds.add(option.id);
         }
         const key = type === "msq" ? question.correctAnswers : (question.acceptedAnswers || [question.correctAnswer]);
+        if (question.acceptedAnswerSets !== undefined && (type !== "msq" || !Array.isArray(question.acceptedAnswerSets) || !question.acceptedAnswerSets.length || question.acceptedAnswerSets.some(set => !Array.isArray(set) || !set.length || new Set(set).size !== set.length || set.some(id => !optionIds.has(id))))) throw new Error(`${question.id} has invalid alternative answer sets.`);
         if (!question.marksToAll && (!Array.isArray(key) || !key.length || new Set(key).size !== key.length || key.some((id) => !optionIds.has(id)))) throw new Error(`${question.id} needs a verified answer.`);
       }
       if (!Number.isFinite(marks(question).correct) || marks(question).correct <= 0 || !Number.isFinite(marks(question).incorrect) || marks(question).incorrect > 0) throw new Error(`${question.id} has invalid marking rules.`);
@@ -353,7 +399,7 @@
       else if (question.marksToAll) outcome = "awarded";
       else if (selected !== undefined) {
         const correct = type === "nat" ? numericValue(selected) !== null && question.correctRanges.some(({ min, max }) => numericValue(selected) >= min && numericValue(selected) <= max)
-          : type === "msq" ? selected.length === question.correctAnswers.length && selected.every((id) => question.correctAnswers.includes(id))
+          : type === "msq" ? (question.acceptedAnswerSets || [question.correctAnswers]).some(set => selected.length === set.length && selected.every((id) => set.includes(id)))
           : (question.acceptedAnswers || [question.correctAnswer]).includes(selected);
         outcome = correct ? "correct" : "incorrect";
         if (question.requiresCorrect && !excluded.has(question.requiresCorrect) && outcomes.get(question.requiresCorrect) !== "correct") {
@@ -691,6 +737,7 @@
           input.name = `question-${index}`;
           input.id = `answer-${index}-${optionIndex}`;
           input.value = option.id;
+          if (/^[a-d]$/i.test(option.id)) input.setAttribute("aria-keyshortcuts", option.id.toUpperCase());
           input.checked = type === "msq" ? (answers[question.id] || []).includes(option.id) : answers[question.id] === option.id;
           label.classList.toggle("selected", input.checked);
           addImages(text, option, `Option ${option.id} for ${questionLabel(question)}`);
@@ -722,6 +769,7 @@
       const actions = element("div", "question-actions"), mark = element("button", "button button-secondary mark-review");
       mark.type = "button";
       mark.id = `mark-review-${index}`;
+      mark.setAttribute("aria-keyshortcuts", "M");
       mark.addEventListener("click", () => {
         if (serverBusy || submittedAt || reviewState) return;
         if (reviewFlags.has(question.id)) reviewFlags.delete(question.id);
@@ -732,6 +780,7 @@
       const exclude = element("button", "button button-secondary out-of-syllabus-toggle", "Out of syllabus");
       exclude.type = "button";
       exclude.id = `out-of-syllabus-${index}`;
+      exclude.setAttribute("aria-keyshortcuts", "O");
       exclude.addEventListener("click", () => {
         if (serverBusy || submittedAt || reviewState) return;
         if (outOfSyllabus.has(question.id)) outOfSyllabus.delete(question.id);
@@ -879,6 +928,7 @@
     setupStorage();
     setupTimer();
     setupCurrentQuestion();
+    setupKeyboardShortcuts();
     setupRoughWork();
     byId("quiz-form").addEventListener("submit", submitAttempt);
     byId("questions").addEventListener("keydown", (event) => {

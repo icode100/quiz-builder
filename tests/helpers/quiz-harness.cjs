@@ -30,13 +30,17 @@ class El {
   addEventListener(name, fn) { (this.events[name] ??= []).push(fn); }
   async fire(name, event = {}) { for (const fn of this.events[name] || []) await fn({ target: this, preventDefault() {}, ...event }); }
   matches(selector) {
-    const attr = selector.match(/\[([^=]+)="([^"]+)"\]/);
-    if (attr && (this.attrs[attr[1]] ?? this[attr[1]]) !== attr[2]) return false;
-    selector = selector.replace(/\[.*?\]/g, '');
-    if (selector.startsWith('.')) return this.className.split(' ').includes(selector.slice(1));
-    if (selector.startsWith('#')) return this.id === selector.slice(1);
-    return this.tagName === selector;
+    return selector.split(',').some(part => {
+      const attrs = [...part.matchAll(/\[([^=\]]+)(?:="([^"]*)")?\]/g)];
+      if (attrs.some(([, name, value]) => value === undefined ? !Object.hasOwn(this.attrs, name) : (this.attrs[name] ?? this[name]) !== value)) return false;
+      const base = part.replace(/\[.*?\]/g, '').trim();
+      if (!base || base === '*') return true;
+      if (base.startsWith('.')) return this.className.split(' ').includes(base.slice(1));
+      if (base.startsWith('#')) return this.id === base.slice(1);
+      return this.tagName === base;
+    });
   }
+  closest(selector) { return this.matches(selector) ? this : this.parent?.closest(selector) || null; }
   querySelectorAll(selector) {
     const out = [];
     for (const node of this.children) {
@@ -47,7 +51,19 @@ class El {
   }
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
   focus() { this.focused = true; } scrollIntoView() { this.scrolled = true; }
-  click() { return this.fire('click'); }
+  click() {
+    if (this.tagName !== 'input' || !['radio', 'checkbox'].includes(this.type)) return this.fire('click');
+    if (this.disabled) return Promise.resolve();
+    const changed = this.type === 'checkbox' || !this.checked;
+    if (this.type === 'radio') {
+      let root = this; while (root.parent) root = root.parent;
+      for (const input of root.querySelectorAll('input')) if (input.type === 'radio' && input.name === this.name) input.checked = false;
+      this.checked = true;
+    } else this.checked = !this.checked;
+    const events = [this.fire('click')];
+    if (changed) events.push(this.fire('input'), this.fire('change'));
+    return Promise.all(events);
+  }
   remove() { if (this.parent) this.parent.children = this.parent.children.filter(node => node !== this); this.parent = null; }
 }
 

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GATE CSE 2015 - Set 2</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="quiz-data.js" defer></script>
+  <script src="rough-work-engine.js" defer></script>
+  <script src="rough-work.js" defer></script>
+  <script src="quiz.js" defer></script>
+</head>
+<body>
+  <div class="quiz-shell">
+  <main class="container">
+    <header class="page-header">
+      <div class="header-top">
+        <p class="eyebrow">Practice quiz</p>
+        <a id="quiz-home" class="button button-secondary" href="/">Home</a>
+        <span id="review-attempt-wrap" class="review-attempt-control" title="This paper has not been attempted before.">
+          <button id="review-attempt" class="button button-secondary" type="button" title="This paper has not been attempted before." disabled>Review last attempt</button>
+        </span>
+        <button id="theme-toggle" class="toggle-switch theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Theme">
+          <span class="switch-label">Theme</span>
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        </button>
+      </div>
+      <h1 id="quiz-title">GATE CSE 2015 - Set 2</h1>
+      <div id="quiz-meta" class="quiz-meta" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+      <details id="paper-details" class="paper-details" hidden>
+        <summary>Paper details and marking instructions</summary>
+        <p id="quiz-source" class="subtitle" hidden></p>
+        <p id="quiz-instructions" class="subtitle" hidden></p>
+      </details>
+    </header>
+
+    <section id="quiz-timer" class="quiz-timer" aria-label="Quiz timer" hidden>
+      <div class="timer-options">
+        <label for="timer-duration">Timer duration</label>
+        <select id="timer-duration">
+          <option value="180">180 mins</option>
+          <option value="150">150 mins</option>
+          <option value="120">120 mins</option>
+          <option value="90">90 mins</option>
+          <option value="60">60 mins</option>
+          <option value="30">30 mins</option>
+        </select>
+      </div>
+      <div class="timer-readout">
+        <output id="timer-display" role="timer" aria-live="off" aria-label="Time remaining">03:00:00</output>
+        <p id="timer-status" class="timer-status" role="status" aria-live="polite">Ready</p>
+      </div>
+      <div class="timer-actions">
+        <button id="timer-start" class="button" type="button">Start</button>
+        <button id="timer-pause" class="button button-secondary" type="button" disabled>Pause</button>
+        <button id="timer-reset" class="button button-secondary" type="button">Reset</button>
+      </div>
+    </section>
+
+    <section id="progress-panel" class="progress-panel" aria-label="Test progress and status" hidden>
+      <div id="test-progress" class="test-progress" hidden>
+        <progress id="test-progress-bar" class="test-progress-bar" max="100" value="0" aria-label="Test progress"></progress>
+        <span class="test-progress-track" aria-hidden="true"><span id="test-progress-fill" class="test-progress-fill"></span></span>
+        <div class="test-progress-content">
+          <span>Test progress <strong id="test-progress-value">0%</strong></span>
+          <span id="test-progress-detail"></span>
+        </div>
+      </div>
+      <p id="status-message" class="status-message" role="status" aria-live="polite" hidden></p>
+    </section>
+
+    <section id="empty-state" class="empty-state" hidden>
+      <h2>Ready for your question paper</h2>
+      <p>This is the blank quiz template. Send the question paper PDF and its answer key in the chat, and a separate folder will be prepared for that quiz.</p>
+      <p>Run <strong>start-quiz.cmd</strong> (Windows) or <strong>start-quiz.command</strong> (macOS) from the Quiz folder, then choose your paper at <strong>http://127.0.0.1:8765/</strong>.</p>
+    </section>
+
+    <form id="quiz-form" class="quiz-form" hidden>
+      <fieldset id="quiz-session" class="session-controls">
+      <div class="quiz-actions">
+        <p id="progress" class="progress" role="status" aria-live="polite"></p>
+        <button class="button" type="submit">Submit and check answers</button>
+        <button id="clear-answers" class="button button-secondary" type="button">Clear answers</button>
+      </div>
+      <div id="questions"></div>
+      <nav id="question-carousel" class="question-carousel" aria-label="Question navigation" hidden>
+        <button id="previous-question" class="button button-secondary" type="button" aria-label="Previous question" aria-keyshortcuts="ArrowLeft" title="Previous question">← Previous</button>
+        <span id="carousel-position" role="status" aria-live="polite"></span>
+        <button id="next-question" class="button button-secondary" type="button" aria-label="Skip question" aria-keyshortcuts="ArrowRight" title="Skip question">→</button>
+      </nav>
+      </fieldset>
+    </form>
+
+    <section id="report" class="report" aria-labelledby="report-title" hidden>
+      <div class="score-card">
+        <h2 id="report-title" tabindex="-1">Your result</h2>
+        <p id="report-source" class="subtitle" hidden></p>
+        <p id="score-value" class="score-value"></p>
+        <p id="score-detail" class="score-detail"></p>
+        <div id="report-summary" class="report-summary"></div>
+      </div>
+      <div class="report-actions">
+        <button id="retry-quiz" class="button" type="button">Attempt again</button>
+        <button id="download-report" class="button button-secondary" type="button">Save report</button>
+        <button id="print-report" class="button button-secondary" type="button">Print report</button>
+      </div>
+      <div id="report-list" class="report-list"></div>
+    </section>
+    <noscript><p>Enable JavaScript in your browser to attempt and score this quiz.</p></noscript>
+  </main>
+  <aside id="rough-work-panel" class="rough-work-panel" aria-labelledby="rough-work-title" hidden>
+    <div class="rough-work-header">
+      <h2 id="rough-work-title">Rough work</h2>
+      <button id="rough-work-close" class="button button-secondary rough-work-close" type="button" aria-label="Close rough work and show question map" title="Close rough work and show question map">Question map <span aria-hidden="true">×</span></button>
+    </div>
+    <p id="rough-page-label" class="rough-page-label"></p>
+    <div class="rough-work-tools" role="group" aria-label="Drawing tools">
+      <div class="rough-tool-group" role="group" aria-label="Ink tool">
+        <button id="rough-tool-pen" type="button" aria-pressed="true" title="Draw with a pen">Pen</button>
+        <button id="rough-tool-highlighter" type="button" aria-pressed="false" title="Draw with a translucent highlighter">Highlight</button>
+        <button id="rough-tool-eraser" type="button" aria-pressed="false" title="Erase ink">Eraser</button>
+      </div>
+      <label>Color <select id="rough-work-color" aria-label="Ink color"><option value="#17233b">Black</option><option value="#4169e1">Blue</option><option value="#dc2626">Red</option><option value="#15803d">Green</option><option value="#f59e0b">Amber</option></select></label>
+      <label>Width <select id="rough-work-width" aria-label="Stroke width"><option value="2">Fine</option><option value="4" selected>Medium</option><option value="8">Bold</option><option value="16">Wide</option></select></label>
+      <label>Paper <select id="rough-work-paper" aria-label="Paper style"><option value="blank">Blank</option><option value="dotted" selected>Dotted</option><option value="ruled">Ruled</option><option value="grid">Grid</option></select></label>
+      <div class="rough-tool-group" role="group" aria-label="Page history">
+        <button id="rough-undo" type="button" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button>
+        <button id="rough-redo" type="button" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>Redo</button>
+        <button id="rough-clear" type="button" title="Clear this question's page (can be undone)" disabled>Clear page</button>
+      </div>
+    </div>
+    <p id="rough-work-help" class="rough-work-help">Draw with a mouse, touch or stylus. Each question has its own page.</p>
+    <div id="rough-work-surface" class="rough-work-surface" role="region" aria-label="Rough-work notebook" aria-describedby="rough-work-help" tabindex="0"><canvas id="rough-work-canvas" class="rough-work-canvas" width="1000" height="1250" tabindex="0" aria-label="Rough-work drawing page" aria-describedby="rough-work-help">Drawing surface for this question’s rough work.</canvas></div>
+    <p id="rough-work-status" class="rough-work-status" role="status" aria-live="polite"></p>
+  </aside>
+  <aside id="question-nav" class="question-nav" aria-labelledby="nav-title" hidden>
+    <h2 id="nav-title">Question map</h2>
+    <p id="nav-progress" class="nav-progress" role="status" aria-live="polite"></p>
+    <div class="nav-legend">
+      <span id="nav-attempted-legend"><span class="nav-dot answered" aria-hidden="true"></span> Attempted</span>
+      <span id="nav-unattempted-legend"><span class="nav-dot unanswered" aria-hidden="true"></span> Not attempted</span>
+      <span id="nav-correct-legend" hidden><span class="nav-dot result-correct" aria-hidden="true"></span> Correct</span>
+      <span id="nav-incorrect-legend" hidden><span class="nav-dot result-incorrect" aria-hidden="true"></span> Incorrect</span>
+      <span id="nav-unanswered-legend" hidden><span class="nav-dot unanswered" aria-hidden="true"></span> Unanswered</span>
+      <span id="nav-awarded-legend" hidden><span class="nav-dot result-awarded" aria-hidden="true"></span> Marks to all</span>
+      <span id="nav-blocked-legend" hidden><span class="nav-dot result-blocked" aria-hidden="true"></span> Not evaluated</span>
+      <span id="nav-excluded-legend" hidden><span class="nav-dot result-excluded" aria-hidden="true">∅</span> Out of syllabus</span>
+      <span id="nav-review-legend"><span class="nav-dot marked-review" aria-hidden="true"></span> Marked for review</span>
+      <span id="nav-check-legend" hidden><span class="nav-dot needs-check" aria-hidden="true"></span> Check number</span>
+    </div>
+    <nav id="nav-groups" class="nav-groups" aria-label="Jump to a question"></nav>
+  </aside>
+  </div>
+  <button id="rough-work-toggle" class="rough-work-toggle" type="button" aria-label="Rough work" title="Open rough work" aria-expanded="false" aria-controls="rough-work-panel" hidden>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 3 5 5M4 20l4.5-1L21 6.5 17.5 3 5 15.5 4 20Z"/><path d="M4 20h16"/></svg>
+  </button>
+</body>
+</html>

@@ -17,8 +17,15 @@ same(engine.widths, [2, 4, 8, 16]);
 same(engine.tools, ['pen', 'highlighter', 'eraser']);
 same(engine.paperStyles, ['blank', 'dotted', 'ruled', 'grid']);
 same(engine.paper, { width: 1000, height: 1250 });
-same(engine.limits, { strokes: 1000, pointsPerStroke: 10000, totalPoints: 100000 });
+same(engine.limits, { strokes: 1000, pointsPerStroke: 10000, totalPoints: 100000, paperHeight: 50000, canvasPixels: 4000000 });
 assert.ok(Object.isFrozen(engine) && Object.isFrozen(engine.colors) && Object.isFrozen(engine.widths) && Object.isFrozen(engine.limits)); checks++;
+const darkColors = ['#e8eefb', '#8ba7ff', '#fb7185', '#4ade80', '#fbbf24'];
+same(engine.colors.map(color => engine.inkColor(color)), engine.colors);
+same(engine.colors.map(color => engine.inkColor(color, 'light')), engine.colors);
+same(engine.colors.map(color => engine.inkColor(color, 'dark')), darkColors);
+for (const theme of ['light', 'dark']) for (const color of [null, undefined, '', 'red', '#fff', '#17233B', ...darkColors, {}, 1]) {
+  assert.throws(() => engine.inkColor(color, theme), /ink color/); checks++;
+}
 same(engine.validateStrokes([]), []);
 for (const tool of engine.tools) for (const color of engine.colors) for (const width of engine.widths) {
   const input = [stroke({ tool, color, width })];
@@ -127,8 +134,47 @@ failed.context.stroke = () => { throw new Error('Synthetic renderer failure'); }
 assert.throws(() => engine.draw(failed.context, [stroke()], 1000, 1250), /Synthetic/);
 same(failed.state(), failState); assert.equal(failed.depth(), 0); checks++;
 
+// Legacy stroke tokens render in either theme without changing their data,
+// geometry, compositing or opacity. Theme changes can be reversed freely.
+const themedDrawing = engine.tools.flatMap((tool, toolIndex) => engine.colors.map((color, index) =>
+  stroke({ tool, color, width: engine.widths[index % engine.widths.length], points: index % 2 ? [[0.3, 0.7]] : [[0.1, 0.2], [0.8, 0.9]], })));
+const originalThemedDrawing = copy(themedDrawing), themeInk = {};
+for (const theme of ['light', 'dark']) {
+  const canvas = canvasContext(), before = canvas.state();
+  engine.draw(canvas.context, themedDrawing, 500, 1250, theme);
+  same(canvas.operations.map(item => item.strokeStyle), themedDrawing.map(item => engine.inkColor(item.color, theme)));
+  same(canvas.operations.map(item => item.fillStyle), themedDrawing.map(item => engine.inkColor(item.color, theme)));
+  same(canvas.operations.map(item => item.globalAlpha), themedDrawing.map(item => item.tool === 'highlighter' ? 0.25 : 1));
+  same(canvas.operations.map(item => item.globalCompositeOperation), themedDrawing.map(item => item.tool === 'eraser' ? 'destination-out' : 'source-over'));
+  same(canvas.state(), before);
+  assert.equal(canvas.depth(), 0); checks++;
+  themeInk[theme] = canvas.operations.map(({ strokeStyle, fillStyle, ...geometry }) => geometry);
+}
+same(themeInk.dark, themeInk.light);
+same(themedDrawing, originalThemedDrawing);
+same(engine.validateStrokes(themedDrawing), originalThemedDrawing);
+const themeReplay = canvasContext();
+for (const theme of ['light', 'dark', 'light']) engine.draw(themeReplay.context, themedDrawing, 500, 1250, theme);
+same(themeReplay.operations.slice(0, themedDrawing.length), themeReplay.operations.slice(-themedDrawing.length));
+same(themedDrawing, originalThemedDrawing);
+
+// Unknown themes must fail before clearing the existing drawing or paper.
+for (const theme of [null, '', 'Dark', 'LIGHT', 'system', '__proto__', 'constructor', true, 1, NaN, [], {}]) {
+  assert.throws(() => engine.inkColor(engine.colors[0], theme), /theme/); checks++;
+  const invalidInk = canvasContext(), beforeInk = invalidInk.state();
+  assert.throws(() => engine.draw(invalidInk.context, drawing, 500, 625, theme), /theme/);
+  same(invalidInk.calls, []);
+  same(invalidInk.state(), beforeInk);
+  for (const style of engine.paperStyles) {
+    const invalidPaper = canvasContext(), beforePaper = invalidPaper.state();
+    assert.throws(() => engine.drawPaper(invalidPaper.context, style, 500, 625, 1250, theme), /theme/);
+    same(invalidPaper.calls, []);
+    same(invalidPaper.state(), beforePaper);
+  }
+}
+
 // Notebook patterns are a separate opaque backdrop. Their operation counts
-// depend only on the fixed virtual page, never the supplied canvas dimensions.
+// depend only on the bounded logical page, never the supplied canvas dimensions.
 for (const style of engine.paperStyles) {
   const trackedPaper = canvasContext(), paperBefore = trackedPaper.state();
   engine.drawPaper(trackedPaper.context, style, 500, 625);
@@ -161,6 +207,49 @@ const largePaper = canvasContext();
 engine.drawPaper(largePaper.context, 'dotted', 100000000, 125000000);
 assert.equal(largePaper.operations[1].path.filter(item => item[0] === 'arc').length, 500); checks++;
 assert.equal(largePaper.operations[1].path[1][3], 300000); checks++;
+
+// Growing the paper adds rows instead of stretching the original guides. At
+// proportional display dimensions, horizontal and vertical gaps stay equal.
+for (const style of engine.paperStyles) {
+  const tallPaper = canvasContext(), before = tallPaper.state();
+  engine.drawPaper(tallPaper.context, style, 500, 1250, 2500);
+  same(tallPaper.operations[0].args, [0, 0, 500, 1250]);
+  same(tallPaper.state(), before);
+  assert.equal(tallPaper.depth(), 0); checks++;
+  if (style === 'blank') { assert.equal(tallPaper.operations.length, 1); checks++; continue; }
+  const pattern = tallPaper.operations[1];
+  if (style === 'dotted') {
+    const dots = pattern.path.filter(item => item[0] === 'arc');
+    assert.equal(dots.length, 1000); checks++;
+    same(dots[0], ['arc', 12.5, 12.5, 1.5, 0, Math.PI * 2]);
+    same(dots.at(-1), ['arc', 487.5, 1237.5, 1.5, 0, Math.PI * 2]);
+    assert.equal(dots[1][2] - dots[0][2], dots[50][1] - dots[0][1]); checks++;
+  } else {
+    const lines = pattern.path.filter(item => item[0] === 'lineTo');
+    assert.equal(lines.length, style === 'grid' ? 68 : 49); checks++;
+    same(pattern.path.slice(0, 4), [['moveTo', 0, 25], ['lineTo', 500, 25], ['moveTo', 0, 50], ['lineTo', 500, 50]]);
+    same(pattern.path.slice(96, 98), [['moveTo', 0, 1225], ['lineTo', 500, 1225]]);
+    assert.equal(pattern.lineWidth, 1.25); checks++;
+    if (style === 'grid') same(pattern.path.slice(-2), [['moveTo', 475, 0], ['lineTo', 475, 1250]]);
+  }
+}
+const maximumPaper = canvasContext();
+engine.drawPaper(maximumPaper.context, 'dotted', 100000000, 5000000000, engine.limits.paperHeight);
+assert.equal(maximumPaper.operations[1].path.filter(item => item[0] === 'arc').length, 20000); checks++;
+const maximumGrid = canvasContext();
+engine.drawPaper(maximumGrid.context, 'grid', 1000, 50000, engine.limits.paperHeight);
+assert.equal(maximumGrid.operations[1].path.filter(item => item[0] === 'lineTo').length, 1018); checks++;
+same(maximumGrid.operations[1].path.slice(1996, 1998), [['moveTo', 0, 49950], ['lineTo', 1000, 49950]]);
+const fractionalHeight = canvasContext();
+engine.drawPaper(fractionalHeight.context, 'blank', 500, 625.25, 1250.5);
+same(fractionalHeight.operations[0].args, [0, 0, 500, 625.25]);
+for (const logicalHeight of [null, '', '1250', true, [], {}, NaN, Infinity, -Infinity, 0, 1249.99, engine.limits.paperHeight + 0.01, Number.MAX_VALUE]) {
+  for (const style of engine.paperStyles) {
+    const invalidHeight = canvasContext();
+    assert.throws(() => engine.drawPaper(invalidHeight.context, style, 1000, 1250, logicalHeight), /paper height/);
+    assert.equal(invalidHeight.calls.length, 0, 'Invalid logical height cannot clear or repaint existing paper'); checks++;
+  }
+}
 for (const style of [undefined, null, '', 'Grid', 'lined', [], {}, 1]) {
   const invalidPaper = canvasContext();
   assert.throws(() => engine.drawPaper(invalidPaper.context, style, 1000, 1250), /paper/);
@@ -179,10 +268,29 @@ const paperWithoutTransform = canvasContext(); delete paperWithoutTransform.cont
 engine.drawPaper(paperWithoutTransform.context, 'blank', 1000, 1250);
 assert.equal(paperWithoutTransform.operations[0].method, 'fillRect'); checks++;
 
+// Paper colors follow the theme while guide geometry, sizes and resource
+// counts stay identical, including expanded pages and the height boundary.
+for (const logicalHeight of [1250, 2500, engine.limits.paperHeight]) for (const style of engine.paperStyles) {
+  const light = canvasContext(), dark = canvasContext(), before = dark.state();
+  engine.drawPaper(light.context, style, 500, logicalHeight / 2, logicalHeight, 'light');
+  engine.drawPaper(dark.context, style, 500, logicalHeight / 2, logicalHeight, 'dark');
+  assert.equal(dark.operations[0].fillStyle, '#111827'); checks++;
+  same(dark.operations[0].args, light.operations[0].args);
+  same(dark.operations.map(item => [item.globalAlpha, item.globalCompositeOperation]), light.operations.map(item => [item.globalAlpha, item.globalCompositeOperation]));
+  same(dark.state(), before);
+  assert.equal(dark.depth(), 0); checks++;
+  if (style === 'blank') { assert.equal(dark.operations.length, 1); checks++; continue; }
+  const guides = dark.operations[1], lightGuides = light.operations[1];
+  assert.equal(style === 'dotted' ? guides.fillStyle : guides.strokeStyle, style === 'dotted' ? '#64748b' : '#44546c'); checks++;
+  same(guides.path, lightGuides.path);
+  assert.equal(guides.lineWidth, lightGuides.lineWidth); checks++;
+}
+
 // The same script loads without CommonJS, DOM, canvas or storage globals.
 const browser = {};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../_template/rough-work-engine.js'), 'utf8'), browser);
 assert.equal(typeof browser.RoughWorkEngine.validateStrokes, 'function'); checks++;
 assert.equal(typeof browser.RoughWorkEngine.drawPaper, 'function'); checks++;
+assert.equal(browser.RoughWorkEngine.inkColor('#17233b', 'dark'), '#e8eefb'); checks++;
 same(copy(browser.RoughWorkEngine.validateStrokes([onePoint])), [onePoint]);
-console.log(`Rough-work engine checks passed: ${checks} validation, resource bounds, immutable vectors, scaled rendering, highlighter alpha, transparent erasing, blank/dotted/ruled/grid paper and context restoration. No real data touched.`);
+console.log(`Rough-work engine checks passed: ${checks} validation, resource bounds, immutable vectors, theme-aware ink and expandable paper, scaled rendering, highlighter alpha, transparent erasing and context restoration. No real data touched.`);

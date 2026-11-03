@@ -41,8 +41,9 @@ function scoreAttempt(attempt, data) {
       if (!Array.isArray(question.options) || question.options.length < 2) invalid();
       const options = new Set(question.options.map(option => option?.id)), key = type === 'msq' ? question.correctAnswers : question.acceptedAnswers || [question.correctAnswer];
       if (options.size !== question.options.length || [...options].some(id => typeof id !== 'string' || !id.trim()) || (!question.marksToAll && (!Array.isArray(key) || !key.length || new Set(key).size !== key.length || key.some(id => !options.has(id))))) invalid();
+      if (question.acceptedAnswerSets !== undefined && (type !== 'msq' || !Array.isArray(question.acceptedAnswerSets) || !question.acceptedAnswerSets.length || question.acceptedAnswerSets.some(set => !Array.isArray(set) || !set.length || new Set(set).size !== set.length || set.some(id => !options.has(id))))) invalid();
       if (answered && (type === 'msq' ? !Array.isArray(answer) || !answer.length || new Set(answer).size !== answer.length || answer.some(id => !options.has(id)) : !options.has(answer))) invalid();
-      correct = answered && !question.marksToAll && (type === 'msq' ? answer.length === key.length && answer.every(id => key.includes(id)) : key.includes(answer));
+      correct = answered && !question.marksToAll && (type === 'msq' ? (question.acceptedAnswerSets || [key]).some(set => answer.length === set.length && answer.every(id => set.includes(id))) : key.includes(answer));
     }
     let eligible = true;
     if (question.requiresCorrect !== undefined) {

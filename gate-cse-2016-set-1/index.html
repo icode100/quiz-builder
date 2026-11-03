@@ -85,9 +85,9 @@
       </div>
       <div id="questions"></div>
       <nav id="question-carousel" class="question-carousel" aria-label="Question navigation" hidden>
-        <button id="previous-question" class="button button-secondary" type="button" aria-label="Previous question" title="Previous question">← Previous</button>
+        <button id="previous-question" class="button button-secondary" type="button" aria-label="Previous question" aria-keyshortcuts="ArrowLeft" title="Previous question">← Previous</button>
         <span id="carousel-position" role="status" aria-live="polite"></span>
-        <button id="next-question" class="button button-secondary" type="button" aria-label="Skip question" title="Skip question">→</button>
+        <button id="next-question" class="button button-secondary" type="button" aria-label="Skip question" aria-keyshortcuts="ArrowRight" title="Skip question">→</button>
       </nav>
       </fieldset>
     </form>
@@ -123,7 +123,7 @@
       </div>
       <label>Color <select id="rough-work-color" aria-label="Ink color"><option value="#17233b">Black</option><option value="#4169e1">Blue</option><option value="#dc2626">Red</option><option value="#15803d">Green</option><option value="#f59e0b">Amber</option></select></label>
       <label>Width <select id="rough-work-width" aria-label="Stroke width"><option value="2">Fine</option><option value="4" selected>Medium</option><option value="8">Bold</option><option value="16">Wide</option></select></label>
-      <label>Paper <select id="rough-work-paper" aria-label="Paper style"><option value="blank">Blank</option><option value="dotted">Dotted</option><option value="ruled">Ruled</option><option value="grid">Grid</option></select></label>
+      <label>Paper <select id="rough-work-paper" aria-label="Paper style"><option value="blank">Blank</option><option value="dotted" selected>Dotted</option><option value="ruled">Ruled</option><option value="grid">Grid</option></select></label>
       <div class="rough-tool-group" role="group" aria-label="Page history">
         <button id="rough-undo" type="button" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button>
         <button id="rough-redo" type="button" title="Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y)" disabled>Redo</button>
