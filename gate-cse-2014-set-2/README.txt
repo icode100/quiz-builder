@@ -47,3 +47,7 @@ Verification: node tests/quiz-2014-set-2.test.cjs checks the independent
 65-entry key, every MCQ option, NAT boundaries, scoring, full reports,
 draft/review lifecycle and server scores using disposable fixtures.
 No real attempt is created or reset during development.
+
+Screen annotation: use the labelled button to draw directly on a question, including in browser fullscreen. Pen, Highlight, Eraser, colors, widths, Undo/Redo and undoable Clear annotations affect only that question. Drag the tool heading (or focus it and use arrow keys) to move the palette. Done or Escape from the tools returns to normal clicking, keeping marks visible. Annotations save separately in this browser and remain through navigation, reload, reports and fresh attempts; they never change answers or rough-work notes. Browser-data removal can erase them; keep the tab open if saving fails.
+
+Numerical number pad: tap 123 beside the numerical-answer field for digits, decimal point, +/- sign, backspace and C (clear). Done closes it. Wide screens reuse the map sidebar; small screens or drawing workspaces use a compact popover without narrowing the question. Answers still validate and autosave normally; no key submits or advances. The pad choice lasts only for this page visit.

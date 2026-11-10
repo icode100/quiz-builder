@@ -51,6 +51,7 @@ class El {
   }
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
   focus() { this.focused = true; } scrollIntoView() { this.scrolled = true; }
+  setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
   click() {
     if (this.tagName !== 'input' || !['radio', 'checkbox'].includes(this.type)) return this.fire('click');
     if (this.disabled) return Promise.resolve();

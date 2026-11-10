@@ -9,3 +9,7 @@ MCQ deductions are exactly one-third of marks; MSQ requires the exact set with n
 Includes the unchanged shared template runtime: browser draft autosave, timer, review flags, syllabus exclusions, rough work, reports and saved-attempt review. Calculator is injected centrally by the local server. No attempt is created until Submit.
 
 Validation: node tests/quiz-2022.test.cjs. Attempts in tests are simulated.
+
+Screen annotation: use the labelled button to draw directly on a question, including in browser fullscreen. Pen, Highlight, Eraser, colors, widths, Undo/Redo and undoable Clear annotations affect only that question. Drag the tool heading (or focus it and use arrow keys) to move the palette. Done or Escape from the tools returns to normal clicking, keeping marks visible. Annotations save separately in this browser and remain through navigation, reload, reports and fresh attempts; they never change answers or rough-work notes. Browser-data removal can erase them; keep the tab open if saving fails.
+
+Numerical number pad: tap 123 beside the numerical-answer field for digits, decimal point, +/- sign, backspace and C (clear). Done closes it. Wide screens reuse the map sidebar; small screens or drawing workspaces use a compact popover without narrowing the question. Answers still validate and autosave normally; no key submits or advances. The pad choice lasts only for this page visit.

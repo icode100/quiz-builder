@@ -15,6 +15,8 @@
   let timerMinutes = 180, timerRemainingMs = 180 * 60000, timerEndsAt = null, timerInterval = null;
   let currentQuestionIndex = 0, currentQuestionFrame = false, currentQuestionInteraction = null;
   let roughNotebook = null;
+  let questionAnnotations = null;
+  let numericKeypadOpen = false;
 
   function setupRoughWork() {
     const toggle = byId("rough-work-toggle"), panel = byId("rough-work-panel");
@@ -41,6 +43,7 @@
   }
 
   function renderCarouselControls() {
+    updateNumericKeypads();
     byId("question-carousel").hidden = Boolean(submittedAt) || !data.questions.length;
     const question = data.questions[currentQuestionIndex];
     if (!question) return;
@@ -64,6 +67,7 @@
     });
     renderCarouselControls();
     if (!byId("rough-work-panel").hidden) roughNotebook?.show(data.questions[index].id, questionLabel(data.questions[index]));
+    questionAnnotations?.setCurrent(data.questions[index].id, questionLabel(data.questions[index]));
     if (persist && changed && !submittedAt && !reviewState) save();
   }
   function questionTarget(index) {
@@ -94,7 +98,8 @@
           serverBusy || submittedAt || reviewState || byId("quiz-form").hidden) return;
       const target = event.target, card = questionTarget(currentQuestionIndex);
       if (!card || card.hidden || target?.isContentEditable ||
-          target?.closest?.('textarea, select, [contenteditable], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"], #rough-work-panel, #shared-calculator-panel') ||
+          target?.closest?.('textarea, select, [contenteditable], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"], #rough-work-panel, #shared-calculator-panel, #screen-annotation-toolbar, .question-annotation-canvas, .numeric-keypad, .numeric-keypad-toggle') ||
+          questionAnnotations?.isDrawing() ||
           window.getSelection?.()?.isCollapsed === false) return;
       const control = target?.closest?.("input");
       const numericFlag = flagKey && questionType(data.questions[currentQuestionIndex]) === "nat" && control?.matches?.(".numeric-answer");
@@ -554,8 +559,8 @@
     } finally { serverBusy = false; setControls(); }
   }
 
-  function addImages(parent, item, alt) {
-    imagesOf(item).forEach((part) => {
+  function addImages(parent, item, alt, annotate = false) {
+    imagesOf(item).forEach((part, index) => {
       const figure = element("figure", "source-figure"), link = element("a", "image-link"), image = element("img", "question-image");
       link.href = part.src;
       link.target = "_blank";
@@ -564,7 +569,12 @@
       image.src = part.src;
       image.alt = part.alt || alt;
       image.loading = "lazy";
-      link.append(image);
+      if (annotate) {
+        const surface = element("div", "annotation-surface annotation-image");
+        surface.dataset.annotationPart = `image-${index}`;
+        surface.append(image);
+        link.append(surface);
+      } else link.append(image);
       figure.append(link, element("figcaption", "source-caption", `Click image to open at full resolution${part.page ? ` · Source page ${part.page}` : ""}`));
       parent.append(figure);
     });
@@ -684,7 +694,94 @@
     input.setAttribute("aria-invalid", String(invalid));
     error.hidden = !invalid;
   }
+  function updateNumericKeypads() {
+    data.questions.forEach((question, index) => {
+      const panel = byId(`numeric-keypad-${index}`), toggle = byId(`numeric-keypad-toggle-${index}`);
+      if (!panel || !toggle) return;
+      const open = numericKeypadOpen && index === currentQuestionIndex && !submittedAt && !reviewState && !serverBusy;
+      panel.hidden = !open;
+      byId(`answer-${index}`).inputMode = open ? "none" : "decimal";
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.title = open ? "Hide number pad" : "Open number pad";
+      if (open) {
+        const rect = byId(`answer-${index}`)?.getBoundingClientRect?.();
+        const height = panel.getBoundingClientRect?.().height || 210;
+        panel.classList.toggle("numeric-keypad-below", Boolean(rect && rect.top < height + 12 && (window.innerHeight || 0) - rect.bottom > rect.top));
+      }
+    });
+  }
+  function editNumericAnswer(input, key) {
+    const previous = input.value;
+    let value = previous;
+    let start = Math.max(0, Math.min(value.length, Number.isInteger(input.selectionStart) ? input.selectionStart : value.length));
+    const end = Math.max(start, Math.min(value.length, Number.isInteger(input.selectionEnd) ? input.selectionEnd : start));
+    if (key === "clear") { value = ""; start = 0; }
+    else if (key === "sign") {
+      const prefix = value.match(/^(\s*)([+-]?)/), offset = prefix[1].length;
+      if (prefix[2] === "-") { value = value.slice(0, offset) + value.slice(offset + 1); if (start > offset) start -= 1; }
+      else if (prefix[2] === "+") value = `${value.slice(0, offset)}-${value.slice(offset + 1)}`;
+      else { value = `${value.slice(0, offset)}-${value.slice(offset)}`; if (start >= offset) start += 1; }
+    } else if (key === "backspace") {
+      if (start === end && start === 0) return false;
+      const left = start === end ? start - 1 : start;
+      value = value.slice(0, left) + value.slice(end); start = left;
+    } else {
+      const character = key === "decimal" ? "." : key;
+      if (!/^[0-9.]$/.test(character)) return false;
+      if (character === "." && (value.slice(0, start) + value.slice(end)).includes(".")) return false;
+      value = value.slice(0, start) + character + value.slice(end); start += 1;
+    }
+    input.value = value;
+    input.focus({ preventScroll: true });
+    input.setSelectionRange?.(start, start);
+    return value !== previous;
+  }
+  function createNumericKeypad(input, index, onInput) {
+    const entry = element("div", "numeric-entry"), toggle = element("button", "numeric-keypad-toggle", "123"), panel = element("div", "numeric-keypad");
+    const usable = () => !serverBusy && !submittedAt && !reviewState && !byId("quiz-form").hidden && index === currentQuestionIndex && byId(input.id) === input;
+    toggle.type = "button";
+    toggle.id = `numeric-keypad-toggle-${index}`;
+    toggle.setAttribute("aria-label", `Number pad for ${questionLabel(data.questions[index])}`);
+    toggle.setAttribute("aria-controls", `numeric-keypad-${index}`);
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.title = "Open number pad";
+    panel.id = `numeric-keypad-${index}`;
+    panel.hidden = true;
+    panel.setAttribute("role", "group");
+    panel.setAttribute("aria-label", `Number pad for ${questionLabel(data.questions[index])}`);
+    const keys = [["7", "7"], ["8", "8"], ["9", "9"], ["backspace", "⌫", "Backspace"], ["4", "4"], ["5", "5"], ["6", "6"], ["sign", "±", "Toggle minus sign"], ["1", "1"], ["2", "2"], ["3", "3"], ["clear", "C", "Clear numerical answer"], ["0", "0"], ["decimal", ".", "Decimal point"], ["done", "Done", "Close number pad"]];
+    for (const [key, label, name] of keys) {
+      const button = element("button", `numeric-keypad-key${key === "0" ? " numeric-keypad-zero" : ""}`, label);
+      button.type = "button";
+      button.dataset.keypadKey = key;
+      button.setAttribute("aria-label", name || label);
+      button.title = name || label;
+      button.addEventListener("pointerdown", event => { if (event.button === 0) event.preventDefault(); });
+      button.addEventListener("click", () => {
+        if (!usable() || panel.hidden) return;
+        if (key === "done") { numericKeypadOpen = false; updateNumericKeypads(); toggle.focus({ preventScroll: true }); }
+        else if (editNumericAnswer(input, key)) onInput();
+      });
+      panel.append(button);
+    }
+    toggle.addEventListener("click", () => {
+      if (!usable()) return;
+      numericKeypadOpen = panel.hidden;
+      updateNumericKeypads();
+      if (numericKeypadOpen) input.focus({ preventScroll: true });
+    });
+    entry.addEventListener("keydown", event => {
+      if (event.key !== "Escape" || panel.hidden) return;
+      event.preventDefault();
+      numericKeypadOpen = false;
+      updateNumericKeypads();
+      toggle.focus({ preventScroll: true });
+    });
+    entry.append(input, toggle, panel);
+    return entry;
+  }
   function renderQuestions() {
+    questionAnnotations?.flush();
     const fragment = document.createDocumentFragment();
     data.questions.forEach((question, index) => {
       const card = element("fieldset", "question-card"), content = element("div", "question-content"), stem = element("div", "question-stem"), response = element("div", "response-controls");
@@ -697,10 +794,15 @@
         const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
         stem.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct, unless that question is marked out of syllabus. No negative marking for this question.`));
       }
-      if (question.text.trim()) stem.append(element("p", "question-text", question.text));
+      stem.dataset.annotationQuestion = question.id;
+      if (question.text.trim()) {
+        const text = element("p", "question-text annotation-surface", question.text);
+        text.dataset.annotationPart = "text";
+        stem.append(text);
+      }
       if (imagesOf(question).length) {
         const images = element("div", "question-images");
-        addImages(images, question, `Question ${questionLabel(question)} and its original options`);
+        addImages(images, question, `Question ${questionLabel(question)} and its original options`, true);
         stem.append(images);
       }
       content.append(stem);
@@ -720,15 +822,16 @@
         error.setAttribute("role", "alert");
         input.setAttribute("aria-describedby", error.id);
         numericError(input, error, input.value);
-        input.addEventListener("input", () => {
+        const syncNumericResponse = () => {
           if (serverBusy) return;
           if (input.value.trim()) answers[question.id] = input.value;
           else delete answers[question.id];
           numericError(input, error, input.value);
           updateProgress();
           save();
-        });
-        response.append(label, input, help, error);
+        };
+        input.addEventListener("input", syncNumericResponse);
+        response.append(label, createNumericKeypad(input, index, syncNumericResponse), help, error);
       } else {
         const options = element("div", "options");
         question.options.forEach((option, optionIndex) => {
@@ -795,6 +898,7 @@
       fragment.append(card);
     });
     byId("questions").replaceChildren(fragment);
+    questionAnnotations?.refresh();
     renderNavigator();
     updateProgress();
     setControls();
@@ -814,6 +918,7 @@
     return line;
   }
   function renderReport(moveFocus = true) {
+    questionAnnotations?.flush();
     currentQuestionInteraction = null;
     if (moveFocus) setCurrentQuestion(0);
     results = grade();
@@ -836,8 +941,15 @@
       const label = { correct: "Correct", incorrect: "Incorrect", unanswered: "Unanswered", awarded: "Marks to all", blocked: "Not evaluated", excluded: "Out of syllabus" }[outcome];
       heading.append(element("h3", "", `Question ${questionLabel(question)}`), element("span", "result-status", outcome === "excluded" ? `${label} · Excluded from scoring` : `${label} · ${number(earned)} / ${number(marks(question).correct)} marks`));
       card.append(heading);
-      if (question.text.trim()) card.append(element("p", "question-text", question.text));
-      addImages(card, question, `Question ${questionLabel(question)} and its original options`);
+      const stem = element("div", "question-stem");
+      stem.dataset.annotationQuestion = question.id;
+      if (question.text.trim()) {
+        const text = element("p", "question-text annotation-surface", question.text);
+        text.dataset.annotationPart = "text";
+        stem.append(text);
+      }
+      addImages(stem, question, `Question ${questionLabel(question)} and its original options`, true);
+      card.append(stem);
       card.append(answerLine("Your answer", question, selected), answerLine("Correct answer", question, question.correctAnswer, true));
       if (reason) card.append(element("p", "explanation", reason));
       if (question.explanation) card.append(element("p", "explanation", question.explanation));
@@ -847,6 +959,7 @@
     byId("quiz-form").hidden = true;
     byId("report").hidden = false;
     byId("quiz-timer").hidden = true;
+    questionAnnotations?.refresh();
     updateProgress();
     setControls();
     if (moveFocus) { byId("report-title").focus(); byId("report").scrollIntoView({ block: "start" }); }
@@ -857,6 +970,7 @@
     byId("report").hidden = true;
     byId("quiz-form").hidden = false;
     byId("quiz-timer").hidden = false;
+    questionAnnotations?.refresh();
     renderTimer();
     if (submittedAt) renderReport(false);
     else scheduleCurrentQuestion();
@@ -930,6 +1044,7 @@
     setupCurrentQuestion();
     setupKeyboardShortcuts();
     setupRoughWork();
+    questionAnnotations = window.QuestionAnnotation?.create({ quizId: data.id, questions: data.questions }) || null;
     byId("quiz-form").addEventListener("submit", submitAttempt);
     byId("questions").addEventListener("keydown", (event) => {
       if (event.key !== "Enter" || !event.target.matches?.("input")) return;
@@ -959,6 +1074,8 @@
     byId("quiz-timer").hidden = true;
     byId("rough-work-toggle").hidden = true;
     byId("rough-work-panel").hidden = true;
+    if (byId("screen-annotation-toggle")) byId("screen-annotation-toggle").hidden = true;
+    if (byId("screen-annotation-toolbar")) byId("screen-annotation-toolbar").hidden = true;
     document.querySelector(".quiz-shell").classList.remove("rough-work-open");
     document.querySelector(".quiz-shell").classList.remove("has-navigator");
     status(`Unable to open this quiz. ${error.message}`, true);

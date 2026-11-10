@@ -278,6 +278,21 @@ a { color: var(--accent); }
 .numeric-label { display: block; font-weight: 600; margin: 1rem 0 0.4rem; }
 .numeric-answer { display: block; width: min(100%, 320px); min-height: 46px; padding: 0.55rem 0.75rem; border: 1px solid var(--control-border); border-radius: 0.6rem; background: var(--surface); color: inherit; }
 .numeric-answer[aria-invalid="true"] { border-color: #b91c1c; background: #fff5f5; }
+.numeric-entry { position: relative; display: flex; align-items: center; gap: 0.35rem; width: min(100%, 320px); min-width: 0; }
+.numeric-entry .numeric-answer { flex: 1; min-width: 0; width: 100%; }
+.numeric-keypad-toggle { flex: none; min-width: 44px; min-height: 44px; padding: 0.3rem; border: 1px solid var(--control-border); border-radius: 0.5rem; background: var(--surface-raised); color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+.numeric-keypad-toggle:hover, .numeric-keypad-toggle[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.numeric-keypad { position: absolute; z-index: 22; left: 0; bottom: calc(100% + 0.5rem); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; width: min(15rem, calc(100vw - 3.5rem)); padding: 8px; border: 1px solid var(--control-border); border-radius: 0.7rem; background: var(--surface); box-shadow: var(--shadow); }
+.numeric-keypad.numeric-keypad-below { bottom: auto; top: calc(100% + 0.5rem); }
+.numeric-keypad-key { min-width: 0; min-height: 44px; padding: 0.25rem; border: 1px solid var(--border); border-radius: 0.4rem; background: var(--surface-raised); color: var(--text); font-size: 1rem; font-weight: 600; line-height: 1.2; touch-action: manipulation; }
+.numeric-keypad-key:hover { border-color: var(--accent); background: var(--accent-soft); }
+.numeric-keypad-zero { grid-column: span 2; }
+.numeric-keypad-key[data-keypad-key="done"] { background: #4169e1; border-color: #4169e1; color: #fff; font-size: 0.75rem; }
+.numeric-keypad-key[data-keypad-key="clear"] { color: var(--warning); }
+/* Reuse the map column while the drawing workspaces are closed. */
+@media screen and (min-width: 901px) {
+  :root:not(.screen-annotation-active) .quiz-shell:not(.rough-work-open) .numeric-keypad { position: fixed; left: auto; top: auto; right: 1.75rem; bottom: 5rem; }
+}
 .response-help { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
 .numeric-error { color: #991b1b; font-size: 0.9rem; margin: 0.4rem 0; }
 .question-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 0.75rem; }
@@ -575,7 +590,7 @@ a { color: var(--accent); }
   .question-actions .button { min-height: 36px; }
   .response-controls:has(.numeric-answer) { display: grid; grid-template-columns: auto minmax(100px, 260px) auto; align-items: center; gap: 0.2rem 0.75rem; margin-top: 0.4rem; }
   .response-controls .numeric-label { grid-column: 1; grid-row: 1; margin: 0; }
-  .response-controls .numeric-answer { grid-column: 2; grid-row: 1; width: 100%; }
+  .response-controls .numeric-entry { grid-column: 2; grid-row: 1; width: 100%; }
   .response-controls:has(.numeric-answer) .question-actions { grid-column: 3; grid-row: 1; justify-content: end; }
   .response-controls > .response-help, .numeric-error { grid-column: 1 / -1; }
   .numeric-label { font-size: 0.85rem; }
@@ -691,13 +706,45 @@ a { color: var(--accent); }
   .rough-work-toggle { right: calc(0.5rem + 52px + 0.75rem); bottom: 0.5rem; }
 }
 
+/* Transparent ink stays aligned with each original question image. */
+.annotation-surface { position: relative; }
+.annotation-image { width: 100%; }
+.question-annotation-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; background: transparent; }
+.screen-annotation-active .question-annotation-canvas { pointer-events: auto; touch-action: none; }
+.question-annotation-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.screen-annotation-toggle { position: fixed; left: 1rem; bottom: 1rem; z-index: 25; display: flex; align-items: center; gap: 0.5rem; min-height: 52px; padding: 0.5rem 0.85rem; border: 1px solid #4169e1; border-radius: 0.9rem; background: #4169e1; color: #fff; font-size: 0.8rem; font-weight: 650; box-shadow: var(--shadow); }
+.screen-annotation-toggle:hover, .screen-annotation-toggle[aria-pressed="true"] { background: #3559c7; border-color: #3559c7; }
+.screen-annotation-toggle svg { flex: none; pointer-events: none; }
+.screen-annotation-toolbar { position: fixed; right: 1rem; bottom: 5rem; z-index: 30; width: min(22rem, calc(100% - 2rem)); max-height: 60vh; max-height: 60dvh; overflow: auto; padding: 0.75rem; border: 1px solid var(--control-border); border-radius: 0.85rem; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.annotation-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem; }
+.annotation-header h2 { margin: 0; font-size: 1rem; }
+#annotation-title { cursor: move; touch-action: none; }
+#annotation-title span { color: var(--muted); margin-left: 0.3rem; }
+#annotation-question-label { margin: 0.1rem 0 0; color: var(--muted); font-size: 0.75rem; }
+.annotation-header .button { min-height: 36px; padding: 0.3rem 0.6rem; }
+.annotation-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.annotation-tool-group { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.annotation-tools button, .annotation-tools select { min-height: 36px; padding: 0.25rem 0.5rem; border: 1px solid var(--control-border); border-radius: 0.4rem; background: var(--surface); color: var(--text); font-size: 0.8rem; }
+.annotation-tools button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.annotation-tools button[aria-pressed="true"] { color: #fff; background: #4169e1; border-color: #4169e1; }
+.annotation-tools label { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.75rem; }
+.annotation-help, .annotation-status { margin: 0.5rem 0 0; font-size: 0.75rem; }
+.annotation-help { color: var(--muted); }
+.annotation-status { color: var(--success); }
+.annotation-status.error { color: var(--warning); }
+@media screen and (max-width: 760px) { .annotation-image { min-width: 720px; } }
+@media (max-width: 500px) {
+  .screen-annotation-toggle { left: 0.5rem; bottom: 0.5rem; padding-inline: 0.65rem; }
+  .screen-annotation-toolbar { right: 0.5rem; bottom: 4.5rem; width: calc(100% - 1rem); max-height: 50vh; max-height: 50dvh; }
+}
+
 @media print {
   @page { margin: 16mm; }
   :root { color-scheme: light; background: #fff; }
   body { background: #fff; color: #111; font-size: 10pt; }
   .question-nav, .quiz-meta, .status-message, .empty-state, .question-card, .result-card, .score-card, .button { box-shadow: none; }
   .quiz-shell, .quiz-shell.has-navigator { display: block; width: 100%; margin: 0; }
-  .question-nav, .quiz-timer, .question-carousel, .rough-work-toggle, .rough-work-panel { display: none !important; }
+  .question-nav, .quiz-timer, .question-carousel, .rough-work-toggle, .rough-work-panel, .screen-annotation-toggle, .screen-annotation-toolbar, .question-annotation-canvas, .numeric-keypad-toggle, .numeric-keypad { display: none !important; }
   .container { width: 100%; padding: 0; margin: 0; }
   .page-header, .quiz-meta, .progress-panel, .status-message, .empty-state, .quiz-form, .quiz-actions, .report-actions { display: none !important; }
   .report { margin: 0; }
