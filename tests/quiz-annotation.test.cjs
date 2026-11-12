@@ -315,6 +315,35 @@ function harness(options = {}) {
   reloaded.ids['screen-annotation-toggle'].click(); reloaded.draw();
   assert.equal(reloaded.saved('GA-1').parts['image-0'].length, beforeReopenedEdit + 1, 'Saved ink restores before the next edit');
 
+  // A thinner annotation nib must coexist with legacy ink without changing
+  // the notebook's accepted widths or shrinking the visible pointer.
+  const legacyFine = { ...stroke(), width: 2 };
+  const fine = harness({ storage: [[key('GA-1'), JSON.stringify(record('GA-1', { 'image-0': [legacyFine] }))]] });
+  const engine = fine.context.RoughWorkEngine;
+  assert.deepEqual(copy(engine.widths), [2, 4, 8, 16], 'Notebook width presets stay unchanged');
+  assert.throws(() => engine.validateStrokes([{ ...stroke(), width: 1.7 }]), /width|stroke/, 'The thinner nib is accepted only for annotations');
+  fine.ids['screen-annotation-toggle'].click();
+  const mediumCursor = fine.canvas().style.cursor;
+  fine.ids['annotation-width'].value = '1.7';
+  fine.ids['annotation-width'].fire('change');
+  assert.equal(fine.canvas().style.cursor, mediumCursor, 'Fine keeps the same visible pointer as Medium');
+  fine.draw();
+  assert.deepEqual(fine.saved('GA-1').parts['image-0'].map(item => item.width), [2, 1.7], 'New fine strokes preserve their width beside untouched legacy ink');
+  const renderedFine = fine.drawing.filter(item => item.type === 'stroke' && item.target === fine.canvas().canvasName).slice(-2);
+  assert.equal(renderedFine[0].width, 2 * fine.canvas().width / 1000, 'Legacy fine strokes retain their original rendered thickness');
+  assert.equal(renderedFine[1].width, 1.7 * fine.canvas().width / 1000);
+  assert.ok(renderedFine[1].width < renderedFine[0].width, 'The new Fine nib visibly draws thinner than legacy Fine');
+  fine.ids['annotation-undo'].click();
+  assert.deepEqual(fine.saved('GA-1').parts['image-0'].map(item => item.width), [2]);
+  fine.ids['annotation-redo'].click();
+  const mixedFineBytes = fine.storage.get(key('GA-1'));
+  const fineReload = harness({ storage: fine.storage });
+  assert.equal(fineReload.storage.get(key('GA-1')), mixedFineBytes, 'Reopening mixed old/new ink never rewrites storage');
+  assert.deepEqual(fineReload.saved('GA-1').parts['image-0'].map(item => item.width), [2, 1.7], 'Both old and new fine widths restore');
+  const restoredFine = fineReload.drawing.filter(item => item.type === 'stroke' && item.target === fineReload.canvas().canvasName).slice(-2);
+  assert.equal(restoredFine[0].width, renderedFine[0].width);
+  assert.equal(restoredFine[1].width, renderedFine[1].width);
+
   // Invalid records are retained byte-for-byte, with usable in-memory drawing.
   const invalidRecords = [
     'not json', JSON.stringify({ ...record('GA-1'), version: 2 }),
@@ -405,6 +434,8 @@ function harness(options = {}) {
     assert.equal(fs.readFileSync(path.join(root, folder, 'question-annotation.js'), 'utf8'), templateModule, `${folder} uses the shared annotation controller`);
     assert.equal(fs.readFileSync(path.join(root, folder, 'styles.css'), 'utf8'), templateStyle, `${folder} uses the shared styles`);
     const html = fs.readFileSync(path.join(root, folder, 'index.html'), 'utf8');
+    const annotationWidthOptions = html.match(/<select\b[^>]*id="annotation-width"[^>]*>([\s\S]*?)<\/select>/)?.[1];
+    assert.match(annotationWidthOptions, /<option value="1\.7">Fine/, `${folder} exposes the thinner Fine annotation nib`);
     for (const id of requiredIds) assert.equal([...html.matchAll(new RegExp(`\\bid="${id}"`, 'g'))].length, 1, `${folder} has exactly one ${id}`);
     const launcher = html.match(/<button\b[^>]*id="screen-annotation-toggle"[^>]*>/)?.[0];
     assert.ok(launcher);

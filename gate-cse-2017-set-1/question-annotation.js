@@ -30,7 +30,7 @@
       const parts = Object.create(null);
       let count = 0, points = 0;
       for (const [name, strokes] of Object.entries(value)) {
-        parts[name] = engine.validateStrokes(strokes);
+        parts[name] = engine.validateStrokes(strokes, engine.annotationWidths);
         count += parts[name].length;
         for (const stroke of parts[name]) points += stroke.points.length;
       }
@@ -101,7 +101,7 @@
       if (!engine || !editing) return;
       const width = record.host.getBoundingClientRect().width;
       if (!(width > 0)) return;
-      const radius = (widths[tool] === 2 ? 4 : widths[tool]) * width / engine.paper.width / 2;
+      const radius = (widths[tool] <= 2 ? 4 : widths[tool]) * width / engine.paper.width / 2;
       const outline = theme() === "dark" ? "#111827" : "white";
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="${radius + 1}" fill="${outline}"/><circle cx="16" cy="16" r="${radius}" fill="${engine.inkColor(colors[tool], theme())}"/></svg>`;
       record.canvas.style.cursor = `url("data:image/svg+xml,${encodeURIComponent(svg)}") 16 16, default`;
@@ -125,7 +125,7 @@
           else { record.canvas.width = width; record.canvas.height = height; }
         }
         const page = read(record.id), strokes = page.parts[record.part] || [];
-        engine.draw(record.context, active?.record === record ? [...strokes, active.stroke] : strokes, width, height, theme());
+        engine.draw(record.context, active?.record === record ? [...strokes, active.stroke] : strokes, width, height, theme(), engine.annotationWidths);
         updateCursor(record);
       }
       controls();
@@ -274,7 +274,7 @@
     byId("annotation-done").addEventListener("click", () => setEditing(false));
     for (const name of ["pen", "highlighter", "eraser"]) byId(`annotation-tool-${name}`).addEventListener("click", () => { finish(); tool = name; controls(); });
     byId("annotation-color").addEventListener("change", event => { finish(); if (engine?.colors.includes(event.target.value)) colors[tool] = event.target.value; controls(); });
-    byId("annotation-width").addEventListener("change", event => { finish(); const width = Number(event.target.value); if (engine?.widths.includes(width)) widths[tool] = width; controls(); });
+    byId("annotation-width").addEventListener("change", event => { finish(); const width = Number(event.target.value); if ((engine?.annotationWidths || engine?.widths)?.includes(width)) widths[tool] = width; controls(); });
     byId("annotation-undo").addEventListener("click", undo);
     byId("annotation-redo").addEventListener("click", redo);
     byId("annotation-clear").addEventListener("click", () => {

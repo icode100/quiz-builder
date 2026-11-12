@@ -8,6 +8,7 @@
   "use strict";
   const colors = Object.freeze(["#17233b", "#4169e1", "#dc2626", "#15803d", "#f59e0b"]);
   const widths = Object.freeze([2, 4, 8, 16]);
+  const annotationWidths = Object.freeze([1.7, ...widths]);
   const tools = Object.freeze(["pen", "highlighter", "eraser"]);
   const paperStyles = Object.freeze(["blank", "dotted", "ruled", "grid"]);
   const limits = Object.freeze({ strokes: 1000, pointsPerStroke: 10000, totalPoints: 100000, paperHeight: 50000, canvasPixels: 4000000 });
@@ -32,13 +33,14 @@
     return selected.ink[index];
   }
 
-  function validateStrokes(value) {
+  function validateStrokes(value, acceptedWidths = widths) {
+    if (acceptedWidths !== widths && acceptedWidths !== annotationWidths) throw new Error("Invalid rough-work width presets.");
     if (!Array.isArray(value) || value.length > limits.strokes) throw new Error("Invalid rough-work strokes.");
     const restored = [];
     let total = 0;
     for (const stroke of value) {
       if (!object(stroke) || Object.keys(stroke).length !== fields.length || fields.some(field => !Object.hasOwn(stroke, field)) ||
-          !tools.includes(stroke.tool) || !colors.includes(stroke.color) || !widths.includes(stroke.width) ||
+          !tools.includes(stroke.tool) || !colors.includes(stroke.color) || !acceptedWidths.includes(stroke.width) ||
           !Array.isArray(stroke.points) || !stroke.points.length || stroke.points.length > limits.pointsPerStroke) throw new Error("Invalid rough-work stroke.");
       total += stroke.points.length;
       if (total > limits.totalPoints) throw new Error("Too many rough-work points.");
@@ -54,10 +56,10 @@
 
   // Width and height are canvas backing dimensions. A transparent ink layer
   // lets erasing reveal the paper surface without depending on its color.
-  function draw(context, strokes, width, height, theme = "light") {
+  function draw(context, strokes, width, height, theme = "light", acceptedWidths = widths) {
     const selected = palette(theme);
     if (!context || !Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) throw new Error("Invalid rough-work canvas.");
-    const checked = validateStrokes(strokes);
+    const checked = validateStrokes(strokes, acceptedWidths);
     context.save();
     try {
       context.setTransform?.(1, 0, 0, 1, 0, 0);
@@ -131,5 +133,5 @@
     } finally { context.restore(); }
   }
 
-  return Object.freeze({ colors, widths, tools, paperStyles, limits, paper, inkColor, validateStrokes, draw, drawPaper });
+  return Object.freeze({ colors, widths, annotationWidths, tools, paperStyles, limits, paper, inkColor, validateStrokes, draw, drawPaper });
 });
