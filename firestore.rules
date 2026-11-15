@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Browser code uses the authenticated server API. Only its Admin SDK can
+    // read/write account state; no public or cross-account client access exists.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

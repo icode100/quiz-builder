@@ -1,0 +1,24 @@
+{
+  "name": "gate-cse-practice",
+  "version": "2.0.0",
+  "private": true,
+  "description": "GATE CSE practice with Firebase accounts and cross-device progress",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "node cloud/build.cjs",
+    "dev:cloud": "node cloud/dev-server.cjs",
+    "test:cloud": "node tests/cloud-build.test.cjs && node tests/cloud-auth.test.mjs && node tests/cloud-sync.test.cjs && node tests/cloud-backend.test.cjs && node tests/cloud-runtime.test.cjs"
+  },
+  "dependencies": {
+    "firebase": "13.3.0",
+    "firebase-admin": "14.5.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.13.6"
+  }
+}

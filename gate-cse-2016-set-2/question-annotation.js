@@ -1,6 +1,7 @@
 /* Question overlays are independent of responses, rough work and submissions. */
 (() => {
   "use strict";
+  const stateStorage = () => window.QuizCloudSync?.storage || localStorage;
 
   function create({ quizId, questions }) {
     const byId = id => document.getElementById(id), engine = window.RoughWorkEngine;
@@ -41,7 +42,7 @@
       if (pages.has(id)) return pages.get(id);
       const result = { parts: Object.create(null), undo: [], redo: [], dirty: false, saved: false, loadFailed: false, warning: "", notice: "" };
       try {
-        const raw = localStorage.getItem(key(id));
+        const raw = stateStorage().getItem(key(id));
         if (raw !== null) {
           if (raw.length > 3 * 1024 * 1024) throw new Error("Annotation too large.");
           const saved = JSON.parse(raw), fields = ["version", "quizId", "questionId", "updatedAt", "parts"];
@@ -53,7 +54,7 @@
         }
       } catch {
         result.loadFailed = true;
-        result.warning = "Could not load saved annotations. Keep this tab open; reload to try again.";
+        result.warning = window.QuizCloudSync ? "Could not load account annotations. Keep this tab open; reload to try again." : "Could not load saved annotations. Keep this tab open; reload to try again.";
       }
       pages.set(id, result);
       return result;
@@ -65,9 +66,9 @@
         const parts = checkedParts(page.parts, id);
         const raw = JSON.stringify({ version: 1, quizId, questionId: id, updatedAt: new Date().toISOString(), parts });
         if (raw.length > 3 * 1024 * 1024) throw new Error("Annotation too large.");
-        localStorage.setItem(key(id), raw);
+        stateStorage().setItem(key(id), raw);
         page.dirty = false; page.saved = true; page.warning = "";
-      } catch { page.warning = "Could not save annotations. Keep this tab open to retain your marks."; }
+      } catch { page.warning = window.QuizCloudSync ? "Could not queue annotations for account sync. Keep this tab open to retain your marks." : "Could not save annotations. Keep this tab open to retain your marks."; }
     }
     function controls() {
       const page = pages.get(currentId), focused = document.activeElement;
@@ -89,7 +90,8 @@
       byId("annotation-redo").disabled = !page?.redo.length;
       byId("annotation-clear").disabled = !page || !Object.values(page.parts).some(strokes => strokes.length);
       if (editing && focused?.disabled && ["annotation-undo", "annotation-redo", "annotation-clear"].includes(focused.id)) byId("annotation-tool-pen").focus({ preventScroll: true });
-      status.textContent = unavailable ? "Screen annotation is unavailable in this browser." : page?.notice || page?.warning || (page?.saved ? "Saved in this browser" : "Draw on the question. Done returns to answering. Marks save automatically.");
+      const autosaveMessage = window.QuizCloudSync ? "Autosave on · Account sync status above" : page?.saved ? "Saved in this browser" : "Draw on the question. Done returns to answering. Marks save automatically.";
+      status.textContent = unavailable ? "Screen annotation is unavailable in this browser." : page?.notice || page?.warning || autosaveMessage;
       status.classList.toggle("error", Boolean(unavailable || page?.notice || page?.warning));
       for (const record of surfaces) {
         record.canvas.tabIndex = editing ? 0 : -1;
@@ -156,6 +158,7 @@
       const { id, part } = drawing.record, page = read(id);
       (page.parts[part] ||= []).push(drawing.stroke);
       remember(id, { kind: "add", part, stroke: drawing.stroke });
+      window.QuizCloudSync?.endEdit(key(id));
     }
     function flush() {
       finish();
@@ -232,6 +235,7 @@
           controls(); return;
         }
         canvas.focus({ preventScroll: true });
+        window.QuizCloudSync?.beginEdit(key(id));
         active = { pointerId: event.pointerId, record, count, stroke: { tool, color: colors[tool], width: widths[tool], points: [first] } };
         try { canvas.setPointerCapture?.(event.pointerId); } catch { /* Drawing remains possible inside the image. */ }
         schedule();
@@ -334,6 +338,13 @@
       byId("theme-toggle")?.addEventListener("click", later);
       window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", later);
     }
+    window.addEventListener("quiz-cloud-record", event => {
+      const changed = event.detail?.key;
+      for (const id of known.keys()) if (changed === key(id)) {
+        if (active?.record.id === id) return;
+        pages.delete(id); read(id); controls(); schedule(); break;
+      }
+    });
     controls();
     return { refresh, setCurrent, flush, isDrawing: () => Boolean(active) };
   }

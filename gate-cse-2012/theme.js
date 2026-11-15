@@ -1,11 +1,12 @@
 (() => {
   "use strict";
+  const stateStorage = () => window.QuizCloudSync?.storage || localStorage;
   const root = document.documentElement;
   const storageKey = "practice-quiz:theme";
   const preference = window.matchMedia("(prefers-color-scheme: dark)");
   let selectedTheme = null;
   try {
-    const saved = localStorage.getItem(storageKey);
+    const saved = stateStorage().getItem(storageKey);
     if (saved === "dark" || saved === "light") selectedTheme = saved;
   } catch { /* Theme switching still works when browser storage is unavailable. */ }
 
@@ -26,8 +27,14 @@
     document.getElementById("theme-toggle")?.addEventListener("click", () => {
       selectedTheme = root.dataset.theme === "dark" ? "light" : "dark";
       applyTheme(selectedTheme);
-      try { localStorage.setItem(storageKey, selectedTheme); } catch { /* Optional preference storage. */ }
+      try { stateStorage().setItem(storageKey, selectedTheme); } catch { /* Optional preference storage. */ }
     });
+  });
+  window.addEventListener("quiz-cloud-record", event => {
+    if (event.detail?.key !== storageKey) return;
+    const saved = event.detail.value;
+    selectedTheme = saved === "dark" || saved === "light" ? saved : null;
+    applyTheme(selectedTheme || (preference.matches ? "dark" : "light"));
   });
   preference.addEventListener("change", () => {
     if (!selectedTheme) applyTheme(preference.matches ? "dark" : "light");

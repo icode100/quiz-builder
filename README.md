@@ -1,3 +1,15 @@
+# GATE CSE Practice
+
+The hosted application uses Firebase accounts and Firestore storage, deployed on Vercel. Sign in with Google or email to resume your responses, current question, timer, rough work and question annotations across devices. Submitted reports belong to your account. Pending changes are kept on your device when offline; the account bar shows when they reach the server. If two devices edit the same progress, choose which version to keep.
+
+To bring existing work across, sign in and use **Import local practice**. Select your quiz browser backup or submitted `attempt.json` files. The import checks every record and refuses to overwrite different account progress. For all locally submitted reports, run `node cloud/export-local-attempts.cjs` and import the resulting `tmp/cloud-migration/submitted-attempts.json`; existing files stay unchanged.
+
+For cloud development, install Node22 and run `npm ci`, then `npm run build`. Set the public Firebase web config and server credentials using `.env.example`; never commit `.env.local` or a service-account private key. Start `npm run dev:cloud` for the built preview on8766. Firebase project: **gate-cse-practice**. Vercel builds from Git with `vercel.json`; `.cloud-dist` contains only public allowlisted quiz files and referenced images. Configure server-only Firebase credentials as encrypted Vercel variables and add the final Vercel domain to Firebase Authentication's authorized domains. Firestore client access stays denied; authenticated server APIs handle all saves and regrade submissions.
+
+For Safari-compatible Google sign-in, set `FIREBASE_AUTH_DOMAIN` to the production hostname. The Vercel auth-helper proxy keeps redirects on that hostname. Add the hostname to Firebase Authentication's authorized domains and add `https://HOST/__/auth/handler` to the existing Google OAuth web client's redirect URIs, preserving its Firebase defaults. Set `APP_ORIGIN` to the matching HTTPS origin in Production; preview deployments need their own matching origin.
+
+Run `npm run test:cloud` for account, storage, grading, conflict, offline, import and deployment-boundary checks. `node cloud/emulator-preview.cjs` runs a local demo-only Firebase preview for testing; it does not access the real project. The local practice launcher instructions below remain available for existing browser work.
+
 # quiz-builder
 
 Local GATE CSE practice quizzes with black and light themes, blue accents, and original PDF question images.

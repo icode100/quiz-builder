@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  const stateStorage = () => window.QuizCloudSync?.storage || localStorage;
 
   function create({ quizId, questions }) {
     const byId = id => document.getElementById(id), engine = window.RoughWorkEngine;
@@ -12,7 +13,7 @@
     let context, inkContext;
     try { context = canvas.getContext("2d"); inkContext = inkCanvas.getContext("2d", { alpha: true }); } catch { /* Other quiz controls remain usable. */ }
     if (!engine || !engine.drawPaper || !engine.inkColor || !context || !inkContext) {
-      status.textContent = "Drawing is unavailable in this browser. You can still use your screen annotation tool.";
+      status.textContent = window.QuizCloudSync ? "Drawing is unavailable in this browser. Your saved notes have not been changed." : "Drawing is unavailable in this browser. You can still use your screen annotation tool.";
       status.classList.toggle("error", true);
       panel.querySelectorAll(".rough-work-tools button, .rough-work-tools select").forEach(control => { control.disabled = true; });
       return { show() {}, hide() {} };
@@ -88,14 +89,15 @@
       byId("rough-redo").disabled = !current?.redo.length;
       byId("rough-clear").disabled = !current?.strokes.length;
       if (opened && focused?.disabled && ["rough-undo", "rough-redo", "rough-clear"].includes(focused.id)) canvas.focus({ preventScroll: true });
-      status.textContent = current?.notice || current?.warning || (current?.saved ? "Saved in this browser" : "Ready · Saved automatically in this browser");
+      const autosaveMessage = window.QuizCloudSync ? "Autosave on · Account sync status above" : current?.saved ? "Saved in this browser" : "Ready · Saved automatically in this browser";
+      status.textContent = current?.notice || current?.warning || autosaveMessage;
       status.classList.toggle("error", Boolean(current?.notice || current?.warning));
       updateCursor();
     }
     function read(id) {
       const restored = { strokes: [], paperStyle: defaultPaper, pageHeight: engine.paper.height, undo: [], redo: [], dirty: false, saved: false, warning: "", notice: "", loadFailed: false };
       try {
-        const text = localStorage.getItem(storageKey(id));
+        const text = stateStorage().getItem(storageKey(id));
         if (text !== null) {
           if (text.length > 3 * 1024 * 1024) throw new Error("Drawing is too large.");
           const saved = JSON.parse(text);
@@ -113,7 +115,7 @@
         }
       } catch {
         restored.loadFailed = true;
-        restored.warning = "Could not load saved rough work. Keep this tab open; reload to try again.";
+        restored.warning = window.QuizCloudSync ? "Could not load account rough work. Keep this tab open; reload to try again." : "Could not load saved rough work. Keep this tab open; reload to try again.";
       }
       return restored;
     }
@@ -121,12 +123,12 @@
       if (!current?.dirty || current.loadFailed) return;
       try {
         const strokes = engine.validateStrokes(current.strokes);
-        localStorage.setItem(storageKey(currentId), JSON.stringify({ version: 1, quizId, questionId: currentId, updatedAt: new Date().toISOString(), paperStyle: current.paperStyle, pageHeight: current.pageHeight, strokes }));
+        stateStorage().setItem(storageKey(currentId), JSON.stringify({ version: 1, quizId, questionId: currentId, updatedAt: new Date().toISOString(), paperStyle: current.paperStyle, pageHeight: current.pageHeight, strokes }));
         current.dirty = false;
         current.saved = true;
         current.warning = "";
       } catch {
-        current.warning = "Could not save rough work. Keep this tab open to retain your notes.";
+        current.warning = window.QuizCloudSync ? "Could not queue rough work for account sync. Keep this tab open to retain your notes." : "Could not save rough work. Keep this tab open to retain your notes.";
       }
     }
     function draw() {
@@ -171,6 +173,7 @@
       try { canvas.releasePointerCapture?.(drawing.pointerId); } catch { /* Capture may already be released. */ }
       page().strokes.push(drawing.stroke);
       remember({ kind: "add", stroke: drawing.stroke });
+      window.QuizCloudSync?.endEdit(storageKey(currentId));
       draw();
     }
     function flush() { finish(); persist(); controls(); }
@@ -243,6 +246,7 @@
       }
       event.preventDefault();
       canvas.focus({ preventScroll: true });
+      window.QuizCloudSync?.beginEdit(storageKey(currentId));
       active = { pointerId: event.pointerId, count, stroke: { tool, color: colors[tool], width: widths[tool], points: [first] } };
       try { canvas.setPointerCapture?.(event.pointerId); } catch { /* Drawing still works inside the page. */ }
       scheduleDraw();
@@ -304,6 +308,12 @@
       byId("theme-toggle")?.addEventListener("click", refreshAfterTheme);
       window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", refreshAfterTheme);
     }
+    window.addEventListener("quiz-cloud-record", event => {
+      const id = questions.find(question => event.detail?.key === storageKey(question.id))?.id;
+      if (!id || active && currentId === id) return;
+      pages.delete(id);
+      if (currentId === id) { pages.set(id, read(id)); controls(); if (opened) { fitPaper(); draw(); } }
+    });
     controls();
     return {
       show(id, label = id) {

@@ -5,3 +5,12 @@
 # Temporary renders and installed dependencies
 /tmp/
 node_modules/
+
+# Cloud build output, local credentials and deployment state
+.cloud-dist/
+.vercel/
+.env
+.env.*
+!.env.example
+*service-account*.json
+cloud/server/quiz-catalog.json

@@ -1,0 +1,15 @@
+.git/
+.env*
+node_modules/
+tmp/
+.cloud-dist/
+tests/
+**/attempt.json
+**/.attempt-*.tmp
+**/*.pdf
+**/*.PDF
+**/*.pem
+**/*service-account*.json
+**/*serviceAccount*.json
+**/assets/source-crops/
+.DS_Store

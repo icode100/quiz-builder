@@ -50,7 +50,7 @@ class El {
     return out;
   }
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
-  focus() { this.focused = true; } scrollIntoView() { this.scrolled = true; }
+  focus() { this.focused = true; if (this.ownerDocument) this.ownerDocument.activeElement = this; } scrollIntoView() { this.scrolled = true; }
   setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
   click() {
     if (this.tagName !== 'input' || !['radio', 'checkbox'].includes(this.type)) return this.fire('click');
@@ -86,12 +86,15 @@ function createHarness(folder, options = {}) {
   } else ids['quiz-form'].append(ids.questions, ids.progress, ids['clear-answers']);
   const submit = new El('button'); submit.type = 'submit'; ids['quiz-form'].append(submit);
   const document = {
-    body, documentElement: new El('html'), createElement: tag => new El(tag),
+    body, documentElement: new El('html'), createElement: tag => { const node = new El(tag); node.ownerDocument = document; return node; },
     createDocumentFragment: () => new El('#fragment'),
     getElementById: id => ids[id] || body.querySelector('#' + id),
     querySelector: selector => body.querySelector(selector),
     addEventListener: (name, fn) => { document[name] = fn; }
   };
+  body.ownerDocument = document;
+  document.documentElement.ownerDocument = document;
+  Object.values(ids).forEach(node => { node.ownerDocument = document; });
   const storage = options.storage instanceof Map ? options.storage : new Map(options.storage || []);
   const window = {
     addEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }), print() {},
