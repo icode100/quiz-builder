@@ -126,7 +126,7 @@
       toggle.disabled = unavailable;
       toggle.setAttribute("aria-pressed", String(editing));
       toggle.setAttribute("aria-expanded", String(editing));
-      toggle.title = unavailable ? "Screen annotation is unavailable in this browser" : editing ? "Finish screen annotation" : "Annotate this question";
+      toggle.title = unavailable ? "Screen annotation is unavailable in this browser" : "Screen annotation";
       toolbar.hidden = !editing;
       document.documentElement.classList.toggle("screen-annotation-active", editing);
       byId("annotation-question-label").textContent = currentLabel ? `Question ${currentLabel}` : "Question annotation";
