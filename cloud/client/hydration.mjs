@@ -8,3 +8,13 @@ export function shouldHydrateOnPage(key, { page, quizId } = {}) {
   const paper = `practice-quiz:${quizId}`;
   return key === paper || key === `${paper}:attempt`;
 }
+
+export function startupKeysForPage({ page, quizId, quizIds = [] } = {}) {
+  const keys = ['practice-quiz:theme'];
+  if (page === 'home') {
+    for (const id of quizIds) if (typeof id === 'string' && id) keys.push(`practice-quiz:${id}:attempt`);
+  } else if (typeof quizId === 'string' && quizId) {
+    keys.push(`practice-quiz:${quizId}`, `practice-quiz:${quizId}:attempt`);
+  }
+  return [...new Set(keys)];
+}

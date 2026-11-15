@@ -1,8 +1,9 @@
 import { auth } from './auth.js';
 import { createAccountCache } from './cache.js';
 import { createCloudSync } from './sync.js';
-import { shouldHydrateOnPage } from './hydration.mjs';
-import { createAccountRequester, getAccountToken } from './request.mjs';
+import { shouldHydrateOnPage, startupKeysForPage } from './hydration.mjs';
+import { createAccountRequester } from './request.mjs';
+import { openAccountStorage } from './startup.mjs';
 
 const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
 const protectedAreas = () => document.querySelectorAll('[data-cloud-protected]');
@@ -90,17 +91,18 @@ async function connect(user) {
   emit('quiz-cloud-status', { state: 'loading', message: 'Connecting to your account…' });
   const request = (path, options) => jsonRequest(path, options, user.uid);
   try {
-    try { await request('/api/session', { method: 'POST', body: { idToken: await getAccountToken(force => auth.getToken(force)) } }); }
-    catch (error) { if (error.status) throw error; }
-    sync = createCloudSync({ uid: user.uid, request, cache: accountCache,
+    sync = await openAccountStorage({ uid: user.uid, request, cache: accountCache, createSync: createCloudSync,
+      getToken: force => auth.getToken(force),
+      startupKeys: startupKeysForPage({ page: document.body.dataset.cloudPage, quizId: document.body.dataset.quizId,
+        quizIds: Array.from(document.querySelectorAll('#home-papers > [data-quiz-id]'), card => card.dataset.quizId) }),
       shouldHydrate: key => shouldHydrateOnPage(key, { page: document.body.dataset.cloudPage, quizId: document.body.dataset.quizId }),
       notify: status => { emit('quiz-cloud-status', status); if (status.state === 'conflict') conflictPanel(); },
       remote: record => emit('quiz-cloud-record', record) });
-    await sync.ready();
     if (auth.getUser()?.uid !== user.uid) { sync.close(); return; }
     window.QuizCloudSync = sync;
     emit('quiz-cloud-record', { key: 'practice-quiz:theme', value: sync.storage.getItem('practice-quiz:theme') });
     gate(false); await loadRuntime(); initialized = true;
+    sync.startBackgroundRefresh?.().catch(() => {});
     if (connectionError) { window.QuizAccountUI?.clearMessageIfMatches(connectionError); connectionError = null; }
     document.getElementById('cloud-connect-retry')?.remove();
     window.QuizAccountUI?.setImportAvailable(Math.max(1, localEntries().length));
@@ -138,7 +140,7 @@ export async function boot() {
   gate(true);
   document.addEventListener('quiz-cloud-import-requested', migrationPanel);
   document.addEventListener('quiz-cloud-before-sign-out', event => {
-    event.detail.waitUntil((async () => { await sync?.prepareToLeave(); await jsonRequest('/api/session', { method: 'DELETE' }, activeUid).catch(() => {}); })());
+    event.detail.waitUntil((async () => { await sync?.prepareToLeave(); await sync?.endSession().catch(() => {}); })());
   });
   document.addEventListener('quiz-auth-changed', event => {
     const user = event.detail?.user;

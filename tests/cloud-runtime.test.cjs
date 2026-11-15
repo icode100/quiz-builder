@@ -65,6 +65,39 @@ function drawingFixture(name) {
   const h = await load('gate-cse-2021-set-1', {storage: protectedLegacy, window: events.window, storageUnavailable: true});
   assert.equal(h.ids['review-attempt'].disabled, true);
   assert.equal(store.calls.filter(([name]) => name === 'getAttempt').length, 1, 'Startup checks only the authenticated attempt API');
+
+  // Confirmed cache enables Review immediately; clicking Review still verifies
+  // the latest server record instead of displaying cached report contents.
+  const cachedRecord = savedAttempt(h,{[h.data.questions[0].id]:h.data.questions[0].correctAnswer});
+  let releaseReview;
+  const cachedAttempt = accountStore([], {getAttempt:() => new Promise(resolve => {releaseReview=resolve;})});
+  let confirmedAttempt = cachedRecord;
+  cachedAttempt.facade.getCachedAttempt = id => { cachedAttempt.calls.push(['getCachedAttempt',id]); return confirmedAttempt; };
+  const cachedEvents = windowEvents(cachedAttempt.facade);
+  const cachedQuiz = createHarness('gate-cse-2021-set-1',{storage:protectedLegacy,window:cachedEvents.window});
+  assert.equal(cachedQuiz.ids['review-attempt'].disabled,false,'Confirmed cached availability appears before any network response');
+  assert.equal(cachedAttempt.calls.some(([name]) => name === 'getAttempt'),false,'Availability uses confirmed cache without a duplicate GET');
+  const openReview = cachedQuiz.ids['review-attempt'].click(); await tick();
+  assert.equal(cachedAttempt.calls.filter(([name]) => name === 'getAttempt').length,1,'Review itself always fetches a fresh verified record');
+  assert.equal(cachedQuiz.ids['quiz-session'].disabled,true,'A held Review request is still busy');
+  releaseReview(cachedRecord); await openReview;
+  assert.equal(cachedQuiz.ids.report.hidden,false); assertLegacy(cachedQuiz);
+  await cachedQuiz.ids['retry-quiz'].click();
+  confirmedAttempt = null;
+  await cachedEvents.emit('quiz-cloud-record',{key:`practice-quiz:${h.data.id}:attempt`,value:null});
+  assert.equal(cachedQuiz.ids['review-attempt'].disabled,true,'Confirmed cached deletion removes Review without another GET');
+  assert.equal(cachedAttempt.calls.filter(([name]) => name === 'getAttempt').length,1);
+
+  // Unknown/pending cache is not confirmation and must wait for the verified API.
+  let releaseUnknown;
+  const unknownAttempt = accountStore([], {getAttempt:() => new Promise(resolve => {releaseUnknown=resolve;})});
+  unknownAttempt.facade.getCachedAttempt = () => undefined;
+  const unknownQuiz = createHarness('gate-cse-2021-set-1',{window:windowEvents(unknownAttempt.facade).window});
+  assert.equal(unknownQuiz.ids['review-attempt'].disabled,true);
+  assert.equal(unknownAttempt.calls.filter(([name]) => name === 'getAttempt').length,1);
+  releaseUnknown(cachedRecord); await unknownQuiz.t.initialCheck;
+  assert.equal(unknownQuiz.ids['review-attempt'].disabled,false,'Unknown/pending records become available only after server confirmation');
+
   const first = h.data.questions.find(question => question.type !== 'nat'), nat = h.data.questions.find(question => question.type === 'nat');
   await editResponse(h, first.id, first.correctAnswer);
   await editResponse(h, nat.id, '-');

@@ -141,7 +141,7 @@
       canvas.setAttribute("aria-disabled", String(blocked));
       if (opened && focused?.disabled && ["rough-undo", "rough-redo", "rough-clear"].includes(focused.id)) canvas.focus({ preventScroll: true });
       const autosaveMessage = window.QuizCloudSync ? "Autosave on · Account sync status above" : current?.saved ? "Saved in this browser" : "Ready · Saved automatically in this browser";
-      status.textContent = load?.loading ? "Loading rough work…" : load?.error || current?.notice || current?.warning || autosaveMessage;
+      status.textContent = load?.loading ? load.ready ? "Showing saved rough work · Checking account…" : "Loading rough work…" : load?.error || current?.notice || current?.warning || autosaveMessage;
       status.classList.toggle("error", Boolean(load?.error || current?.notice || current?.warning));
       updateCursor();
     }

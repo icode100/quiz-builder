@@ -461,8 +461,12 @@
     const check = ++reviewCheck;
     let saved = null;
     try {
-      const response = await readAttemptResponse();
-      if (response.ok) saved = await response.json();
+      const cached = window.QuizCloudSync?.getCachedAttempt?.(data.id);
+      if (cached !== undefined) saved = cached;
+      else {
+        const response = await readAttemptResponse();
+        if (response.ok) saved = await response.json();
+      }
     } catch { /* Missing or unreadable attempts leave review disabled. */ }
     if (check === reviewCheck) setSavedAttempt(saved);
   }

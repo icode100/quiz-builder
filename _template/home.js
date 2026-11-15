@@ -43,10 +43,20 @@
   });
   if (window.QuizCloudSync) {
     const number = value => Number(value.toFixed(4)).toLocaleString("en-US", { maximumFractionDigits: 4 });
-    async function refreshCard(card) {
+    const cardChecks = new WeakMap();
+    async function refreshCard(card, fetchUnknown = true) {
+      const check = (cardChecks.get(card) || 0) + 1;
+      cardChecks.set(card, check);
       let saved;
-      try { saved = await window.QuizCloudSync.getAttempt(card.dataset.quizId); }
+      try {
+        saved = window.QuizCloudSync.getCachedAttempt?.(card.dataset.quizId);
+        if (saved === undefined) {
+          if (!fetchUnknown) return;
+          saved = await window.QuizCloudSync.getAttempt(card.dataset.quizId);
+        }
+      }
       catch { return; }
+      if (cardChecks.get(card) !== check) return;
       const attempted = Boolean(saved?.answers && typeof saved.answers === "object" && !Array.isArray(saved.answers) && Object.values(saved.answers).some(value => value !== null));
       card.dataset.attempted = String(attempted);
       const badge = card.querySelector(".paper-status");
@@ -65,7 +75,7 @@
       updateFilter();
     }
     const existing = new Set(window.QuizCloudSync.entries().map(([key]) => key));
-    Promise.all(cards.filter(card => existing.has(`practice-quiz:${card.dataset.quizId}:attempt`)).map(refreshCard));
+    cards.forEach(card => refreshCard(card, existing.has(`practice-quiz:${card.dataset.quizId}:attempt`)));
     window.addEventListener("quiz-cloud-record", event => {
       const card = cards.find(item => event.detail?.key === `practice-quiz:${item.dataset.quizId}:attempt`);
       if (card) refreshCard(card);

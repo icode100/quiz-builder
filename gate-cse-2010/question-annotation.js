@@ -142,7 +142,7 @@
       byId("annotation-clear").disabled = blocked || !page || !Object.values(page.parts).some(strokes => strokes.length);
       if (editing && focused?.disabled && ["annotation-undo", "annotation-redo", "annotation-clear"].includes(focused.id)) byId("annotation-tool-pen").focus({ preventScroll: true });
       const autosaveMessage = window.QuizCloudSync ? "Autosave on · Account sync status above" : page?.saved ? "Saved in this browser" : "Draw on the question. Done returns to answering. Marks save automatically.";
-      status.textContent = unavailable ? "Screen annotation is unavailable in this browser." : load?.loading ? "Loading question annotations…" : load?.error || page?.notice || page?.warning || autosaveMessage;
+      status.textContent = unavailable ? "Screen annotation is unavailable in this browser." : load?.loading ? load.ready ? "Showing saved annotations · Checking account…" : "Loading question annotations…" : load?.error || page?.notice || page?.warning || autosaveMessage;
       status.classList.toggle("error", Boolean(unavailable || load?.error || page?.notice || page?.warning));
       for (const record of surfaces) {
         record.canvas.tabIndex = editing && editable(record.id) ? 0 : -1;

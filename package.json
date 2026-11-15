@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node cloud/build.cjs",
     "dev:cloud": "node cloud/dev-server.cjs",
-    "test:cloud": "node tests/cloud-build.test.cjs && node tests/cloud-auth.test.mjs && node tests/cloud-startup.test.cjs && node tests/cloud-cache.test.cjs && node tests/cloud-sync.test.cjs && node tests/cloud-drawing-lazy.test.cjs && node tests/cloud-oidc.test.cjs && node tests/cloud-backend.test.cjs && node tests/cloud-runtime.test.cjs"
+    "test:cloud": "node tests/cloud-build.test.cjs && node tests/cloud-auth.test.mjs && node tests/cloud-startup.test.cjs && node tests/cloud-cache.test.cjs && node tests/cloud-lru.test.cjs && node tests/cloud-sync.test.cjs && node tests/cloud-drawing-lazy.test.cjs && node tests/cloud-oidc.test.cjs && node tests/cloud-backend.test.cjs && node tests/cloud-runtime.test.cjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "9.4.1",
