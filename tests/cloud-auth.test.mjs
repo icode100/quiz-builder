@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createAuthController, authErrorMessage } from '../cloud/client/auth-core.mjs';
+import { MEMORY_AUTH_NOTICE, noticeAfterConnection } from '../cloud/client/account-notice.mjs';
 
 const config = { enabled: true, firebase: { apiKey: 'test-key', authDomain: 'test.firebaseapp.com', projectId: 'test-project', appId: 'test-app' } };
 function fixture(options = {}) {
@@ -118,6 +119,13 @@ timed.dispose();
 assert.equal(authErrorMessage({ code: 'auth/wrong-password' }), authErrorMessage({ code: 'auth/user-not-found' }));
 assert.equal(authErrorMessage(new Error('private SDK details')), 'Unable to sign in. Please try again.');
 
+const oldConnectionError = 'Sign-in could not be verified. Please sign in again.';
+assert.equal(noticeAfterConnection(oldConnectionError, oldConnectionError, { signedIn: true }), '', 'A successful connection clears its own stale failure notice');
+assert.equal(noticeAfterConnection(oldConnectionError, oldConnectionError, { signedIn: true, persistence: 'memory' }), MEMORY_AUTH_NOTICE, 'Memory-only sign-in warning is restored after recovery');
+assert.equal(noticeAfterConnection('Imported and synced. Refresh to load practice.', oldConnectionError, { signedIn: true }), null, 'Recovery does not clear a newer migration notice');
+assert.equal(noticeAfterConnection(MEMORY_AUTH_NOTICE, oldConnectionError, { signedIn: true, persistence: 'memory' }), null, 'An already-visible memory warning stays untouched');
+assert.equal(noticeAfterConnection(oldConnectionError, null, { signedIn: true }), null, 'A first connection does not clear unrelated UI messages');
+
 const source = readFileSync(new URL('../cloud/client/account-ui.js', import.meta.url), 'utf8');
 assert.match(source, /quiz-cloud-before-sign-out/);
 assert.match(source, /auth\.signInGoogle\(\{ redirect: true \}\)/, 'Continue with Google uses the first-party same-tab flow');
@@ -126,4 +134,8 @@ assert.match(source, /quiz-cloud-import-requested/);
 assert.match(source, /data-cloud-protected/);
 assert.match(source, /field\.type = show \? 'text' : 'password'/);
 assert.equal(source.includes('localStorage'), false, 'Account UI does not read, move or clear quiz data');
+assert.match(source, /clearMessageIfMatches\(connectionError\)/);
+const bootSource = readFileSync(new URL('../cloud/client/boot.js', import.meta.url), 'utf8');
+assert.match(bootSource, /connectionError = error\.message/);
+assert.ok(bootSource.indexOf('await loadRuntime()') < bootSource.indexOf('clearMessageIfMatches(connectionError)'), 'Only a fully connected runtime clears its previous connection error');
 console.log('Cloud auth checks passed: startup/config errors, restored and switched accounts, token refresh, email operations, popup/redirect behavior, sign-out, storage fallback, loopback emulators and bounded loading. No real accounts or quiz data touched.');

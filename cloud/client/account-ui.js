@@ -1,5 +1,6 @@
 /* Shared account controls; the sync adapter owns all quiz state and migration. */
 import { auth, authErrorMessage } from './auth.js';
+import { MEMORY_AUTH_NOTICE, noticeAfterConnection } from './account-notice.mjs';
 
 export function mountAccountUI(host = document.getElementById('cloud-account')) {
   if (!host) {
@@ -116,7 +117,7 @@ export function mountAccountUI(host = document.getElementById('cloud-account')) 
       byId('cloud-show-password').textContent = 'Show';
       byId('cloud-show-password').setAttribute('aria-pressed', 'false');
       if (previousUid !== user.uid) showMessage('', false, true);
-      if (next.persistence === 'memory') showMessage('You are signed in for this tab only because browser storage is unavailable.', false, true);
+      if (next.persistence === 'memory') showMessage(MEMORY_AUTH_NOTICE, false, true);
       if (next.error) showMessage(authErrorMessage(next.error), true, true);
     } else if (next.error) showMessage(authErrorMessage(next.error), true);
     drawSyncStatus();
@@ -175,7 +176,18 @@ export function mountAccountUI(host = document.getElementById('cloud-account')) 
   window.addEventListener('online', drawSyncStatus);
   window.addEventListener('offline', drawSyncStatus);
   const stop = auth.subscribe(render);
-  const api = { setImportAvailable, showMessage: (message, error = false) => showMessage(message, error, Boolean(current.user)), destroy: stop };
+  const api = {
+    setImportAvailable,
+    showMessage: (message, error = false) => showMessage(message, error, Boolean(current.user)),
+    clearMessageIfMatches(connectionError) {
+      const signedIn = Boolean(current.user), node = byId(signedIn ? 'cloud-account-message' : 'cloud-auth-message');
+      const replacement = noticeAfterConnection(node.textContent, connectionError, { signedIn, persistence: current.persistence });
+      if (replacement === null) return false;
+      showMessage(replacement, false, signedIn);
+      return true;
+    },
+    destroy: stop
+  };
   window.QuizAccountUI = api;
   return api;
 }

@@ -4,7 +4,7 @@ import { createCloudSync } from './sync.js';
 
 const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
 const protectedAreas = () => document.querySelectorAll('[data-cloud-protected]');
-let activeUid = null, initialized = false, connecting = false, sync = null, poll = null;
+let activeUid = null, initialized = false, connecting = false, sync = null, poll = null, connectionError = null;
 const accountCache = createAccountCache();
 function gate(value) { protectedAreas().forEach(node => { node.inert = value; node.hidden = value; }); }
 function notice(message, error = true) { window.QuizAccountUI?.showMessage(message, error); }
@@ -119,6 +119,7 @@ async function connect(user) {
     window.QuizCloudSync = sync;
     emit('quiz-cloud-record', { key: 'practice-quiz:theme', value: sync.storage.getItem('practice-quiz:theme') });
     gate(false); await loadRuntime(); initialized = true;
+    if (connectionError) { window.QuizAccountUI?.clearMessageIfMatches(connectionError); connectionError = null; }
     document.getElementById('cloud-connect-retry')?.remove();
     window.QuizAccountUI?.setImportAvailable(Math.max(1, localEntries().length));
     const refresh = () => {
@@ -139,6 +140,7 @@ async function connect(user) {
     });
   } catch (error) {
     sync?.close(); sync = null; activeUid = null;
+    connectionError = error.message;
     emit('quiz-cloud-status', { state: 'error', message: error.message }); notice(error.message);
     let retry = document.getElementById('cloud-connect-retry');
     if (!retry) { retry = document.createElement('button'); retry.id = 'cloud-connect-retry'; retry.type = 'button'; retry.className = 'cloud-button cloud-button-quiet'; retry.textContent = 'Retry loading practice'; retry.addEventListener('click', () => connect(auth.getUser())); document.getElementById('cloud-account').append(retry); }
