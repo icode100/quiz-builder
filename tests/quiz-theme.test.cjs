@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../_template/theme.js'), 'utf8');
 const key = 'practice-quiz:theme';
 function load({ saved, dark = false, unavailable = false, delayedButton = false, noButton = false } = {}) {
-  const root = { dataset: {} }, label = { textContent: 'Theme' }, events = {}, systemEvents = {}, clicks = [];
+  const root = { dataset: {} }, label = { textContent: 'Theme' }, events = {}, windowEvents = {}, systemEvents = {}, clicks = [];
   const attrs = { role: 'switch', 'aria-label': 'Theme', 'aria-checked': 'false' };
   const button = {
     title: '', setAttribute(name, value) { attrs[name] = String(value); },
@@ -29,7 +29,10 @@ function load({ saved, dark = false, unavailable = false, delayedButton = false,
   };
   vm.runInNewContext(source, {
     document,
-    window: { matchMedia(query) { assert.equal(query, '(prefers-color-scheme: dark)'); return preference; } },
+    window: {
+      matchMedia(query) { assert.equal(query, '(prefers-color-scheme: dark)'); return preference; },
+      addEventListener(name, callback) { (windowEvents[name] ||= []).push(callback); }
+    },
     localStorage: {
       getItem(name) { operations.push(['get', name]); if (unavailable) throw Error('Storage unavailable'); return storage.get(name) ?? null; },
       setItem(name, value) { operations.push(['set', name, value]); if (unavailable) throw Error('Storage unavailable'); storage.set(name, value); }
@@ -39,6 +42,7 @@ function load({ saved, dark = false, unavailable = false, delayedButton = false,
     root, label, button, attrs, storage, operations,
     ready() { visibleButton = !noButton; for (const callback of events.DOMContentLoaded || []) callback(); },
     click() { for (const callback of clicks) callback(); },
+    windowEvent(name, detail) { for (const callback of windowEvents[name] || []) callback({ detail }); },
     system(value) { preference.matches = value; for (const callback of systemEvents.change || []) callback({ matches: value }); }
   };
 }
@@ -85,4 +89,14 @@ assert.equal(unavailable.storage.has(key), false, 'Failed persistence still perm
 const missing = load({ noButton: true }); missing.ready(); missing.system(true);
 assert.equal(missing.root.dataset.theme, 'dark', 'Pages without the optional button still follow system theme');
 
-console.log('PASS: theme label/title and accessible state, toggle, saved/system preference, delayed/missing button, isolated storage and unavailable storage. No real browser state changed.');
+const remote = load({ saved: 'light' }); remote.ready();
+const beforeRemote = remote.operations.slice(), storedBeforeRemote = [...remote.storage];
+remote.windowEvent('quiz-cloud-record', { key, value: 'dark' }); theme(remote, 'dark');
+remote.windowEvent('quiz-cloud-record', { key: 'practice-quiz:another-record', value: 'light' }); theme(remote, 'dark');
+remote.system(false); theme(remote, 'dark');
+remote.windowEvent('quiz-cloud-record', { key, value: null }); theme(remote, 'light');
+remote.system(true); theme(remote, 'dark');
+assert.deepEqual(remote.operations, beforeRemote, 'Remote theme application neither rereads nor echoes writes to storage');
+assert.deepEqual([...remote.storage], storedBeforeRemote, 'Remote preference changes leave browser records untouched');
+
+console.log('PASS: theme label/title and accessible state, toggle, saved/system preference, read-only cloud events, delayed/missing button, isolated storage and unavailable storage. No real browser state changed.');

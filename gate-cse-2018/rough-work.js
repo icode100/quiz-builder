@@ -19,13 +19,58 @@
       return { show() {}, hide() {} };
     }
     const paperStyles = engine.paperStyles, defaultPaper = "dotted";
-    const ids = new Set(questions.map(question => question.id)), pages = new Map();
+    const ids = new Set(questions.map(question => question.id)), pages = new Map(), hydration = new Map();
     const widths = { pen: 4, highlighter: 16, eraser: 16 };
     const colors = { pen: "#17233b", highlighter: "#f59e0b", eraser: "#17233b" };
     let currentId = null, tool = "pen", active = null, opened = false, frame = null;
     const storageKey = id => `practice-quiz:${quizId}:rough:${encodeURIComponent(id)}`;
     const page = () => pages.get(currentId);
     const theme = () => document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    const loadingState = id => hydration.get(id)?.cloud === window.QuizCloudSync ? hydration.get(id) : null;
+    const editable = id => !window.QuizCloudSync?.ensureKeys || Boolean(loadingState(id)?.ready);
+
+    function reloadPage(id) {
+      const previous = pages.get(id);
+      try { if (previous && !previous.loadFailed && previous.sourceText === stateStorage().getItem(storageKey(id))) return previous; } catch { /* read() reports a protected failure. */ }
+      const restored = read(id);
+      if (restored.loadFailed && previous) {
+        previous.warning = restored.warning;
+        previous.loadFailed = true;
+        return previous;
+      }
+      pages.set(id, restored);
+      return restored;
+    }
+    function ensurePage(id, retry = false) {
+      const cloud = window.QuizCloudSync;
+      if (!id || typeof cloud?.ensureKeys !== "function") return;
+      const previous = loadingState(id);
+      if (active && currentId === id || previous?.loading || previous?.ready && !previous.error || previous?.error && !retry) return previous?.promise;
+      if (cloud.isHydrated?.(storageKey(id))) {
+        const restored = reloadPage(id);
+        hydration.set(id, { cloud, ready: !restored.loadFailed, loading: false, error: restored.loadFailed ? restored.warning : "" });
+        return;
+      }
+      const cached = pages.get(id);
+      const load = { cloud, ready: Boolean(cached?.saved && !cached.loadFailed), loading: true, error: "", remoteApplied: false, promise: null };
+      hydration.set(id, load);
+      let request;
+      try { request = cloud.ensureKeys([storageKey(id)]); } catch (error) { request = Promise.reject(error); }
+      load.promise = Promise.resolve(request).then(() => {
+        if (window.QuizCloudSync !== cloud || hydration.get(id) !== load) return;
+        const restored = load.remoteApplied ? pages.get(id) : reloadPage(id);
+        load.loading = false; load.ready = Boolean(restored && !restored.loadFailed);
+        load.error = load.ready ? "" : restored?.warning || "Could not load account rough work. Close and reopen Rough work to retry.";
+        if (opened && currentId === id) { fitPaper(); controls(); draw(); }
+      }).catch(() => {
+        if (window.QuizCloudSync !== cloud || hydration.get(id) !== load) return;
+        const cached = pages.get(id);
+        load.loading = false; load.ready = Boolean(cached?.saved && !cached.loadFailed);
+        load.error = load.ready ? "Could not refresh account rough work. Using saved notes; edits will queue for sync." : "Could not load account rough work. Close and reopen Rough work to retry. Saved notes are unchanged.";
+        if (opened && currentId === id) controls();
+      });
+      return load.promise;
+    }
 
     function fitPaper() {
       const current = page();
@@ -65,6 +110,7 @@
 
     function updateCursor() {
       if (!opened) return;
+      if (!editable(currentId)) { canvas.style.cursor = loadingState(currentId)?.loading ? "progress" : "not-allowed"; return; }
       const width = canvas.getBoundingClientRect().width;
       if (!Number.isFinite(width) || width <= 0) return;
       // Fine shares Medium's pointer size while retaining its own ink width.
@@ -77,27 +123,33 @@
 
     function controls() {
       const current = page();
+      const load = loadingState(currentId), blocked = !editable(currentId);
       const focused = document.activeElement;
-      tools.forEach(name => byId(`rough-tool-${name}`).setAttribute("aria-pressed", String(name === tool)));
+      tools.forEach(name => { byId(`rough-tool-${name}`).setAttribute("aria-pressed", String(name === tool)); byId(`rough-tool-${name}`).disabled = blocked; });
       byId("rough-work-color").value = colors[tool];
-      byId("rough-work-color").disabled = tool === "eraser";
+      byId("rough-work-color").disabled = blocked || tool === "eraser";
       byId("rough-work-color").querySelector('option[value="#17233b"]').textContent = theme() === "dark" ? "White" : "Black";
       byId("rough-work-width").value = String(widths[tool]);
+      byId("rough-work-width").disabled = blocked;
       byId("rough-work-paper").value = current?.paperStyle || defaultPaper;
+      byId("rough-work-paper").disabled = blocked;
       canvas.dataset.paperStyle = current?.paperStyle || defaultPaper;
-      byId("rough-undo").disabled = !current?.undo.length;
-      byId("rough-redo").disabled = !current?.redo.length;
-      byId("rough-clear").disabled = !current?.strokes.length;
+      byId("rough-undo").disabled = blocked || !current?.undo.length;
+      byId("rough-redo").disabled = blocked || !current?.redo.length;
+      byId("rough-clear").disabled = blocked || !current?.strokes.length;
+      canvas.setAttribute("aria-busy", String(Boolean(load?.loading)));
+      canvas.setAttribute("aria-disabled", String(blocked));
       if (opened && focused?.disabled && ["rough-undo", "rough-redo", "rough-clear"].includes(focused.id)) canvas.focus({ preventScroll: true });
       const autosaveMessage = window.QuizCloudSync ? "Autosave on · Account sync status above" : current?.saved ? "Saved in this browser" : "Ready · Saved automatically in this browser";
-      status.textContent = current?.notice || current?.warning || autosaveMessage;
-      status.classList.toggle("error", Boolean(current?.notice || current?.warning));
+      status.textContent = load?.loading ? "Loading rough work…" : load?.error || current?.notice || current?.warning || autosaveMessage;
+      status.classList.toggle("error", Boolean(load?.error || current?.notice || current?.warning));
       updateCursor();
     }
     function read(id) {
-      const restored = { strokes: [], paperStyle: defaultPaper, pageHeight: engine.paper.height, undo: [], redo: [], dirty: false, saved: false, warning: "", notice: "", loadFailed: false };
+      const restored = { strokes: [], paperStyle: defaultPaper, pageHeight: engine.paper.height, undo: [], redo: [], dirty: false, saved: false, warning: "", notice: "", loadFailed: false, sourceText: null };
       try {
         const text = stateStorage().getItem(storageKey(id));
+        restored.sourceText = text;
         if (text !== null) {
           if (text.length > 3 * 1024 * 1024) throw new Error("Drawing is too large.");
           const saved = JSON.parse(text);
@@ -120,10 +172,12 @@
       return restored;
     }
     function persist(current = page()) {
-      if (!current?.dirty || current.loadFailed) return;
+      if (!current?.dirty || current.loadFailed || !editable(currentId)) return;
       try {
         const strokes = engine.validateStrokes(current.strokes);
-        stateStorage().setItem(storageKey(currentId), JSON.stringify({ version: 1, quizId, questionId: currentId, updatedAt: new Date().toISOString(), paperStyle: current.paperStyle, pageHeight: current.pageHeight, strokes }));
+        const value = JSON.stringify({ version: 1, quizId, questionId: currentId, updatedAt: new Date().toISOString(), paperStyle: current.paperStyle, pageHeight: current.pageHeight, strokes });
+        stateStorage().setItem(storageKey(currentId), value);
+        current.sourceText = value;
         current.dirty = false;
         current.saved = true;
         current.warning = "";
@@ -178,6 +232,7 @@
     }
     function flush() { finish(); persist(); controls(); }
     function undo() {
+      if (!editable(currentId)) return;
       finish();
       const current = page(), action = current?.undo.pop();
       if (!action) return;
@@ -189,6 +244,7 @@
       persist(); controls(); draw();
     }
     function redo() {
+      if (!editable(currentId)) return;
       finish();
       const current = page(), action = current?.redo.pop();
       if (!action) return;
@@ -212,6 +268,7 @@
       controls();
     });
     byId("rough-work-paper").addEventListener("change", event => {
+      if (!editable(currentId)) return;
       const paperStyle = event.target.value;
       finish();
       const current = page();
@@ -227,6 +284,7 @@
     byId("rough-undo").addEventListener("click", undo);
     byId("rough-redo").addEventListener("click", redo);
     byId("rough-clear").addEventListener("click", () => {
+      if (!editable(currentId)) return;
       finish();
       const current = page();
       if (!current?.strokes.length) return;
@@ -236,7 +294,7 @@
       draw();
     });
     canvas.addEventListener("pointerdown", event => {
-      if (!opened || active || event.button !== 0 || !page()) return;
+      if (!opened || active || event.button !== 0 || !page() || !editable(currentId)) return;
       const current = page(), first = point(event);
       const count = current.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
       if (!first) return;
@@ -311,9 +369,13 @@
     window.addEventListener("quiz-cloud-record", event => {
       const id = questions.find(question => event.detail?.key === storageKey(question.id))?.id;
       if (!id || active && currentId === id) return;
-      pages.delete(id);
-      if (currentId === id) { pages.set(id, read(id)); controls(); if (opened) { fitPaper(); draw(); } }
+      const load = loadingState(id);
+      const restored = reloadPage(id);
+      if (load?.loading) load.remoteApplied = true;
+      else if (load && !restored.loadFailed) { load.ready = true; load.error = ""; }
+      if (currentId === id) { controls(); if (opened) { fitPaper(); draw(); } }
     });
+    window.addEventListener("online", () => { if (opened) { ensurePage(currentId, true); controls(); } });
     controls();
     return {
       show(id, label = id) {
@@ -324,6 +386,7 @@
           if (!pages.has(id)) pages.set(id, read(id));
         }
         opened = true;
+        ensurePage(id, true);
         byId("rough-page-label").textContent = `Question ${label}`;
         canvas.setAttribute("aria-label", `Drawing page for ${label}`);
         fitPaper();

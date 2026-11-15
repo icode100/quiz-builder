@@ -1,4 +1,5 @@
 'use strict';
+const { createHash } = require('node:crypto');
 const { getServices } = require('./admin.cjs');
 const { loadCatalog } = require('./catalog.cjs');
 const { createStateStore } = require('./store.cjs');
@@ -7,6 +8,7 @@ const { reply, sameOrigin, body, cookie, setCookie } = require('./http.cjs');
 const SESSION_MS = 5 * 24 * 60 * 60 * 1000;
 function createApiHandler(options = {}) {
   let store = options.store, auth = options.auth, catalog = options.catalog;
+  const verifyingSessions = new Map();
   function dependencies() {
     if (!store || !auth) { const services = (options.getServices || getServices)(); auth ||= services.auth; store ||= createStateStore(services.db); }
     catalog ||= loadCatalog();
@@ -16,7 +18,23 @@ function createApiHandler(options = {}) {
     const session = cookie(req);
     if (!session) throw new ApiError(401, 'Sign in to sync your quiz.');
     let decoded;
-    try { decoded = await dependencies().auth.verifySessionCookie(session, true); } catch { throw new ApiError(401, 'Your session has ended. Sign in again.'); }
+    try {
+      const key = createHash('sha256').update(session).digest('hex');
+      let verification = verifyingSessions.get(key);
+      if (!verification) {
+        verification = Promise.resolve().then(() => dependencies().auth.verifySessionCookie(session, true));
+        // Hydration reads several records concurrently. Share only a still
+        // running check; completed successes/failures are never cached. Every
+        // later request checks revocation again, and the UID guard still runs
+        // separately for every request.
+        if (verifyingSessions.size < 256) {
+          verifyingSessions.set(key, verification);
+          const clear = () => { if (verifyingSessions.get(key) === verification) verifyingSessions.delete(key); };
+          verification.then(clear, clear);
+        }
+      }
+      decoded = await verification;
+    } catch { throw new ApiError(401, 'Your session has ended. Sign in again.'); }
     if (!decoded || typeof decoded.uid !== 'string' || !decoded.uid || decoded.uid.includes('/') || decoded.uid.length > 128) throw new ApiError(401, 'Invalid account session.');
     return decoded;
   }

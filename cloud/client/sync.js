@@ -22,22 +22,29 @@ function sameValue(key, left, right) {
 export function createCloudSync({ uid, request, cache, notify = () => {}, remote = () => {}, delay = 400, shouldHydrate = () => true }) {
   if (!uid) throw new Error('Sign in before opening account storage.');
   const values = new Map(), revisions = new Map(), pending = new Map(), conflicts = new Map(), inflight = new Map(), editing = new Set();
-  let cursor = 0, sequence = 0, timer = null, running = null, refreshing = null, initialization = null, closed = false, cacheWrite = Promise.resolve(), cacheError = false;
+  const watched = new Set(), hydrated = new Set(), hydrating = new Map(), reads = new Map();
+  let cursor = 0, sequence = 0, timer = null, running = null, refreshing = null, initialization = null, closed = false, cacheWrite = Promise.resolve(), cacheError = false, cacheReadFailed = false;
   const state = (name, message) => { if (!closed) notify({ state: name, message, pending: pending.size, conflicts: conflicts.size }); };
+  const cacheWarning = () => cacheReadFailed
+    ? 'Saved offline progress could not be read and has been kept unchanged. Close other tabs and reload to recover it. Keep this tab open until changes sync.'
+    : 'Offline storage is unavailable. Keep this tab open until everything is synced.';
   function snapshot() {
     return { version: 1, uid, values: [...values], revisions: [...revisions], pending: [...pending], cursor, sequence };
   }
   function persistPending() {
+    // Never replace an unread snapshot: it can contain unsynced answers or ink.
+    // Cloud hydration can still proceed, but this session must not write over it.
+    if (cacheReadFailed) { cacheError = true; state('error', cacheWarning()); return Promise.resolve(false); }
     const current = snapshot();
-    cacheWrite = cacheWrite.catch(() => {}).then(() => cache.write(uid, current)).then(() => { cacheError = false; }, () => {
-      cacheError = true; state('error', 'Offline storage is unavailable. Keep this tab open until everything is synced.');
+    cacheWrite = cacheWrite.catch(() => {}).then(() => cache.write(uid, current)).then(() => { cacheError = false; return true; }, () => {
+      cacheError = true; state('error', cacheWarning()); return false;
     });
     return cacheWrite;
   }
   function status() {
     if (conflicts.size) state('conflict', 'This progress was also changed on another device. Choose which version to keep.');
+    else if (cacheError) state('error', cacheWarning());
     else if (pending.size) state('syncing', `${pending.size} change${pending.size === 1 ? '' : 's'} waiting to sync`);
-    else if (cacheError) state('error', 'Cloud is up to date; offline storage is unavailable.');
     else state('synced', 'Synced to your account');
   }
   function queue(key, value, { force = false } = {}) {
@@ -64,9 +71,39 @@ export function createCloudSync({ uid, request, cache, notify = () => {}, remote
     if (value === null) values.delete(key); else values.set(key, value);
     if (!local && previous !== value) remote({ key, value, revision: record.revision });
   }
-  async function getRemote(key) {
-    const result = await request(`/api/state?key=${encodeURIComponent(key)}`);
-    return checkedRecord(result.record || result, key);
+  function getRemote(key) {
+    if (!reads.has(key)) {
+      const reading = Promise.resolve().then(() => request(`/api/state?key=${encodeURIComponent(key)}`))
+        .then(result => checkedRecord(result.record || result, key))
+        .finally(() => { if (reads.get(key) === reading) reads.delete(key); });
+      reads.set(key, reading);
+    }
+    return reads.get(key);
+  }
+  function reconcile(record) {
+    checkedRecord(record);
+    const key = record.key, knownRevision = revisions.get(key) || 0;
+    // A lazy page read can finish after a newer poll/save. Never move backwards.
+    if (record.revision < Math.max(knownRevision, conflicts.get(key)?.revision || 0)) return;
+    const waiting = pending.get(key), sending = inflight.get(key);
+    if (editing.has(key)) {
+      if (record.revision > knownRevision || recordValue(record) !== (values.get(key) ?? null)) {
+        conflicts.set(key, record); state('conflict', 'Another device changed the drawing you are editing. Finish the stroke, then choose which version to keep.');
+      }
+    } else if (waiting) {
+      if (sameValue(key, waiting.value, recordValue(record))) {
+        pending.delete(key); conflicts.delete(key); merge(record, { local: true });
+      } else if (sending && sameValue(key, sending.value, recordValue(record)) && record.revision > sending.baseRevision) {
+        // A poll can observe our earlier save before its HTTP response arrives.
+        // Keep newer local ink/answers, but advance their compare-and-set base.
+        revisions.set(key, Math.max(knownRevision, record.revision));
+        waiting.baseRevision = Math.max(waiting.baseRevision, record.revision);
+        const conflict = conflicts.get(key);
+        if (conflict && conflict.revision <= record.revision) conflicts.delete(key);
+      } else if (record.revision !== waiting.baseRevision) {
+        conflicts.set(key, record); state('conflict', 'Another device saved a different version of this progress.');
+      }
+    } else merge(record);
   }
   async function parallelRead(items, read) {
     const results = new Array(items.length);
@@ -76,7 +113,28 @@ export function createCloudSync({ uid, request, cache, notify = () => {}, remote
     }));
     return results;
   }
-  async function refresh() {
+  async function ensureKeys(keys) {
+    if (closed) throw new Error('This account is no longer active. Reload and sign in again.');
+    if (!Array.isArray(keys) || keys.some(key => !validKey(key))) throw new Error('Invalid account storage key.');
+    let changed = false;
+    await parallelRead([...new Set(keys)], key => {
+      watched.add(key);
+      if (hydrated.has(key)) return;
+      if (!hydrating.has(key)) {
+        changed = true;
+        const loading = getRemote(key).then(record => {
+          if (closed) throw new Error('This account is no longer active. Reload and sign in again.');
+          reconcile(record); hydrated.add(key);
+        }).finally(() => { if (hydrating.get(key) === loading) hydrating.delete(key); });
+        hydrating.set(key, loading);
+      }
+      return hydrating.get(key);
+    });
+    if (closed) throw new Error('This account is no longer active. Reload and sign in again.');
+    if (changed) { await persistPending(); status(); }
+    return api;
+  }
+  async function refresh({ initial = false } = {}) {
     if (closed) return;
     if (refreshing) return refreshing;
     refreshing = (async () => {
@@ -86,33 +144,26 @@ export function createCloudSync({ uid, request, cache, notify = () => {}, remote
         if (!Array.isArray(result.records)) throw new Error('Invalid cloud sync manifest.');
         const incoming = result.records.filter(item => {
           if (!validKey(item?.key) || !Number.isSafeInteger(item.revision) || item.revision < 1) throw new Error('Invalid cloud sync manifest.');
-          if (!pending.has(item.key) && !editing.has(item.key) && !shouldHydrate(item.key)) return false;
+          // The verified outbox is already available locally. Large notes from
+          // another page can upload/reconcile after practice becomes usable.
+          if (initial && !watched.has(item.key) && !editing.has(item.key) && !shouldHydrate(item.key)) return false;
+          if (!pending.has(item.key) && !editing.has(item.key) && !watched.has(item.key) && !shouldHydrate(item.key)) return false;
           return pending.has(item.key) || item.revision > (revisions.get(item.key) || 0) || (!item.deleted && !values.has(item.key));
         });
-        const records = await parallelRead(incoming, item => item.deleted ? { ...item, value: null } : getRemote(item.key));
+        const records = await parallelRead(incoming, async item => {
+          if (item.deleted) return { ...item, value: null };
+          let record = await getRemote(item.key);
+          // A shared lazy read may have captured an older value before this
+          // manifest was fetched. Confirm its minimum revision before advancing
+          // the cursor, or the newer change would disappear from future polls.
+          if (record.revision < item.revision) record = await getRemote(item.key);
+          if (record.revision < item.revision) throw new Error('Cloud progress changed while loading. Retry to load the latest version.');
+          return record;
+        });
         for (let index = 0; index < incoming.length; index++) {
           const item = incoming[index], record = records[index];
           if (closed) return;
-          checkedRecord(record, item.key);
-          const waiting = pending.get(item.key), sending = inflight.get(item.key);
-          if (editing.has(item.key)) {
-            // Visible pointer ink has not reached storage yet. Never repaint it or
-            // advance its base revision while another device changes this page.
-            conflicts.set(item.key, record); state('conflict', 'Another device changed the drawing you are editing. Finish the stroke, then choose which version to keep.');
-          } else if (waiting) {
-            if (sameValue(item.key, waiting.value, recordValue(record))) {
-              pending.delete(item.key); conflicts.delete(item.key); merge(record, { local: true });
-            } else if (sending && sameValue(item.key, sending.value, recordValue(record)) && record.revision > sending.baseRevision) {
-              // A poll can observe our earlier save before its HTTP response arrives.
-              // Keep newer local ink/answers, but advance their compare-and-set base.
-              revisions.set(item.key, Math.max(revisions.get(item.key) || 0, record.revision));
-              waiting.baseRevision = Math.max(waiting.baseRevision, record.revision);
-              const conflict = conflicts.get(item.key);
-              if (conflict && conflict.revision <= record.revision) conflicts.delete(item.key);
-            } else if (record.revision !== waiting.baseRevision) {
-              conflicts.set(item.key, record); state('conflict', 'Another device saved a different version of this progress.');
-            }
-          } else merge(record);
+          checkedRecord(record, item.key); reconcile(record); hydrated.add(item.key);
         }
         cursor = result.cursor ?? cursor; more = Boolean(result.hasMore);
       }
@@ -186,8 +237,8 @@ export function createCloudSync({ uid, request, cache, notify = () => {}, remote
           cursor = 0;
           sequence = Number.isSafeInteger(saved.sequence) ? saved.sequence : 0;
         }
-      } catch { cacheError = true; }
-      try { await refresh(); await flush(); }
+      } catch { cacheError = true; cacheReadFailed = true; }
+      try { await refresh({ initial: true }); flush().catch(() => {}); }
       catch (error) { if (!values.size && !pending.size) throw error; }
       return api;
     })();
@@ -207,6 +258,17 @@ export function createCloudSync({ uid, request, cache, notify = () => {}, remote
     } else throw new Error('Choose this device or the cloud version.');
     await persistPending(); await flush(); status();
   }
+  async function prepareToLeave() {
+    while (pending.size) {
+      const savingSequence = sequence;
+      if (await persistPending()) {
+        if (sequence === savingSequence) return;
+        continue;
+      }
+      try { await flush(); } catch {}
+      if (pending.size) throw new Error('Your latest changes are not saved on this device or synced to your account. Keep this tab open and reconnect before leaving.');
+    }
+  }
   const storage = {
     getItem: key => values.get(key) ?? null,
     setItem: (key, value) => queue(key, String(value)),
@@ -215,7 +277,9 @@ export function createCloudSync({ uid, request, cache, notify = () => {}, remote
     get length() { return values.size; }
   };
   const api = {
-    storage, ready, flush, refresh, persistPending, resolveConflict,
+    storage, ready, flush, refresh, persistPending, prepareToLeave, resolveConflict, ensureKeys,
+    hasUncachedChanges: () => Boolean(pending.size && cacheError),
+    isHydrated: key => hydrated.has(key),
     entries: () => [...values], conflicts: () => [...conflicts],
     beginEdit(key) {
       if (closed) throw new Error('This account is no longer active. Reload and sign in again.');

@@ -1,6 +1,8 @@
 import { auth } from './auth.js';
 import { createAccountCache } from './cache.js';
 import { createCloudSync } from './sync.js';
+import { shouldHydrateOnPage } from './hydration.mjs';
+import { createAccountRequester, getAccountToken } from './request.mjs';
 
 const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
 const protectedAreas = () => document.querySelectorAll('[data-cloud-protected]');
@@ -8,30 +10,10 @@ let activeUid = null, initialized = false, connecting = false, sync = null, poll
 const accountCache = createAccountCache();
 function gate(value) { protectedAreas().forEach(node => { node.inert = value; node.hidden = value; }); }
 function notice(message, error = true) { window.QuizAccountUI?.showMessage(message, error); }
-async function jsonRequest(path, options = {}, uid, renew = true) {
-  if (!uid || auth.getUser()?.uid !== uid) throw new Error('Your account changed. Reload before continuing.');
-  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 25000);
-  let response;
-  try {
-    response = await fetch(path, { method: options.method || 'GET', credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-      headers: { 'X-Quiz-Account': uid, ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
-      ...(options.body ? { body: JSON.stringify(options.body) } : {}) });
-  } finally { clearTimeout(timeout); }
-  let result;
-  try { result = await response.json(); } catch { result = { error: 'The server returned an unreadable response.' }; }
-  if (auth.getUser()?.uid !== uid) throw new Error('Your account changed. Reload before continuing.');
-  if (response.status === 401 && renew && path !== '/api/session') {
-    await jsonRequest('/api/session', { method: 'POST', body: { idToken: await auth.getToken(true) } }, uid, false);
-    return jsonRequest(path, options, uid, false);
-  }
-  if (!response.ok) {
-    if (result.code === 'account-changed') { gate(true); sync?.close(); location.reload(); }
-    const error = new Error(result.error || 'Could not reach account storage.');
-    error.status = response.status; error.data = result;
-    throw error;
-  }
-  return result;
-}
+const jsonRequest = createAccountRequester({
+  getUser: () => auth.getUser(), getToken: force => auth.getToken(force),
+  accountChanged: () => { gate(true); sync?.close(); location.reload(); }
+});
 function loadRuntime() {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -108,10 +90,10 @@ async function connect(user) {
   emit('quiz-cloud-status', { state: 'loading', message: 'Connecting to your account…' });
   const request = (path, options) => jsonRequest(path, options, user.uid);
   try {
-    try { await request('/api/session', { method: 'POST', body: { idToken: await auth.getToken() } }); }
+    try { await request('/api/session', { method: 'POST', body: { idToken: await getAccountToken(force => auth.getToken(force)) } }); }
     catch (error) { if (error.status) throw error; }
     sync = createCloudSync({ uid: user.uid, request, cache: accountCache,
-      shouldHydrate: key => !key.includes(":rough:") && !key.includes(":annotation:") || Boolean(document.body.dataset.quizId && key.startsWith(`practice-quiz:${document.body.dataset.quizId}:`)),
+      shouldHydrate: key => shouldHydrateOnPage(key, { page: document.body.dataset.cloudPage, quizId: document.body.dataset.quizId }),
       notify: status => { emit('quiz-cloud-status', status); if (status.state === 'conflict') conflictPanel(); },
       remote: record => emit('quiz-cloud-record', record) });
     await sync.ready();
@@ -131,12 +113,18 @@ async function connect(user) {
     window.addEventListener('online', refresh);
     document.addEventListener('visibilitychange', () => { if (document.hidden) sync.persistPending(); else refresh(); });
     window.addEventListener('pagehide', () => sync.persistPending());
+    window.addEventListener('beforeunload', event => {
+      if (!sync.hasUncachedChanges()) return;
+      event.preventDefault(); event.returnValue = '';
+    });
     document.addEventListener('click', async event => {
       const link = event.target.closest?.('a[href]');
       if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || link.target === '_blank' || !sync.pending()) return;
       const url = new URL(link.href, location.href);
       if (url.origin !== location.origin || url.hash && url.pathname === location.pathname) return;
-      event.preventDefault(); await sync.persistPending(); location.href = url.href;
+      event.preventDefault();
+      try { await sync.prepareToLeave(); location.href = url.href; }
+      catch (error) { notice(error.message); }
     });
   } catch (error) {
     sync?.close(); sync = null; activeUid = null;
@@ -150,7 +138,7 @@ export async function boot() {
   gate(true);
   document.addEventListener('quiz-cloud-import-requested', migrationPanel);
   document.addEventListener('quiz-cloud-before-sign-out', event => {
-    event.detail.waitUntil((async () => { await sync?.persistPending(); await jsonRequest('/api/session', { method: 'DELETE' }, activeUid).catch(() => {}); })());
+    event.detail.waitUntil((async () => { await sync?.prepareToLeave(); await jsonRequest('/api/session', { method: 'DELETE' }, activeUid).catch(() => {}); })());
   });
   document.addEventListener('quiz-auth-changed', event => {
     const user = event.detail?.user;

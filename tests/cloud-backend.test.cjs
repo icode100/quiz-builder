@@ -10,7 +10,7 @@ const copy = value => JSON.parse(JSON.stringify(value));
 const now = new Date().toISOString();
 const catalog = loadCatalog();
 function memoryFirestore() {
-  const data = new Map(), batches = []; let queue = Promise.resolve();
+  const data = new Map(), batches = [], queries = []; let queue = Promise.resolve();
   const snapshot = ref => ({ ref, exists: data.has(ref.path), data: () => copy(data.get(ref.path)) });
   const apply = writes => {
     for (const [kind, ref, value, merge] of writes) {
@@ -20,15 +20,18 @@ function memoryFirestore() {
   };
   const doc = path => ({ path, id: path.split('/').at(-1), collection: name => collection(`${path}/${name}`), get: async () => snapshot(doc(path)) });
   function collection(path) {
-    let field, after = -1, maximum = Infinity;
-    const ref = { path, doc: id => doc(`${path}/${id}`), where(name, operator, value) { assert.equal(operator, '>'); field = name; after = value; return ref; }, orderBy(name) { assert.equal(name, field); return ref; }, limit(value) { maximum = value; return ref; }, async get() {
+    let field, after = -1, maximum = Infinity, selected;
+    const ref = { path, doc: id => doc(`${path}/${id}`), where(name, operator, value) { assert.equal(operator, '>'); field = name; after = value; return ref; }, orderBy(name) { assert.equal(name, field); return ref; }, select(...names) { selected = names; return ref; }, limit(value) { maximum = value; return ref; }, async get() {
       let docs = [...data.keys()].filter(key => key.startsWith(path + '/') && !key.slice(path.length + 1).includes('/')).map(key => snapshot(doc(key)));
       if (field) docs = docs.filter(item => item.data()[field] > after).sort((a, b) => a.data()[field] - b.data()[field]);
-      return { docs: docs.slice(0, maximum) };
+      docs = docs.slice(0, maximum);
+      if (selected) docs = docs.map(item => { const value = Object.fromEntries(selected.filter(name => Object.hasOwn(item.data(), name)).map(name => [name, item.data()[name]])); return { ...item, data: () => copy(value) }; });
+      queries.push({ path, selected, bytes: Buffer.byteLength(JSON.stringify(docs.map(item => item.data()))) });
+      return { docs };
     } };
     return ref;
   }
-  return { data, batches, collection, getAll: async (...refs) => refs.map(snapshot), batch() { const writes = []; return { set(ref, value) { writes.push(['set', ref, value]); }, delete(ref) { writes.push(['delete', ref]); }, async commit() { batches.push(copy(writes.map(([kind, ref, value]) => [kind, ref.path, value || null]))); apply(writes); } }; }, async runTransaction(fn) {
+  return { data, batches, queries, collection, getAll: async (...refs) => refs.map(snapshot), batch() { const writes = []; return { set(ref, value) { writes.push(['set', ref, value]); }, delete(ref) { writes.push(['delete', ref]); }, async commit() { batches.push(copy(writes.map(([kind, ref, value]) => [kind, ref.path, value || null]))); apply(writes); } }; }, async runTransaction(fn) {
     const previous = queue; let release; queue = new Promise(resolve => { release = resolve; }); await previous;
     try { const writes = []; const result = await fn({ getAll: async (...refs) => refs.map(snapshot), set(ref, value, options) { writes.push(['set', ref, value, options?.merge]); } }); apply(writes); return result; } finally { release(); }
   } };
@@ -101,14 +104,39 @@ function attempt(quiz, mode = 'blank', exclusions = []) {
   for (let i = 0; i < PAGE_SIZE + 3; i++) await store.write('pages', `key-${i}`, String(i), 0);
   const firstPage = await store.list('pages'); assert.equal(firstPage.records.length, PAGE_SIZE); assert.equal(firstPage.hasMore, true);
   const secondPage = await store.list('pages', firstPage.cursor); assert.equal(secondPage.records.length, 3); assert.equal(secondPage.hasMore, false);
+  for (let index = 0; index < 3; index++) await store.write('manifest', `large-inline-${index}`, 'x'.repeat(500 * 1024), 0);
+  const metadata = await store.list('manifest');
+  assert.equal(metadata.records.length, 3);
+  assert.deepEqual(db.queries.at(-1).selected, ['key', 'revision', 'updatedAt', 'deleted'], 'Firestore applies the manifest projection before transferring document bodies');
+  assert.ok(db.queries.at(-1).bytes < 1024, 'Listing 1.5MiB of inline drawings transfers metadata only');
+  assert.equal(metadata.records.some(record => 'value' in record), false);
+  const beforeUnchanged = db.queries.length;
+  assert.deepEqual(await store.list('manifest', metadata.cursor), { records: [], cursor: metadata.cursor, hasMore: false });
+  assert.equal(db.queries.length, beforeUnchanged, 'Unchanged polls do not scan state documents');
 
   const authCalls = [], auth = { async verifySessionCookie(value, revoked) { authCalls.push(['cookie', value, revoked]); if (!/^session-[AB]$/.test(value)) throw Error('bad'); return { uid: value.slice(-1), email: 'test@example.invalid', name: 'Quiz user' }; }, async verifyIdToken(value, revoked) { authCalls.push(['id', value, revoked]); if (value !== 'synthetic-verified-id-token') throw Error('bad'); return { uid: 'A', email: 'test@example.invalid' }; }, async createSessionCookie(value, options) { assert.equal(options.expiresIn, SESSION_MS); return 'session-A'; } };
   const handler = createApiHandler({ auth, store, catalog });
-  async function request(url, { method = 'GET', session = 'A', input, origin = 'https://quiz.example.test', host = 'quiz.example.test', cookieName = '__Host-quiz_session', expectedAccount = session } = {}) {
+  async function request(url, { method = 'GET', session = 'A', input, origin = 'https://quiz.example.test', host = 'quiz.example.test', cookieName = '__Host-quiz_session', expectedAccount = session, requestHandler = handler } = {}) {
     const headers = { host, ...(expectedAccount ? { 'x-quiz-account': expectedAccount } : {}), ...(origin ? { origin } : {}), ...(session ? { cookie: `${cookieName}=session-${session}` } : {}), ...(input === undefined ? {} : { 'content-type': 'application/json' }) };
     const response = { headers: {}, setHeader(name, value) { this.headers[name] = value; }, end(value) { this.json = JSON.parse(value); } };
-    await handler({ url, method, headers, ...(input === undefined ? {} : { body: input }) }, response); return response;
+    await requestHandler({ url, method, headers, ...(input === undefined ? {} : { body: input }) }, response); return response;
   }
+  let releaseVerification, verificationCalls = 0, revokedSession = false;
+  const verificationGate = new Promise(resolve => { releaseVerification = resolve; });
+  const coalescedHandler = createApiHandler({ store, catalog, auth: { ...auth, async verifySessionCookie(value, revoked) {
+    verificationCalls++; assert.equal(revoked, true); await verificationGate;
+    if (revokedSession) throw Error('Synthetic revoked session');
+    return auth.verifySessionCookie(value, revoked);
+  } } });
+  const simultaneous = [request('/api/state', { requestHandler: coalescedHandler }), request('/api/state', { requestHandler: coalescedHandler, expectedAccount: 'B' })];
+  await Promise.resolve(); assert.equal(verificationCalls, 1, 'Concurrent hydration requests share only the currently running revocation check');
+  releaseVerification();
+  assert.deepEqual((await Promise.all(simultaneous)).map(item => item.statusCode), [200, 409], 'Account guards remain independent for coalesced requests');
+  await request('/api/state', { requestHandler: coalescedHandler }); assert.equal(verificationCalls, 2, 'Completed verification results are never cached');
+  revokedSession = true;
+  assert.equal((await request('/api/state', { requestHandler: coalescedHandler })).statusCode, 401);
+  assert.equal((await request('/api/state', { requestHandler: coalescedHandler })).statusCode, 401);
+  assert.equal(verificationCalls, 4, 'Failed revocation checks are never cached either');
   assert.equal((await request('/api/session', { session: null })).json.authenticated, false);
   let response = await request('/api/session', { method: 'POST', session: null, input: { idToken: 'synthetic-verified-id-token' } });
   assert.equal(response.statusCode, 200); assert.match(response.headers['Set-Cookie'], /__Host-quiz_session=session-A; Path=\/; HttpOnly; SameSite=Lax; Max-Age=432000; Secure/);

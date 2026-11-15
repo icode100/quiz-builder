@@ -40,7 +40,10 @@ function createStateStore(db) {
     const cursor = counter.exists ? counter.data().cursor || 0 : 0;
     if (!validRevision(cursor)) throw new ApiError(500, 'Invalid account revision.');
     if (since >= cursor) return { records: [], cursor, hasMore: false };
-    const snapshots = await owner.collection('state').where('revision', '>', since).orderBy('revision').limit(PAGE_SIZE + 1).get();
+    // A manifest needs only metadata. Inline drawings can occupy 600KiB each;
+    // do not download their bodies from Firestore just to discard them here.
+    const snapshots = await owner.collection('state').where('revision', '>', since).orderBy('revision')
+      .select('key', 'revision', 'updatedAt', 'deleted').limit(PAGE_SIZE + 1).get();
     const docs = snapshots.docs.slice(0, PAGE_SIZE), records = docs.map(snapshot => publicRecord(snapshot.data()));
     const hasMore = snapshots.docs.length > PAGE_SIZE;
     return { records, cursor: hasMore ? records.at(-1).revision : Math.max(cursor, records.at(-1)?.revision || 0), hasMore };

@@ -159,12 +159,83 @@ function fakeIndexedDB() {
     assert.equal(scoped.api.storage.getItem(OTHER_NOTE),'other paper ink','A prior high cached cursor cannot hide a newly opened quiz note');assert.equal(scoped.api.storage.getItem(ROUGH),null);
     const scopedInitial=scopeServer.calls.filter(call=>call.method==='GET'&&call.address.includes('since='));assert.ok(scopedInitial.filter(call=>call.address.endsWith('since=0')).length>=2);
     const pendingCache=memoryCache(),base=scopeServer.record('scoped',ROUGH).revision;pendingCache.values.set('scoped',{version:1,uid:'scoped',values:[[ROUGH,'offline other paper ink']],revisions:[[ROUGH,base]],pending:[[ROUGH,{value:'offline other paper ink',baseRevision:base,sequence:1}]],cursor:previousCursor,sequence:1});
-    const pendingScoped=device('scoped',scopeServer,pendingCache,{shouldHydrate:key=>!isNote(key)});await pendingScoped.api.ready();assert.equal(scopeServer.record('scoped',ROUGH).value,'offline other paper ink','Pending out-of-scope edits are reconciled and synced rather than discarded');
+    const pendingScoped=device('scoped',scopeServer,pendingCache,{shouldHydrate:key=>!isNote(key)});await pendingScoped.api.ready();await pendingScoped.api.flush();assert.equal(scopeServer.record('scoped',ROUGH).value,'offline other paper ink','Pending out-of-scope edits are reconciled and synced rather than discarded');
 
     // Bounded parallel reads improve bootstrap but retain revision application order.
     const parallelServer=new Server();parallelServer.pageSize=100;for(let index=0;index<9;index++)parallelServer.commit('parallel',`practice-quiz:paper-${index}`,'draft '+index);
     let activeReads=0,maxReads=0;parallelServer.beforeGet=async()=>{maxReads=Math.max(maxReads,++activeReads);await tick();activeReads--;};const parallel=device('parallel',parallelServer);await parallel.api.ready();
     assert.ok(maxReads>1&&maxReads<=4,'Hydration uses at most four concurrent payload reads');assert.deepEqual(parallel.changes.map(record=>record.revision),[1,2,3,4,5,6,7,8,9]);
+
+    // Slow imported note uploads never hold the restored quiz behind the gate.
+    const startupServer=new Server(),startupCache=memoryCache(),uploadStarted=deferred(),allowUpload=deferred();
+    const startupBase=startupServer.commit('startup',ROUGH,'older cloud ink').revision;
+    startupCache.values.set('startup',{version:1,uid:'startup',values:[[DRAFT,'cached draft'],[ROUGH,'pending imported ink']],revisions:[[ROUGH,startupBase]],pending:[[ROUGH,{value:'pending imported ink',baseRevision:startupBase,sequence:1}]],cursor:0,sequence:1});
+    startupServer.beforePut=async()=>{uploadStarted.resolve();await allowUpload.promise;};
+    const startup=device('startup',startupServer,startupCache,{shouldHydrate:key=>!isNote(key)});await startup.api.ready();await uploadStarted.promise;
+    assert.equal(startup.api.storage.getItem(ROUGH),'pending imported ink');assert.equal(startup.api.pending(),1,'ready restores the outbox without waiting for slow upload ACKs');
+    assert.equal(startupServer.calls.filter(call=>new URL(call.address,'https://quiz.example').searchParams.get('key')===ROUGH).length,0,'Initial scoped refresh skips even pending note payload downloads');
+    let startupSubmitted=false;const startupSubmission=startup.api.submitAttempt('paper',{version:1,answers:{'CS-1':'A'}}).then(()=>{startupSubmitted=true;});
+    await tick();assert.equal(startupSubmitted,false,'Submit still waits for its ACK while a background outbox flush is active');assert.equal(startup.api.storage.getItem(DRAFT),'cached draft');
+    assert.equal(await startup.api.persistPending(),true);await startup.api.prepareToLeave();assert.equal(startup.api.pending(),2,'A durable cached import can navigate without waiting for background uploads');assert.equal(startup.api.hasUncachedChanges(),false);
+    allowUpload.resolve();await startupSubmission;await startup.api.flush();assert.equal(startupServer.record('startup',ROUGH).value,'pending imported ink');assert.equal(startupSubmitted,true);
+
+    // Lazy drawing hydration confirms only the requested page, dedupes and watches it.
+    const lazyServer=new Server(),lazyCache=memoryCache();lazyServer.commit('lazy',ROUGH,'cloud page');lazyServer.commit('lazy',ANNOTATION,'cloud annotations');lazyServer.commit('lazy',OTHER_NOTE,'unopened page');
+    lazyCache.values.set('lazy',{version:1,uid:'lazy',values:[[ROUGH,'stale cached page']],revisions:[[ROUGH,0]],pending:[],cursor:0,sequence:0});
+    const lazy=device('lazy',lazyServer,lazyCache,{shouldHydrate:()=>false});await lazy.api.ready();assert.equal(lazy.api.isHydrated(ROUGH),false);assert.equal(lazy.api.storage.getItem(ROUGH),'stale cached page');
+    await Promise.all([lazy.api.ensureKeys([ROUGH,ROUGH]),lazy.api.ensureKeys([ROUGH])]);
+    assert.equal(lazy.api.storage.getItem(ROUGH),'cloud page');assert.equal(lazy.api.isHydrated(ROUGH),true);assert.equal(lazy.changes.at(-1).key,ROUGH);
+    const lazyGets=()=>lazyServer.calls.filter(call=>new URL(call.address,'https://quiz.example').searchParams.get('key')===ROUGH).length;
+    assert.equal(lazyGets(),1,'Concurrent page openings share one confirmed read');await lazy.api.ensureKeys([ROUGH]);assert.equal(lazyGets(),1,'Already-confirmed pages do not refetch on every render');
+    const missing='practice-quiz:paper:rough:missing';await lazy.api.ensureKeys([missing]);await lazy.api.ensureKeys([missing]);assert.equal(lazy.api.isHydrated(missing),true);
+    assert.equal(lazyServer.calls.filter(call=>new URL(call.address,'https://quiz.example').searchParams.get('key')===missing).length,1,'Missing pages are also confirmed once');
+    lazyServer.commit('lazy',ROUGH,'remote update after opening');await lazy.api.refresh();assert.equal(lazy.api.storage.getItem(ROUGH),'remote update after opening','Ensured pages remain watched despite the initial hydration scope');assert.equal(lazy.api.storage.getItem(OTHER_NOTE),null);
+    lazyServer.offline=true;const beforeLazy=lazy.api.entries();await assert.rejects(lazy.api.ensureKeys([ANNOTATION]),/Network/);assert.deepEqual(lazy.api.entries(),beforeLazy);assert.equal(lazy.api.isHydrated(ANNOTATION),false);
+    lazyServer.offline=false;await lazy.api.ensureKeys([ANNOTATION]);assert.equal(lazy.api.storage.getItem(ANNOTATION),'cloud annotations','Failed page loads can be retried');
+    lazy.api.beginEdit(OTHER_NOTE);await lazy.api.ensureKeys([OTHER_NOTE]);assert.equal(lazy.api.storage.getItem(OTHER_NOTE),null);assert.equal(lazy.api.conflicts().length,1,'A lazy response cannot repaint an active pointer stroke');lazy.api.endEdit(OTHER_NOTE);await lazy.api.resolveConflict(OTHER_NOTE,'cloud');assert.equal(lazy.api.storage.getItem(OTHER_NOTE),'unopened page');
+    const lazyBulkKeys=Array.from({length:9},(_,index)=>`practice-quiz:paper:rough:bulk-${index}`);for(const key of lazyBulkKeys)lazyServer.commit('lazy',key,'bulk ink');
+    let lazyActive=0,lazyMaximum=0;lazyServer.beforeGet=async()=>{lazyMaximum=Math.max(lazyMaximum,++lazyActive);await tick();lazyActive--;};await lazy.api.ensureKeys(lazyBulkKeys);lazyServer.beforeGet=null;assert.ok(lazyMaximum>1&&lazyMaximum<=4,'A group of lazy page reads stays bounded to four requests');
+
+    // Lazy reads use CAS reconciliation and cannot undo a newer completed save.
+    const staleServer=new Server(),staleCache=memoryCache();const staleRecord=staleServer.commit('stale',ROUGH,'old ink');
+    staleCache.values.set('stale',{version:1,uid:'stale',values:[[ROUGH,'old ink']],revisions:[[ROUGH,staleRecord.revision]],pending:[],cursor:0,sequence:0});
+    const lazyReadStarted=deferred(),releaseLazyRead=deferred();let holdLazy=true;
+    const stale=device('stale',staleServer,staleCache,{shouldHydrate:()=>false,request:async(address,options)=>{if(holdLazy&&new URL(address,'https://quiz.example').searchParams.get('key')===ROUGH){holdLazy=false;lazyReadStarted.resolve();await releaseLazyRead.promise;return staleRecord;}return staleServer.request('stale',address,options);}});
+    await stale.api.ready();const staleLoading=stale.api.ensureKeys([ROUGH]);await lazyReadStarted.promise;stale.api.storage.setItem(ROUGH,'newer saved ink');await stale.api.flush();releaseLazyRead.resolve();await staleLoading;
+    assert.equal(stale.api.storage.getItem(ROUGH),'newer saved ink');assert.equal(stale.changes.some(record=>record.value==='old ink'),false,'A late lazy response never regresses a newer ACK');
+    const unresolvedNote='practice-quiz:paper:annotation:pending';staleServer.commit('stale',unresolvedNote,'remote ink');stale.api.storage.setItem(unresolvedNote,'local ink');await stale.api.ensureKeys([unresolvedNote]);assert.equal(stale.api.storage.getItem(unresolvedNote),'local ink');assert.equal(stale.api.conflicts().length,1);await stale.api.resolveConflict(unresolvedNote,'device');assert.equal(staleServer.record('stale',unresolvedNote).value,'local ink');
+
+    // A newer manifest cannot consume an older response shared with a lazy read.
+    const manifestServer=new Server(),manifestReadStarted=deferred(),releaseManifestRead=deferred();manifestServer.commit('manifest',ROUGH,'old page');let holdManifestRead=true,manifestGets=0;
+    const manifest=device('manifest',manifestServer,memoryCache(),{shouldHydrate:()=>false,request:async(address,options)=>{
+      if(new URL(address,'https://quiz.example').searchParams.get('key')===ROUGH){
+        manifestGets++;
+        if(holdManifestRead){holdManifestRead=false;const old=manifestServer.record('manifest',ROUGH);manifestReadStarted.resolve();await releaseManifestRead.promise;return old;}
+      }
+      return manifestServer.request('manifest',address,options);
+    }});
+    await manifest.api.ready();const sharedLazy=manifest.api.ensureKeys([ROUGH]);await manifestReadStarted.promise;manifestServer.commit('manifest',ROUGH,'new page');const newerManifest=manifest.api.refresh();await tick();releaseManifestRead.resolve();await Promise.all([sharedLazy,newerManifest]);
+    assert.equal(manifestGets,2,'A response older than the manifest is fetched again after the shared read finishes');assert.equal(manifest.api.storage.getItem(ROUGH),'new page');await manifest.api.refresh();assert.equal(manifest.api.storage.getItem(ROUGH),'new page','Advancing the manifest cursor never loses the intervening change');
+
+    // Repeated stale responses fail without advancing past the missing revision.
+    const laggingServer=new Server();const oldLagging=laggingServer.commit('lagging',ROUGH,'old page');let lagging=false;
+    const lagged=device('lagging',laggingServer,memoryCache(),{shouldHydrate:()=>false,request:(address,options)=>lagging&&new URL(address,'https://quiz.example').searchParams.get('key')===ROUGH?Promise.resolve(clone(oldLagging)):laggingServer.request('lagging',address,options)});
+    await lagged.api.ready();await lagged.api.ensureKeys([ROUGH]);laggingServer.commit('lagging',ROUGH,'latest page');lagging=true;await assert.rejects(lagged.api.refresh(),/changed while loading/);assert.equal(lagged.api.storage.getItem(ROUGH),'old page');
+    lagging=false;await lagged.api.refresh();assert.equal(lagged.api.storage.getItem(ROUGH),'latest page','A later successful poll can still fetch a revision missed by stale responses');
+
+    // A timed-out initial cache read never replaces its unread offline outbox.
+    const unreadSnapshot={uid:'unread',pending:[['private offline ink','keep']]},unreadBacking=memoryCache();unreadBacking.values.set('unread',clone(unreadSnapshot));let unreadWrites=0;
+    const unreadCache={async read(){throw Error('Offline storage did not respond');},async write(uid,value){unreadWrites++;await unreadBacking.write(uid,value);}};
+    const unreadServer=new Server();unreadServer.commit('unread',DRAFT,'confirmed cloud draft');const unread=device('unread',unreadServer,unreadCache);await unread.api.ready();
+    assert.equal(unread.api.storage.getItem(DRAFT),'confirmed cloud draft');unread.api.storage.setItem(DRAFT,'new online answer');await unread.api.flush();await unread.api.persistPending();
+    assert.equal(unreadServer.record('unread',DRAFT).value,'new online answer');assert.equal(unreadWrites,0,'Unread IndexedDB progress is preserved for a later recovery/reload');assert.deepEqual(unreadBacking.values.get('unread'),unreadSnapshot);assert.match(unread.events.at(-1).message,/could not be read.*kept unchanged/);assert.equal(unread.events.at(-1).state,'error');
+    unreadServer.offline=true;unread.api.storage.setItem(DRAFT,'uncached offline answer');assert.equal(await unread.api.persistPending(),false);assert.equal(unread.api.hasUncachedChanges(),true);await assert.rejects(unread.api.prepareToLeave(),/Keep this tab open/);assert.equal(unread.api.storage.getItem(DRAFT),'uncached offline answer');assert.equal(unread.api.pending(),1);assert.deepEqual(unreadBacking.values.get('unread'),unreadSnapshot,'Blocking navigation also preserves the unread original cache');
+    unreadServer.offline=false;await unread.api.prepareToLeave();assert.equal(unread.api.pending(),0);assert.equal(unread.api.hasUncachedChanges(),false);assert.equal(unreadServer.record('unread',DRAFT).value,'uncached offline answer','A confirmed server save permits navigation even when cache writes stay disabled');
+
+    // Leaving must include edits made while an older durable write was waiting.
+    const leavingServer=new Server(),leavingCache=memoryCache(),oldSaveStarted=deferred(),allowOldSave=deferred(),latestSaveStarted=deferred(),allowLatestSave=deferred();const writeLeaving=leavingCache.write;
+    leavingCache.write=async(uid,value)=>{const draft=new Map(value.values).get(DRAFT);if(draft==='older edit'){oldSaveStarted.resolve();await allowOldSave.promise;}if(draft==='latest edit'){latestSaveStarted.resolve();await allowLatestSave.promise;}await writeLeaving(uid,value);};
+    const leaving=device('leaving',leavingServer,leavingCache);await leaving.api.ready();leavingServer.offline=true;leaving.api.storage.setItem(DRAFT,'older edit');let leaveFinished=false;const leavingPage=leaving.api.prepareToLeave().then(()=>{leaveFinished=true;});await oldSaveStarted.promise;leaving.api.storage.setItem(DRAFT,'latest edit');allowOldSave.resolve();await latestSaveStarted.promise;await tick();assert.equal(leaveFinished,false,'Committing an older sequence cannot approve navigation past a newer edit');allowLatestSave.resolve();await leavingPage;assert.equal(new Map(leavingCache.values.get('leaving').values).get(DRAFT),'latest edit');
 
     // Import checks unknown/unhydrated cloud notes and validates all inputs first.
     const importHome=device('scoped',scopeServer,memoryCache(),{shouldHydrate:key=>!isNote(key)});await importHome.api.ready();const writesBefore=scopeServer.calls.filter(call=>call.method==='PUT').length;
@@ -182,6 +253,6 @@ function fakeIndexedDB() {
     const late=device('carol',server),lateStarted=deferred(),lateRelease=deferred();await late.api.ready();
     server.afterPut=async(uid)=>{if(uid==='carol'){lateStarted.resolve();await lateRelease.promise;}};late.api.storage.setItem(DRAFT,'Carol edit');const lateSend=late.api.flush();await lateStarted.promise;const beforeClose=late.changes.length;late.api.close();lateRelease.resolve();await lateSend;server.afterPut=null;assert.equal(late.changes.length,beforeClose);
     assert.throws(()=>late.api.storage.setItem(DRAFT,'stale edit'),/no longer active/);
-    console.log('Cloud sync checks passed: two-device resume, paginated sync, account isolation, offline IndexedDB queue/reload, 3MiB notes, pointer edit locks, scoped hydration, bounded parallel reads, in-flight edit/ACK races, conflicts and lost responses, all-record import validation, Submit/reset guards and rejected writes.');
+    console.log('Cloud sync checks passed: two-device resume, account isolation, offline outbox preservation, 3MiB notes, lazy/scoped hydration, background startup uploads, bounded reads, pointer locks, edit/ACK races, CAS conflicts, import validation and confirmed Submit/reset guards.');
   } finally {for(const api of devices)api.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
