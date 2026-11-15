@@ -10,6 +10,8 @@ Production uses Vercel OIDC and Google Workload Identity Federation to access th
 
 For Safari-compatible Google sign-in, set `FIREBASE_AUTH_DOMAIN` to the production hostname. The Vercel auth-helper proxy keeps redirects on that hostname. Add the hostname to Firebase Authentication's authorized domains and add `https://HOST/__/auth/handler` to the existing Google OAuth web client's redirect URIs, preserving its Firebase defaults. Set `APP_ORIGIN` to the matching HTTPS origin in Production; preview deployments need their own matching origin.
 
+Vercel Production also requires `NODE_OPTIONS=--experimental-require-module` for Firebase Admin Auth's CommonJS/ESM dependencies. This is Vercel's [documented interoperability setting](https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration#experimental-nodejs-require-of-es-module). Keep the literal SDK imports in the server loader so Vercel includes their runtime files.
+
 Run `npm run test:cloud` for account, storage, grading, conflict, offline, import and deployment-boundary checks. `node cloud/emulator-preview.cjs` runs a local demo-only Firebase preview for testing; it does not access the real project. The local practice launcher instructions below remain available for existing browser work.
 
 # quiz-builder
