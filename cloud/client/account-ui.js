@@ -131,7 +131,7 @@ export function mountAccountUI(host = document.getElementById('cloud-account')) 
 
   byId('cloud-mode-sign-in').addEventListener('click', () => setMode('signin'));
   byId('cloud-mode-create').addEventListener('click', () => setMode('create'));
-  byId('cloud-google-sign-in').addEventListener('click', () => act(() => auth.signInGoogle()));
+  byId('cloud-google-sign-in').addEventListener('click', () => act(() => auth.signInGoogle({ redirect: true })));
   byId('cloud-email-form').addEventListener('submit', event => {
     event.preventDefault();
     if (current.loading || current.working || !event.currentTarget.reportValidity()) return;

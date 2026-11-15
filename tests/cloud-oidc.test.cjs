@@ -86,7 +86,7 @@ function fixture(overrides = {}) {
   const originalFetch = realClient.fetch;
   realClient.fetch = async (url, init) => {
     firestoreRequests.push(String(url));
-    assert.match(String(url), /^https:\/\/firestore\.googleapis\.com\//);
+    assert.equal(new URL(String(url)).hostname, 'firestore.googleapis.com');
     assert.equal(init.method, 'POST');
     const request = JSON.parse(init.body);
     const document = `projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/oidc-test/document`;
