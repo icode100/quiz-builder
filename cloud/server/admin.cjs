@@ -2,6 +2,21 @@
 let services;
 const CLOUD_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 
+// Literal require targets let Vercel's dependency tracer include every runtime
+// package, while the injectable loader keeps credential tests fully offline.
+function defaultLoad(name) {
+  switch (name) {
+    case 'firebase-admin/app': return require('firebase-admin/app');
+    case 'firebase-admin/auth': return require('firebase-admin/auth');
+    case 'firebase-admin/firestore': return require('firebase-admin/firestore');
+    case 'google-auth-library': return require('google-auth-library');
+    case '@vercel/oidc': return require('@vercel/oidc');
+    case '@google-cloud/firestore': return require('@google-cloud/firestore');
+    case 'node:crypto': return require('node:crypto');
+    default: throw new Error('Unknown cloud dependency.');
+  }
+}
+
 function workloadSettings(env, projectId) {
   const names = ['GCP_PROJECT_NUMBER', 'GCP_WORKLOAD_IDENTITY_POOL_ID', 'GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID', 'GCP_SERVICE_ACCOUNT_EMAIL'];
   if (!names.some(name => env[name]) && env.FIREBASE_AUTH_MODE !== 'vercel-oidc') return null;
@@ -17,7 +32,7 @@ function workloadSettings(env, projectId) {
   };
 }
 
-function createServices({ env = process.env, load = require } = {}) {
+function createServices({ env = process.env, load = defaultLoad } = {}) {
   const { getApps, initializeApp, cert, applicationDefault } = load('firebase-admin/app');
   const { getAuth } = load('firebase-admin/auth');
   const { getFirestore } = load('firebase-admin/firestore');

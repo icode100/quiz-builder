@@ -53,14 +53,24 @@ function createApiHandler(options = {}) {
         }
         const input = await body(req);
         if (typeof input.idToken !== 'string' || input.idToken.length < 20 || input.idToken.length > 20000) throw new ApiError(400, 'A Firebase sign-in token is required.');
-        let user, session;
+        let user, session, signInStage = 'dependencies';
         try {
           const auth = dependencies().auth;
+          signInStage = 'verifyIdToken';
           user = await auth.verifyIdToken(input.idToken, true);
           if (!user?.uid || typeof user.uid !== 'string' || user.uid.includes('/') || user.uid.length > 128) throw Error('Invalid identity.');
           matchingAccount(req, user.uid, false);
+          signInStage = 'createSessionCookie';
           session = await auth.createSessionCookie(input.idToken, { expiresIn: SESSION_MS });
-        } catch (error) { if (error instanceof ApiError) throw error; throw new ApiError(401, 'Sign-in could not be verified. Please sign in again.'); }
+        } catch (error) {
+          if (error instanceof ApiError) throw error;
+          // Do not log error messages/objects: upstream exceptions can contain
+          // tokens or personal information. Only constrained diagnostic labels.
+          const code = typeof error?.code === 'string' && /^[a-z][a-z0-9_-]*(?:\/[a-z][a-z0-9_-]*)?$/i.test(error.code) && error.code.length <= 80 ? error.code : 'unknown';
+          const name = typeof error?.name === 'string' && /^[a-z][a-z0-9]{0,49}$/i.test(error.name) ? error.name : 'Error';
+          console.error('Cloud quiz sign-in failed:', { stage: signInStage, code, name });
+          throw new ApiError(401, 'Sign-in could not be verified. Please sign in again.');
+        }
         setCookie(req, res, session, SESSION_MS / 1000);
         return reply(res, 200, { authenticated: true, user: publicUser(user), expiresIn: SESSION_MS });
       }
