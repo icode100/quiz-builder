@@ -32,6 +32,8 @@ The home page and quizzes share remembered light/dark mode, rounded white or dar
 
 Question images follow the theme, including reports: original white paper with dark text in light mode, and CSS-inverted black paper with white text in dark mode. Original PNGs, diagrams, and equations stay intact. Click an image to open its original colors at full resolution; printed reports use those original white-paper colors. New quizzes inherit the same styling from `_template`.
 
+Each practice question shows its wrong-answer deduction beside its marks, for example **2 marks · Negative marks: 2/3**. Questions without a deduction show **No negative marking**; older papers retain their own penalties.
+
 On screens up to 760px wide, question images keep a readable minimum width of 720px. Scroll sideways within the image to see the remaining content; the surrounding page and controls stay within the screen. Desktop and printed layouts retain their normal sizing.
 
 Click the calculator icon at the bottom right of the quiz or home page to open the shared scientific calculator; its accessible name remains **Calculator** and its tooltip **Open calculator**. It supports editable expressions, parentheses, powers, roots, logarithms, trigonometry with **DEG/RAD**, factorials, combinations/permutations, **Ans**, and memory controls. Move it by dragging its heading (or focus the heading and use arrow keys), close it with **×** or **Escape**, or use **↗** to open it in a separate tab. Closing and reopening the panel preserves its current calculation; reloading starts fresh. Calculations use JavaScript floating-point arithmetic.

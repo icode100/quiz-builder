@@ -266,6 +266,11 @@
   const questionLabel = (question) => question.displayLabel || question.id;
   const number = (value) => Number(value.toFixed(4)).toLocaleString(undefined, { maximumFractionDigits: 4 });
   const marks = (question) => ({ correct: question.marks ?? data.scoring?.correct ?? 1, incorrect: question.incorrectMarks ?? data.scoring?.incorrect ?? 0 });
+  const penaltyFractions = new Map([[1 / 4, "1/4"], [1 / 2, "1/2"], [1 / 3, "1/3"], [2 / 3, "2/3"]]);
+  function negativeMarksText(question) {
+    const penalty = question.marksToAll ? 0 : -marks(question).incorrect;
+    return penalty === 0 ? "No negative marking" : `Negative marks: ${penaltyFractions.get(penalty) ?? number(penalty)}`;
+  }
   const activeExclusions = () => submittedAt ? reportOutOfSyllabus : outOfSyllabus;
   const percentageText = (percentage) => percentage === null ? "Percentage unavailable" : `${number(percentage)}%`;
   const imagesOf = (item) => [...(item.image ? [{ src: item.image, alt: item.imageAlt, page: item.sourcePage }] : []), ...(item.images || [])];
@@ -804,7 +809,7 @@
       card.tabIndex = -1;
       card.append(element("legend", "question-heading", `Question ${questionLabel(question)}`));
       const type = questionType(question), kind = type === "nat" ? "Numerical answer" : type === "msq" ? "Select all correct options (exact set; no partial credit)" : "Choose one option";
-      content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"}`));
+      content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"} · ${negativeMarksText(question)}`));
       if (question.requiresCorrect) {
         const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
         stem.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct, unless that question is marked out of syllabus. No negative marking for this question.`));
