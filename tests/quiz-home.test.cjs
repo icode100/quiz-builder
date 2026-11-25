@@ -15,7 +15,7 @@ class Element {
       toggle: (name, on) => { this.classList.remove(name); if (on) this.className = [this.className, name].filter(Boolean).join(' '); }
     };
   }
-  querySelector(selector) { return selector === '.paper-status' ? this.badge || null : selector === '.paper-score' ? this.score || null : null; }
+  querySelector(selector) { return ({'.paper-status':this.badge,'.paper-score':this.score,'.paper-score-value':this.scoreValue,'.paper-score-bar':this.scoreBar,'.paper-score-marks':this.scoreMarks})[selector] || null; }
   querySelectorAll(selector) { return selector === 'li' ? this.children : []; }
   addEventListener(name, callback) { (this.events[name] ||= []).push(callback); }
   async fire(name) { for (const callback of this.events[name] || []) await callback({ target: this, preventDefault() {} }); }
@@ -24,11 +24,12 @@ class Element {
 
 function harness(states = ['true', 'false', 'false'], options = {}) {
   const ids = Object.fromEntries(['home-papers', 'unsolved-only', 'paper-count', 'no-papers', 'reset-attempts', 'home-status'].map(id => [id, new Element()]));
-  const cards = states.map(state => {
-    const card = new Element(); card.dataset.attempted = state;
+  const cards = states.map((state,index) => {
+    const card = new Element(); card.dataset.attempted = state; card.dataset.quizId = `paper-${index + 1}`;
     card.badge = new Element(); card.badge.textContent = state === 'true' ? 'Attempted before' : 'Not attempted';
     card.badge.className = state === 'true' ? 'paper-status attempted' : 'paper-status unattempted';
     card.score = new Element(); card.score.hidden = state !== 'true'; card.score.textContent = 'Last score: 42% 42 / 100 marks';
+    card.scoreValue = new Element(); card.scoreBar = new Element(); card.scoreMarks = new Element();
     return card;
   });
   ids['home-papers'].children = cards;
@@ -36,6 +37,7 @@ function harness(states = ['true', 'false', 'false'], options = {}) {
   const windowEvents = {};
   let storageCalls = 0, reloads = 0;
   const window = {
+    QuizCloudSync: options.cloud,
     confirm(message) { confirmations.push(message); return options.confirm !== false; },
     addEventListener(name, callback) { (windowEvents[name] ||= []).push(callback); },
     location: { reload() { reloads++; } }
@@ -138,6 +140,40 @@ async function run() {
   await empty.ids['unsolved-only'].fire('change');
   assert.equal(empty.ids['no-papers'].hidden, false);
   assert.equal(empty.storageCalls(), 0);
-  console.log('Quiz home tests passed: filtering/counts, reset confirmation/loading/success/failure, score visibility, empty library, and browser draft isolation.');
+
+  // Confirmed cached scores render before held network calls; unknown/pending
+  // records cannot masquerade as a confirmed submission or forged summary.
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  const attempt = score => ({answers:{Q1:'A'},summary:{score,maximum:100,percentage:score}});
+  const confirmed = new Map([['paper-1',attempt(65.5)],['paper-2',null]]), gets = [], held = new Map();
+  const cloud = {
+    entries: () => [['practice-quiz:paper-1:attempt','confirmed'],['practice-quiz:paper-4:attempt','unconfirmed-pending']],
+    getCachedAttempt: id => confirmed.get(id),
+    getAttempt(id) { gets.push(id); return new Promise(resolve => held.set(id,resolve)); }
+  };
+  const cached = harness(['false','true','false','false'],{cloud});
+  assert.equal(cached.cards[0].dataset.attempted,'true');
+  assert.equal(cached.cards[0].scoreValue.textContent,'Last score: 65.5%');
+  assert.equal(cached.cards[0].scoreBar.value,65.5);
+  assert.equal(cached.cards[0].scoreMarks.textContent,'65.5 / 100 marks');
+  assert.equal(cached.cards[1].dataset.attempted,'false','Confirmed absence overrides a stale badge immediately');
+  assert.deepEqual(gets,['paper-4'],'Unknown absent cards do not launch requests; pending records use the verified API');
+  assert.equal(cached.cards[3].score.hidden,true,'Pending cache is never rendered as a confirmed score');
+  confirmed.set('paper-4',attempt(82));
+  cached.fireWindow('quiz-cloud-record',{detail:{key:'practice-quiz:paper-4:attempt'}});
+  assert.equal(cached.cards[3].scoreValue.textContent,'Last score: 82%');
+  assert.deepEqual(gets,['paper-4'],'A confirmed remote event reuses its cache without a duplicate GET');
+  held.get('paper-4')(attempt(12)); await tick();
+  assert.equal(cached.cards[3].scoreValue.textContent,'Last score: 82%','A late older GET cannot replace the newer confirmed event');
+  confirmed.set('paper-1',null);
+  cached.fireWindow('quiz-cloud-record',{detail:{key:'practice-quiz:paper-1:attempt'}});
+  assert.equal(cached.cards[0].dataset.attempted,'false'); assert.equal(cached.cards[0].score.hidden,true);
+  assert.equal(cached.storageCalls(),0);
+
+  let fallbackGets = 0;
+  const fallback = harness(['false'],{cloud:{entries:() => [['practice-quiz:paper-1:attempt','legacy-facade']],async getAttempt() { fallbackGets++; return attempt(41); }}});
+  await tick();
+  assert.equal(fallbackGets,1); assert.equal(fallback.cards[0].scoreValue.textContent,'Last score: 41%','Older facades retain their verified-network fallback');
+  console.log('Quiz home tests passed: filtering/counts, reset confirmation/loading/success/failure, cached cloud scores and late-response protection, score visibility, empty library, and browser draft isolation.');
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

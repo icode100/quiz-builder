@@ -1,12 +1,13 @@
 /* Question overlays are independent of responses, rough work and submissions. */
 (() => {
   "use strict";
+  const stateStorage = () => window.QuizCloudSync?.storage || localStorage;
 
   function create({ quizId, questions }) {
     const byId = id => document.getElementById(id), engine = window.RoughWorkEngine;
     const toggle = byId("screen-annotation-toggle"), toolbar = byId("screen-annotation-toolbar");
     if (!toggle || !toolbar) return null;
-    const status = byId("annotation-status"), pages = new Map(), known = new Map();
+    const status = byId("annotation-status"), pages = new Map(), known = new Map(), hydration = new Map();
     const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
     for (const question of questions) {
       const names = new Set();
@@ -24,6 +25,53 @@
     let unavailable = !engine?.draw || !engine?.validateStrokes || !engine?.inkColor;
     let toolbarPosition = null, dragging = null;
     const observer = window.ResizeObserver ? new window.ResizeObserver(() => schedule()) : null;
+    const loadingState = id => hydration.get(id)?.cloud === window.QuizCloudSync ? hydration.get(id) : null;
+    const editable = id => !window.QuizCloudSync?.ensureKeys || Boolean(loadingState(id)?.ready);
+
+    function reloadPage(id) {
+      const previous = pages.get(id);
+      try { if (previous && !previous.loadFailed && previous.sourceText === stateStorage().getItem(key(id))) return previous; } catch { /* read() reports a protected failure. */ }
+      pages.delete(id);
+      const restored = read(id);
+      if (restored.loadFailed && previous) {
+        previous.warning = restored.warning;
+        previous.loadFailed = true;
+        pages.set(id, previous);
+        return previous;
+      }
+      return restored;
+    }
+    function ensurePage(id, retry = false) {
+      const cloud = window.QuizCloudSync;
+      if (!id || !known.has(id) || typeof cloud?.ensureKeys !== "function") return;
+      read(id);
+      const previous = loadingState(id);
+      if (active?.record.id === id || previous?.loading || previous?.ready && !previous.error || previous?.error && !retry) return previous?.promise;
+      if (cloud.isHydrated?.(key(id))) {
+        const restored = reloadPage(id);
+        hydration.set(id, { cloud, ready: !restored.loadFailed, loading: false, error: restored.loadFailed ? restored.warning : "" });
+        return;
+      }
+      const cached = pages.get(id);
+      const load = { cloud, ready: Boolean(cached?.saved && !cached.loadFailed), loading: true, error: "", remoteApplied: false, promise: null };
+      hydration.set(id, load);
+      let request;
+      try { request = cloud.ensureKeys([key(id)]); } catch (error) { request = Promise.reject(error); }
+      load.promise = Promise.resolve(request).then(() => {
+        if (window.QuizCloudSync !== cloud || hydration.get(id) !== load) return;
+        const restored = load.remoteApplied ? pages.get(id) : reloadPage(id);
+        load.loading = false; load.ready = Boolean(restored && !restored.loadFailed);
+        load.error = load.ready ? "" : restored?.warning || "Could not load account annotations. Close and reopen Screen annotation to retry.";
+        controls(); schedule();
+      }).catch(() => {
+        if (window.QuizCloudSync !== cloud || hydration.get(id) !== load) return;
+        const cached = pages.get(id);
+        load.loading = false; load.ready = Boolean(cached?.saved && !cached.loadFailed);
+        load.error = load.ready ? "Could not refresh account annotations. Using saved marks; edits will queue for sync." : "Could not load account annotations. Close and reopen Screen annotation to retry. Saved marks are unchanged.";
+        if (currentId === id) controls();
+      });
+      return load.promise;
+    }
 
     function checkedParts(value, id) {
       if (!object(value) || Object.keys(value).some(name => !known.get(id)?.has(name))) throw new Error("Invalid annotation parts.");
@@ -39,9 +87,10 @@
     }
     function read(id) {
       if (pages.has(id)) return pages.get(id);
-      const result = { parts: Object.create(null), undo: [], redo: [], dirty: false, saved: false, loadFailed: false, warning: "", notice: "" };
+      const result = { parts: Object.create(null), undo: [], redo: [], dirty: false, saved: false, loadFailed: false, warning: "", notice: "", sourceText: null };
       try {
-        const raw = localStorage.getItem(key(id));
+        const raw = stateStorage().getItem(key(id));
+        result.sourceText = raw;
         if (raw !== null) {
           if (raw.length > 3 * 1024 * 1024) throw new Error("Annotation too large.");
           const saved = JSON.parse(raw), fields = ["version", "quizId", "questionId", "updatedAt", "parts"];
@@ -53,52 +102,59 @@
         }
       } catch {
         result.loadFailed = true;
-        result.warning = "Could not load saved annotations. Keep this tab open; reload to try again.";
+        result.warning = window.QuizCloudSync ? "Could not load account annotations. Keep this tab open; reload to try again." : "Could not load saved annotations. Keep this tab open; reload to try again.";
       }
       pages.set(id, result);
       return result;
     }
     function persist(id) {
       const page = pages.get(id);
-      if (!page?.dirty || page.loadFailed) return;
+      if (!page?.dirty || page.loadFailed || !editable(id)) return;
       try {
         const parts = checkedParts(page.parts, id);
         const raw = JSON.stringify({ version: 1, quizId, questionId: id, updatedAt: new Date().toISOString(), parts });
         if (raw.length > 3 * 1024 * 1024) throw new Error("Annotation too large.");
-        localStorage.setItem(key(id), raw);
+        stateStorage().setItem(key(id), raw);
+        page.sourceText = raw;
         page.dirty = false; page.saved = true; page.warning = "";
-      } catch { page.warning = "Could not save annotations. Keep this tab open to retain your marks."; }
+      } catch { page.warning = window.QuizCloudSync ? "Could not queue annotations for account sync. Keep this tab open to retain your marks." : "Could not save annotations. Keep this tab open to retain your marks."; }
     }
     function controls() {
       const page = pages.get(currentId), focused = document.activeElement;
+      const load = loadingState(currentId), blocked = !editable(currentId);
       toggle.hidden = false;
       toggle.disabled = unavailable;
       toggle.setAttribute("aria-pressed", String(editing));
       toggle.setAttribute("aria-expanded", String(editing));
-      toggle.title = unavailable ? "Screen annotation is unavailable in this browser" : editing ? "Finish screen annotation" : "Annotate this question";
+      toggle.title = unavailable ? "Screen annotation is unavailable in this browser" : "Screen annotation";
       toolbar.hidden = !editing;
       document.documentElement.classList.toggle("screen-annotation-active", editing);
       byId("annotation-question-label").textContent = currentLabel ? `Question ${currentLabel}` : "Question annotation";
-      for (const name of ["pen", "highlighter", "eraser"]) byId(`annotation-tool-${name}`).setAttribute("aria-pressed", String(name === tool));
+      for (const name of ["pen", "highlighter", "eraser"]) { byId(`annotation-tool-${name}`).setAttribute("aria-pressed", String(name === tool)); byId(`annotation-tool-${name}`).disabled = unavailable || blocked; }
       byId("annotation-color").value = colors[tool];
-      byId("annotation-color").disabled = tool === "eraser";
+      byId("annotation-color").disabled = unavailable || blocked || tool === "eraser";
       const neutral = byId("annotation-color").querySelector('option[value="#17233b"]');
       if (neutral) neutral.textContent = theme() === "dark" ? "White" : "Black";
       byId("annotation-width").value = String(widths[tool]);
-      byId("annotation-undo").disabled = !page?.undo.length;
-      byId("annotation-redo").disabled = !page?.redo.length;
-      byId("annotation-clear").disabled = !page || !Object.values(page.parts).some(strokes => strokes.length);
+      byId("annotation-width").disabled = unavailable || blocked;
+      byId("annotation-undo").disabled = blocked || !page?.undo.length;
+      byId("annotation-redo").disabled = blocked || !page?.redo.length;
+      byId("annotation-clear").disabled = blocked || !page || !Object.values(page.parts).some(strokes => strokes.length);
       if (editing && focused?.disabled && ["annotation-undo", "annotation-redo", "annotation-clear"].includes(focused.id)) byId("annotation-tool-pen").focus({ preventScroll: true });
-      status.textContent = unavailable ? "Screen annotation is unavailable in this browser." : page?.notice || page?.warning || (page?.saved ? "Saved in this browser" : "Draw on the question. Done returns to answering. Marks save automatically.");
-      status.classList.toggle("error", Boolean(unavailable || page?.notice || page?.warning));
+      const autosaveMessage = window.QuizCloudSync ? "Autosave on · Account sync status above" : page?.saved ? "Saved in this browser" : "Draw on the question. Done returns to answering. Marks save automatically.";
+      status.textContent = unavailable ? "Screen annotation is unavailable in this browser." : load?.loading ? load.ready ? "Showing saved annotations · Checking account…" : "Loading question annotations…" : load?.error || page?.notice || page?.warning || autosaveMessage;
+      status.classList.toggle("error", Boolean(unavailable || load?.error || page?.notice || page?.warning));
       for (const record of surfaces) {
-        record.canvas.tabIndex = editing ? 0 : -1;
+        record.canvas.tabIndex = editing && editable(record.id) ? 0 : -1;
+        record.canvas.setAttribute("aria-busy", String(Boolean(loadingState(record.id)?.loading)));
+        record.canvas.setAttribute("aria-disabled", String(!editable(record.id)));
         record.canvas.setAttribute("aria-label", `Annotate question ${record.id}`);
         updateCursor(record);
       }
     }
     function updateCursor(record) {
       if (!engine || !editing) return;
+      if (!editable(record.id)) { record.canvas.style.cursor = loadingState(record.id)?.loading ? "progress" : "not-allowed"; return; }
       const width = record.host.getBoundingClientRect().width;
       if (!(width > 0)) return;
       const radius = (widths[tool] <= 2 ? 4 : widths[tool]) * width / engine.paper.width / 2;
@@ -117,6 +173,7 @@
           if (record.canvas.width !== 1 || record.canvas.height !== 1) { record.canvas.width = 1; record.canvas.height = 1; }
           continue;
         }
+        ensurePage(record.id);
         const scale = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(engine.limits.canvasPixels / (rect.width * rect.height)));
         const width = Math.max(1, Math.min(engine.limits.canvasPixels, Math.floor(rect.width * scale)));
         const height = Math.max(1, Math.min(Math.floor(engine.limits.canvasPixels / width), Math.floor(rect.height * scale)));
@@ -156,6 +213,7 @@
       const { id, part } = drawing.record, page = read(id);
       (page.parts[part] ||= []).push(drawing.stroke);
       remember(id, { kind: "add", part, stroke: drawing.stroke });
+      window.QuizCloudSync?.endEdit(key(id));
     }
     function flush() {
       finish();
@@ -164,8 +222,10 @@
     }
     function setCurrent(id, label = id) {
       if (!known.has(id)) return false;
-      if (currentId !== id) finish();
+      const changed = currentId !== id;
+      if (changed) finish();
       currentId = id; currentLabel = label;
+      if (changed || !loadingState(id)) ensurePage(id, changed);
       controls(); schedule();
       return true;
     }
@@ -173,7 +233,7 @@
       finish();
       editing = Boolean(value && !unavailable);
       if (!editing) endDrag();
-      if (editing && currentId) read(currentId);
+      if (editing && currentId) { read(currentId); ensurePage(currentId, true); }
       controls(); schedule();
       if (editing && toolbarPosition) placeToolbar(toolbarPosition.left, toolbarPosition.top);
       if (focus) (editing ? byId("annotation-tool-pen") : toggle).focus({ preventScroll: true });
@@ -192,6 +252,7 @@
       toolbar.style.bottom = "auto";
     }
     function undo() {
+      if (!editable(currentId)) return;
       finish();
       const page = pages.get(currentId), action = page?.undo.pop();
       if (!action) return;
@@ -201,6 +262,7 @@
       persist(currentId); controls(); schedule();
     }
     function redo() {
+      if (!editable(currentId)) return;
       finish();
       const page = pages.get(currentId), action = page?.redo.pop();
       if (!action) return;
@@ -223,6 +285,7 @@
       canvas.addEventListener("pointerdown", event => {
         if (!editing || active || event.button !== 0) return;
         setCurrent(id);
+        if (!editable(id)) { event.preventDefault(); return; }
         const page = read(id), first = point(record, event);
         const all = Object.values(page.parts).flat(), count = all.reduce((sum, stroke) => sum + stroke.points.length, 0);
         if (!first) return;
@@ -232,6 +295,7 @@
           controls(); return;
         }
         canvas.focus({ preventScroll: true });
+        window.QuizCloudSync?.beginEdit(key(id));
         active = { pointerId: event.pointerId, record, count, stroke: { tool, color: colors[tool], width: widths[tool], points: [first] } };
         try { canvas.setPointerCapture?.(event.pointerId); } catch { /* Drawing remains possible inside the image. */ }
         schedule();
@@ -278,6 +342,7 @@
     byId("annotation-undo").addEventListener("click", undo);
     byId("annotation-redo").addEventListener("click", redo);
     byId("annotation-clear").addEventListener("click", () => {
+      if (!editable(currentId)) return;
       finish();
       const page = pages.get(currentId);
       if (!page || !Object.values(page.parts).some(strokes => strokes.length)) return;
@@ -334,6 +399,17 @@
       byId("theme-toggle")?.addEventListener("click", later);
       window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", later);
     }
+    window.addEventListener("quiz-cloud-record", event => {
+      const changed = event.detail?.key;
+      for (const id of known.keys()) if (changed === key(id)) {
+        if (active?.record.id === id) return;
+        const load = loadingState(id), restored = reloadPage(id);
+        if (load?.loading) load.remoteApplied = true;
+        else if (load && !restored.loadFailed) { load.ready = true; load.error = ""; }
+        controls(); schedule(); break;
+      }
+    });
+    window.addEventListener("online", () => { if (currentId) { ensurePage(currentId, true); controls(); schedule(); } });
     controls();
     return { refresh, setCurrent, flush, isDrawing: () => Boolean(active) };
   }

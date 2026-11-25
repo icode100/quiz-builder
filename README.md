@@ -1,3 +1,23 @@
+# GATE CSE Practice
+
+The hosted application at [gate-cse-practice-nine.vercel.app](https://gate-cse-practice-nine.vercel.app/) uses Firebase accounts and Firestore storage, deployed on Vercel. Sign in with Google or email to resume your responses, current question, timer, rough work and question annotations across devices. Submitted reports belong to your account. Pending changes are kept on your device when offline; the account bar shows when they reach the server. If two devices edit the same progress, choose which version to keep.
+
+To bring existing work across, sign in and use **Import local practice**. Select your quiz browser backup or submitted `attempt.json` files. The import checks every record and refuses to overwrite different account progress. For all locally submitted reports, run `node cloud/export-local-attempts.cjs` and import the resulting `tmp/cloud-migration/submitted-attempts.json`; existing files stay unchanged.
+
+For cloud development, install Node22 and run `npm ci`, then `npm run build`. Set the public Firebase web config and server identity using `.env.example`; never commit `.env.local` or a service-account private key. Start `npm run dev:cloud` for the built preview on8766. Firebase project: **gate-cse-practice**. Vercel builds from Git branch `codex/firebase-cloud` with `vercel.json`; `.cloud-dist` contains only public allowlisted quiz files and referenced images. Firestore client access stays denied; authenticated server APIs handle all saves and regrade submissions.
+
+Production uses Vercel OIDC and Google Workload Identity Federation to access the dedicated `quiz-vercel` service account without a private key. Its identity pool/provider are `vercel` in project719475848673. The provider trusts issuer `https://oidc.vercel.com/icode100s-projects`, accepts audience `https://vercel.com/icode100s-projects`, and restricts tokens to project `prj_QbgQYjjRgaTySrDFyk9VAEiAoTfF` and environment `production`. The service account has Cloud Datastore User and the custom Quiz Login Sessions role (`firebaseauth.users.get`, `firebaseauth.users.createSession`); only the matching pool principal receives Workload Identity User. IAM Service Account Credentials and Security Token Service APIs must be enabled. Production environment identifiers are listed in `.env.example`; previews do not inherit production access.
+
+The API runs in Mumbai beside the Firestore region. Startup reads small revision metadata and the current paper's progress; imported notebooks load per question and pending drawing uploads continue in the background. Browser-storage stalls and incomplete network responses have deadlines, with saved offline work preserved on failure. A large backup must not delay opening the first question.
+
+Recently used tests and drawings use an account-specific browser LRU cache in IndexedDB. Cached progress appears first while cloud updates are checked in the background. Clean cached records are limited to256 entries or approximately32MiB; the active test, unsynced edits and active drawings are protected. Eviction removes only a local copy, so an older page downloads again when needed. Browser caches stay separate on each device; Firebase remains responsible for cross-device sync. Existing offline work migrates without being cleared.
+
+For Safari-compatible Google sign-in, set `FIREBASE_AUTH_DOMAIN` to the production hostname. The Vercel auth-helper proxy keeps redirects on that hostname. Add the hostname to Firebase Authentication's authorized domains and add `https://HOST/__/auth/handler` to the existing Google OAuth web client's redirect URIs, preserving its Firebase defaults. Set `APP_ORIGIN` to the matching HTTPS origin in Production; preview deployments need their own matching origin.
+
+Vercel Production also requires `NODE_OPTIONS=--experimental-require-module` for Firebase Admin Auth's CommonJS/ESM dependencies. This is Vercel's [documented interoperability setting](https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration#experimental-nodejs-require-of-es-module). Keep the literal SDK imports in the server loader so Vercel includes their runtime files.
+
+Run `npm run test:cloud` for account, storage, grading, conflict, offline, import and deployment-boundary checks. `node cloud/emulator-preview.cjs` runs a local demo-only Firebase preview for testing; it does not access the real project. The local practice launcher instructions below remain available for existing browser work.
+
 # quiz-builder
 
 Local GATE CSE practice quizzes with black and light themes, blue accents, and original PDF question images.
@@ -11,6 +31,8 @@ Double-click [start-quiz.cmd](start-quiz.cmd) to start/reuse the small local ser
 The home page and quizzes share remembered light/dark mode, rounded white or dark blue-black cards, and soft shadows. Royal-blue primary actions, teal cache/progress feedback, and an amber dashed **Out of syllabus** state make actions and status easier to distinguish. **Clear response** uses soft pastel rose styling with readable text and a gentle hover; **Clear answers** stays quiet. **Mark for review** uses a blue outline and a solid selected state. A distinct timer readout, separated map counts/legends, visible **Previous**/**Next**/**Skip question** labels, and clearer home/filter cards improve scanning. The pitch-black dark page, pale light background, keyboard-accessible sun/moon theme pill showing **Light** or **Dark**, and percentage/bar/marks order remain.
 
 Question images follow the theme, including reports: original white paper with dark text in light mode, and CSS-inverted black paper with white text in dark mode. Original PNGs, diagrams, and equations stay intact. Click an image to open its original colors at full resolution; printed reports use those original white-paper colors. New quizzes inherit the same styling from `_template`.
+
+Each practice question shows its wrong-answer deduction beside its marks, for example **2 marks · Negative marks: 2/3**. Questions without a deduction show **No negative marking**; older papers retain their own penalties.
 
 On screens up to 760px wide, question images keep a readable minimum width of 720px. Scroll sideways within the image to see the remaining content; the surrounding page and controls stay within the screen. Desktop and printed layouts retain their normal sizing.
 

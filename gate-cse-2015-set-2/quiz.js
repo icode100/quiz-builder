@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  const stateStorage = () => window.QuizCloudSync?.storage || localStorage;
 
   const byId = (id) => document.getElementById(id);
   const data = window.QUIZ_DATA;
@@ -98,7 +99,7 @@
           serverBusy || submittedAt || reviewState || byId("quiz-form").hidden) return;
       const target = event.target, card = questionTarget(currentQuestionIndex);
       if (!card || card.hidden || target?.isContentEditable ||
-          target?.closest?.('textarea, select, [contenteditable], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"], #rough-work-panel, #shared-calculator-panel, #screen-annotation-toolbar, .question-annotation-canvas, .numeric-keypad, .numeric-keypad-toggle') ||
+          target?.closest?.('textarea, select, [contenteditable], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"], #rough-work-panel, #shared-calculator-panel, #screen-annotation-toolbar, #cloud-account, .question-annotation-canvas, .numeric-keypad, .numeric-keypad-toggle') ||
           questionAnnotations?.isDrawing() ||
           window.getSelection?.()?.isCollapsed === false) return;
       const control = target?.closest?.("input");
@@ -265,6 +266,11 @@
   const questionLabel = (question) => question.displayLabel || question.id;
   const number = (value) => Number(value.toFixed(4)).toLocaleString(undefined, { maximumFractionDigits: 4 });
   const marks = (question) => ({ correct: question.marks ?? data.scoring?.correct ?? 1, incorrect: question.incorrectMarks ?? data.scoring?.incorrect ?? 0 });
+  const penaltyFractions = new Map([[1 / 4, "1/4"], [1 / 2, "1/2"], [1 / 3, "1/3"], [2 / 3, "2/3"]]);
+  function negativeMarksText(question) {
+    const penalty = question.marksToAll ? 0 : -marks(question).incorrect;
+    return penalty === 0 ? "No negative marking" : `Negative marks: ${penaltyFractions.get(penalty) ?? number(penalty)}`;
+  }
   const activeExclusions = () => submittedAt ? reportOutOfSyllabus : outOfSyllabus;
   const percentageText = (percentage) => percentage === null ? "Percentage unavailable" : `${number(percentage)}%`;
   const imagesOf = (item) => [...(item.image ? [{ src: item.image, alt: item.imageAlt, page: item.sourcePage }] : []), ...(item.images || [])];
@@ -354,23 +360,23 @@
   function save() {
     updatedAt = new Date(Math.max(Date.now(), (Date.parse(updatedAt) || 0) + 1)).toISOString();
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], outOfSyllabus: [...outOfSyllabus], currentQuestionId: data.questions[currentQuestionIndex]?.id, timer: timerSnapshot(), updatedAt }));
-      if (!storageAvailable) status("Progress is cached in this browser until Submit.");
+      stateStorage().setItem(storageKey, JSON.stringify({ signature, answers, reviewFlags: [...reviewFlags], outOfSyllabus: [...outOfSyllabus], currentQuestionId: data.questions[currentQuestionIndex]?.id, timer: timerSnapshot(), updatedAt }));
+      if (!storageAvailable) status(window.QuizCloudSync ? "Account progress is ready. Changes sync automatically." : "Progress is cached in this browser until Submit.");
       storageAvailable = true;
       return true;
     } catch {
       storageAvailable = false;
-      status("Could not cache your progress. Keep this tab open to retain your answers.", true);
+      status(window.QuizCloudSync ? "Could not queue your progress for account sync. Keep this tab open to retain your answers." : "Could not cache your progress. Keep this tab open to retain your answers.", true);
       return false;
     }
   }
   function clearDraft() {
     try {
-      localStorage.removeItem(storageKey);
-      status("Submitted and saved to attempt.json. The browser draft cache has been cleared.");
+      stateStorage().removeItem(storageKey);
+      status(window.QuizCloudSync ? "Submitted and saved to your account." : "Submitted and saved to attempt.json. The browser draft cache has been cleared.");
       return true;
     } catch {
-      status("Your result was saved, but the browser draft cache could not be cleared.", true);
+      status(window.QuizCloudSync ? "Your report is saved to your account, but clearing the practice draft could not be queued. Keep this tab open and check the sync status." : "Your result was saved, but the browser draft cache could not be cleared.", true);
       return false;
     }
   }
@@ -378,17 +384,17 @@
     storageKey = `practice-quiz:${data.id}`;
     signature = JSON.stringify({ questions: data.questions, scoring: data.scoring ?? null });
     try {
-      const text = localStorage.getItem(storageKey);
+      const text = stateStorage().getItem(storageKey);
       if (text) {
         try { restoreDraft(JSON.parse(text)); }
-        catch { localStorage.removeItem(storageKey); }
+        catch { stateStorage().removeItem(storageKey); }
       }
-      localStorage.setItem(`${storageKey}:probe`, "1");
-      localStorage.removeItem(`${storageKey}:probe`);
+      stateStorage().setItem(`${storageKey}:probe`, "1");
+      stateStorage().removeItem(`${storageKey}:probe`);
       storageAvailable = true;
-      status("Progress is cached in this browser until Submit.");
+      status(window.QuizCloudSync ? "Account progress is ready. Changes sync automatically." : "Progress is cached in this browser until Submit.");
     } catch {
-      status("Browser cache is unavailable. Keep this tab open to retain your answers.", true);
+      status(window.QuizCloudSync ? "Account progress storage is unavailable. Keep this tab open to retain your answers." : "Browser cache is unavailable. Keep this tab open to retain your answers.", true);
     }
   }
   function grade() {
@@ -445,6 +451,11 @@
     if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Start the quiz server and open the quiz at http://127.0.0.1:8765.");
     return new URL("attempt.json", url).href;
   }
+  async function readAttemptResponse() {
+    if (!window.QuizCloudSync) return fetch(attemptUrl(), { cache: "no-store" });
+    const record = await window.QuizCloudSync.getAttempt(data.id);
+    return { ok: Boolean(record), status: record ? 200 : 404, json: async () => record };
+  }
   function setSavedAttempt(saved) {
     reviewCheck++;
     const responses = saved?.answers;
@@ -455,8 +466,12 @@
     const check = ++reviewCheck;
     let saved = null;
     try {
-      const response = await fetch(attemptUrl(), { cache: "no-store" });
-      if (response.ok) saved = await response.json();
+      const cached = window.QuizCloudSync?.getCachedAttempt?.(data.id);
+      if (cached !== undefined) saved = cached;
+      else {
+        const response = await readAttemptResponse();
+        if (response.ok) saved = await response.json();
+      }
     } catch { /* Missing or unreadable attempts leave review disabled. */ }
     if (check === reviewCheck) setSavedAttempt(saved);
   }
@@ -504,7 +519,7 @@
     serverBusy = true;
     setControls();
     try {
-      const response = await fetch(attemptUrl(), { cache: "no-store" });
+      const response = await readAttemptResponse();
       if (!response.ok) {
         setSavedAttempt(null);
         throw new Error(response.status === 404 ? "No submitted attempt has been saved yet." : "The saved attempt could not be read.");
@@ -547,15 +562,20 @@
     setControls();
     try {
       const attempt = attemptSnapshot();
-      const response = await fetch(attemptUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attempt) });
-      if (!response.ok) throw new Error("The server could not save the result.");
-      setSavedAttempt(attempt);
+      if (window.QuizCloudSync) {
+        const saved = await window.QuizCloudSync.submitAttempt(data.id, attempt);
+        setSavedAttempt(saved);
+      } else {
+        const response = await fetch(attemptUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attempt) });
+        if (!response.ok) throw new Error("The server could not save the result.");
+        setSavedAttempt(attempt);
+      }
       reviewFlags.clear();
       outOfSyllabus.clear();
       updateProgress();
       clearDraft();
     } catch (error) {
-      status(`Your report is ready, but attempt.json was not saved. ${error.message} Your draft is kept; restart the server and reload to submit again.`, true);
+      status(window.QuizCloudSync ? `Your report is ready, but the account save is not confirmed. ${error.message} Your draft is kept; reconnect and retry.` : `Your report is ready, but attempt.json was not saved. ${error.message} Your draft is kept; restart the server and reload to submit again.`, true);
     } finally { serverBusy = false; setControls(); }
   }
 
@@ -789,7 +809,7 @@
       card.tabIndex = -1;
       card.append(element("legend", "question-heading", `Question ${questionLabel(question)}`));
       const type = questionType(question), kind = type === "nat" ? "Numerical answer" : type === "msq" ? "Select all correct options (exact set; no partial credit)" : "Choose one option";
-      content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"}`));
+      content.append(element("p", "question-meta", `${kind} · ${marks(question).correct} ${marks(question).correct === 1 ? "mark" : "marks"} · ${negativeMarksText(question)}`));
       if (question.requiresCorrect) {
         const prerequisite = data.questions.find((item) => item.id === question.requiresCorrect);
         stem.append(element("p", "response-help", `Evaluated only if question ${questionLabel(prerequisite)} is correct, unless that question is marked out of syllabus. No negative marking for this question.`));
@@ -1004,7 +1024,7 @@
       return true;
     }
     clearAttempt();
-    if (storageAvailable) status("New attempt started. Progress is cached until Submit.");
+    if (storageAvailable) status(window.QuizCloudSync ? "New attempt started. Progress syncs to your account." : "New attempt started. Progress is cached until Submit.");
     return true;
   }
   function downloadText(contents, filename, type) {
@@ -1064,6 +1084,24 @@
     byId("print-report").addEventListener("click", () => window.print());
     window.addEventListener("beforeunload", (event) => { if (serverBusy) { event.preventDefault(); event.returnValue = ""; } });
     window.addEventListener("pageshow", (event) => { if (event.persisted) { renderTimer(); checkLastAttempt(); } });
+    window.addEventListener("quiz-cloud-record", event => {
+      const record = event.detail;
+      if (record?.key === `practice-quiz:${data.id}:attempt`) { checkLastAttempt(); return; }
+      if (record?.key !== storageKey || serverBusy || submittedAt || reviewState) return;
+      const focus = document.activeElement, focusId = focus?.id, start = focus?.selectionStart, end = focus?.selectionEnd;
+      try {
+        if (record.value === null) {
+          Object.keys(answers).forEach(id => delete answers[id]);
+          reviewFlags.clear(); outOfSyllabus.clear(); currentQuestionIndex = 0; updatedAt = "";
+          resetTimer(false);
+        } else restoreDraft(JSON.parse(record.value));
+        showAttempt();
+        const restored = focusId && byId(focusId);
+        restored?.focus({ preventScroll: true });
+        if (Number.isInteger(start) && Number.isInteger(end)) restored?.setSelectionRange?.(start, end);
+        status("Progress updated from your account.");
+      } catch { status("Cloud progress could not be loaded. Your current responses are kept.", true); }
+    });
     showAttempt();
     checkLastAttempt();
     if (new URL(window.location.href).protocol === "file:") status("Start the quiz server and open http://127.0.0.1:8765 for persistent drafts and automatic result saving.", true);
