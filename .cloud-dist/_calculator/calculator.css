@@ -1,0 +1,91 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  color: #1e293b;
+  background: #fff8fc;
+  --surface: #fff;
+  --screen: #f5f8ff;
+  --key: #fff;
+  --key-hover: #eff5ff;
+  --border: #d4e1f1;
+  --muted: #596b84;
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-soft: #dbeafe;
+  --error: #b91c1c;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e5eaf4;
+  background: #000;
+  --surface: #101318;
+  --screen: #060a12;
+  --key: #171d29;
+  --key-hover: #242f44;
+  --border: #35425b;
+  --muted: #a7b5cd;
+  --accent: #5b7ded;
+  --accent-hover: #3559c7;
+  --accent-soft: #202f56;
+  --error: #fda4af;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input { font: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.calculator { width: 100%; max-width: 520px; margin: auto; padding: 12px; }
+.calculator-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+h1 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+.angle-mode { display: flex; padding: 3px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); }
+.angle-mode button { min-width: 40px; min-height: 27px; padding: 3px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; }
+.angle-mode button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.screen { margin-bottom: 9px; padding: 9px 10px 7px; border: 1px solid var(--border); border-radius: 8px; background: var(--screen); }
+.screen label { display: block; margin-bottom: 3px; color: var(--muted); font-size: 11px; }
+#expression { display: block; width: 100%; min-width: 0; height: 32px; padding: 3px 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; outline: 0; background: transparent; color: inherit; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 18px; }
+#expression:focus { border-color: var(--accent); box-shadow: 0 1px 0 var(--accent); }
+#expression[aria-invalid="true"] { border-color: var(--error); }
+#expression::placeholder { color: var(--muted); font-size: 15px; }
+#result { display: block; min-height: 37px; overflow-x: auto; padding-top: 5px; color: var(--accent); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 25px; font-weight: 650; line-height: 1.2; text-align: right; white-space: nowrap; }
+#calculation-status { min-height: 15px; margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.3; overflow-wrap: anywhere; }
+#calculation-status.error { color: var(--error); }
+.memory-bar { display: grid; grid-template-columns: repeat(4, 1fr) minmax(76px, 1.4fr); gap: 5px; margin-bottom: 8px; }
+.memory-bar button { min-height: 30px; padding: 3px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 650; }
+.memory-bar button:hover { background: var(--key-hover); color: var(--accent); }
+#memory-indicator { align-self: center; overflow: hidden; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.keypad { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.keypad button { min-width: 0; min-height: 39px; padding: 5px 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--key); color: inherit; font-size: 17px; font-weight: 600; line-height: 1.1; box-shadow: 0 1px 2px rgb(21 58 104 / 5%); }
+.keypad button:hover { background: var(--key-hover); }
+.keypad button:active, .memory-bar button:active { transform: translateY(1px); }
+.keypad .scientific { min-height: 33px; background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 550; }
+.keypad .scientific:hover, .keypad .scientific[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.keypad .operator { background: var(--accent-soft); color: var(--accent); }
+.keypad .operator:hover { border-color: var(--accent); background: var(--accent-soft); }
+.keypad .utility { color: var(--accent); font-size: 13px; }
+.keypad .equals { border-color: var(--accent); background: var(--accent); color: #fff; font-size: 23px; }
+.keypad .equals:hover { background: var(--accent-hover); }
+:root[data-theme="dark"] .angle-mode button[aria-pressed="true"], :root[data-theme="dark"] .keypad .equals { border-color: #4169e1; background: #4169e1; color: #fff; }
+:root[data-theme="dark"] .angle-mode button[aria-pressed="true"]:hover, :root[data-theme="dark"] .keypad .equals:hover { background: #3559c7; }
+.help { margin-top: 10px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.help summary { width: fit-content; padding: 1px 0; color: var(--accent); cursor: pointer; font-size: 12px; }
+.help p { margin: 8px 0 0; }
+code, kbd { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.95em; }
+kbd { padding: 1px 3px; border: 1px solid var(--border); border-radius: 3px; }
+
+@media (max-width: 350px) {
+  .calculator { padding: 9px; }
+  .calculator-header { gap: 5px; }
+  h1 { font-size: 13px; }
+  .angle-mode button { min-width: 35px; }
+  .keypad { gap: 4px; }
+  .keypad .scientific { font-size: 12px; }
+  #result { font-size: 22px; }
+}
+
+@media (forced-colors: active) {
+  button[aria-pressed="true"], .keypad .equals { border: 2px solid Highlight; }
+  #expression:focus { outline: 2px solid Highlight; }
+}

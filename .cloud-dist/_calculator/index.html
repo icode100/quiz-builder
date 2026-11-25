@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scientific calculator</title>
+  <script src="/_template/theme.js"></script>
+  <link rel="stylesheet" href="/_calculator/calculator.css">
+  <script src="/_calculator/engine.js" defer></script>
+  <script src="/_calculator/calculator.js" defer></script>
+</head>
+<body>
+  <main class="calculator" aria-labelledby="calculator-title">
+    <header class="calculator-header">
+      <h1 id="calculator-title">Scientific calculator</h1>
+      <div class="angle-mode" role="group" aria-label="Angle unit">
+        <button type="button" data-angle="DEG" aria-pressed="true" title="Use degrees for trigonometric functions">DEG</button>
+        <button type="button" data-angle="RAD" aria-pressed="false" title="Use radians for trigonometric functions">RAD</button>
+      </div>
+    </header>
+
+    <section class="screen" aria-label="Calculation">
+      <label for="expression">Expression</label>
+      <input id="expression" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="calculation-status" placeholder="Enter an expression" maxlength="1024">
+      <output id="result" aria-label="Result">0</output>
+      <p id="calculation-status" role="status" aria-live="polite" aria-atomic="true">Ready · degrees</p>
+    </section>
+
+    <div class="memory-bar" role="group" aria-label="Calculator memory">
+      <button type="button" data-action="memory-clear" title="Clear memory">MC</button>
+      <button type="button" data-action="memory-recall" title="Insert memory value">MR</button>
+      <button type="button" data-action="memory-add" title="Add the current value to memory">M+</button>
+      <button type="button" data-action="memory-subtract" title="Subtract the current value from memory">M−</button>
+      <output id="memory-indicator" aria-label="Memory value" title="Memory: 0">M: 0</output>
+    </div>
+
+    <div id="keypad" class="keypad" aria-label="Calculator keypad">
+      <button type="button" class="scientific" data-function="sin" data-more-function="sinh" data-more-label="sinh">sin</button>
+      <button type="button" class="scientific" data-function="cos" data-more-function="cosh" data-more-label="cosh">cos</button>
+      <button type="button" class="scientific" data-function="tan" data-more-function="tanh" data-more-label="tanh">tan</button>
+      <button type="button" class="scientific" data-function="asin" data-more-function="abs" data-more-label="abs" aria-label="Inverse sine">sin⁻¹</button>
+      <button type="button" class="scientific" data-function="acos" data-more-function="exp" data-more-label="eˣ" aria-label="Inverse cosine">cos⁻¹</button>
+      <button type="button" class="scientific" data-function="atan" data-more-function="cbrt" data-more-label="∛" aria-label="Inverse tangent">tan⁻¹</button>
+
+      <button type="button" class="scientific" data-function="ln" data-more-function="floor" data-more-label="floor" title="Natural logarithm">ln</button>
+      <button type="button" class="scientific" data-function="log" data-more-function="ceil" data-more-label="ceil" title="Base-10 logarithm">log</button>
+      <button type="button" class="scientific" data-function="log2" data-more-function="root" data-more-label="ⁿ√" title="Base-2 logarithm">log₂</button>
+      <button type="button" class="scientific" data-function="sqrt" data-more-insert="10^" data-more-label="10ˣ" title="Square root">√</button>
+      <button type="button" class="scientific" data-insert="^2" data-more-action="reciprocal" data-more-label="1/x" title="Square">x²</button>
+      <button type="button" class="scientific" data-insert="^" data-more-insert="^3" data-more-label="x³" title="Power">xʸ</button>
+
+      <button type="button" class="scientific" data-function="ncr" title="Combinations: ncr(n,r)">nCr</button>
+      <button type="button" class="scientific" data-function="npr" title="Permutations: npr(n,r)">nPr</button>
+      <button type="button" class="scientific" data-insert="!" title="Factorial">n!</button>
+      <button type="button" class="scientific" data-insert="pi" title="Pi">π</button>
+      <button type="button" class="scientific" data-insert="e" title="Euler's number">e</button>
+      <button type="button" id="more-functions" class="scientific" data-action="more" aria-pressed="false" title="Show more scientific functions">More</button>
+
+      <button type="button" data-insert="7">7</button>
+      <button type="button" data-insert="8">8</button>
+      <button type="button" data-insert="9">9</button>
+      <button type="button" class="operator" data-insert="(">(</button>
+      <button type="button" class="operator" data-insert=")">)</button>
+      <button type="button" class="utility" data-action="delete" aria-label="Delete at cursor">DEL</button>
+
+      <button type="button" data-insert="4">4</button>
+      <button type="button" data-insert="5">5</button>
+      <button type="button" data-insert="6">6</button>
+      <button type="button" class="operator" data-insert="*" aria-label="Multiply">×</button>
+      <button type="button" class="operator" data-insert="/" aria-label="Divide">÷</button>
+      <button type="button" class="utility" data-action="clear" title="Clear the current expression; keep answer and memory">AC</button>
+
+      <button type="button" data-insert="1">1</button>
+      <button type="button" data-insert="2">2</button>
+      <button type="button" data-insert="3">3</button>
+      <button type="button" class="operator" data-insert="+" aria-label="Add">+</button>
+      <button type="button" class="operator" data-insert="-" aria-label="Subtract">−</button>
+      <button type="button" class="utility" data-insert="ans" title="Insert the last answer">Ans</button>
+
+      <button type="button" data-insert="0">0</button>
+      <button type="button" data-insert=".">.</button>
+      <button type="button" class="utility" data-insert="e" title="Scientific notation, for example 1e-3">EXP</button>
+      <button type="button" class="operator" data-action="sign" title="Negate the selected text or entire expression">±</button>
+      <button type="button" class="operator" data-insert="," title="Separate function arguments">,</button>
+      <button type="button" class="equals" data-action="evaluate" aria-label="Calculate">=</button>
+    </div>
+
+    <details class="help">
+      <summary>Syntax &amp; keyboard help</summary>
+      <p>Type or use the keys. Press <kbd>Enter</kbd> or <kbd>=</kbd> to calculate; <kbd>Esc</kbd> closes the panel. Select text to wrap it in a function.</p>
+      <p>Examples: <code>sin(30)</code>, <code>2^10</code>, <code>ncr(5,2)</code>, <code>root(27,3)</code>, <code>1e-3</code>. Use <code>*</code> for multiplication and <code>%</code> for remainder; percentage is <code>/100</code>. <strong>More</strong> shows hyperbolic functions, absolute value, floor, ceil and roots.</p>
+      <p>Trigonometric inputs and inverse outputs use DEG or RAD. <code>log</code> is base 10; <code>ln</code> is base e. Factorials and combinations require nonnegative integers. Memory and Ans last while this page is open. Results use JavaScript floating-point arithmetic and may include rounding error. This is a practice tool.</p>
+    </details>
+    <noscript><p>Enable JavaScript to use the calculator.</p></noscript>
+  </main>
+</body>
+</html>
